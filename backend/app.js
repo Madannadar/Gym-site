@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import router from "./routers/index.js";
 import { loggerMiddleware } from "./middlewares/logger.js"; // Import middleware
+import db from "./config/db.js";
 
 dotenv.config();
 
