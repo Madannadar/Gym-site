@@ -5,7 +5,7 @@ const schema = `
     DROP TABLE IF EXISTS event_diets, diet_meals, diet_plans, foods, workout_exercises, exercises, event_workouts, workout_templates, event_participants, events, users CASCADE;
 
     -- USERS TABLE (Stores user details and dietary preferences)
-    CREATE TABLE users (
+    CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
@@ -15,7 +15,7 @@ const schema = `
     );
 
     -- EVENTS TABLE (Stores gym events)
-    CREATE TABLE events (
+    CREATE TABLE IF NOT EXISTS events (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         description TEXT,
@@ -26,7 +26,7 @@ const schema = `
     );
 
     -- EVENT PARTICIPANTS TABLE (Links users to events)
-    CREATE TABLE event_participants (
+    CREATE TABLE IF NOT EXISTS event_participants (
         id SERIAL PRIMARY KEY,
         event_id INT REFERENCES events(id) ON DELETE CASCADE,
         user_id INT REFERENCES users(id) ON DELETE CASCADE,
@@ -35,7 +35,7 @@ const schema = `
     );
 
     -- WORKOUT TEMPLATE TABLE (Reusable workout plans for events)
-    CREATE TABLE workout_templates (
+    CREATE TABLE IF NOT EXISTS workout_templates (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         description TEXT,
@@ -46,7 +46,7 @@ const schema = `
     );
 
     -- EVENT WORKOUTS TABLE (Assigns workout templates to events)
-    CREATE TABLE event_workouts (
+    CREATE TABLE IF NOT EXISTS event_workouts (
         id SERIAL PRIMARY KEY,
         event_id INT REFERENCES events(id) ON DELETE CASCADE,
         workout_template_id INT REFERENCES workout_templates(id) ON DELETE CASCADE,
@@ -55,7 +55,7 @@ const schema = `
     );
 
     -- EXERCISES TABLE (Stores individual exercises)
-    CREATE TABLE exercises (
+    CREATE TABLE IF NOT EXISTS exercises (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         description TEXT,
@@ -64,7 +64,7 @@ const schema = `
     );
 
     -- WORKOUT EXERCISES TABLE (Links exercises to workout templates)
-    CREATE TABLE workout_exercises (
+    CREATE TABLE IF NOT EXISTS workout_exercises (
         id SERIAL PRIMARY KEY,
         workout_template_id INT REFERENCES workout_templates(id) ON DELETE CASCADE,
         exercise_id INT REFERENCES exercises(id) ON DELETE CASCADE,
@@ -74,7 +74,7 @@ const schema = `
     );
 
     -- FOOD ITEMS TABLE (Stores food and nutrition data)
-    CREATE TABLE foods (
+    CREATE TABLE IF NOT EXISTS foods (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         description TEXT,
@@ -88,7 +88,7 @@ const schema = `
     );
 
     -- DIET PLANS TABLE (Reusable diet templates)
-    CREATE TABLE diet_plans (
+    CREATE TABLE IF NOT EXISTS diet_plans (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         description TEXT,
@@ -99,7 +99,7 @@ const schema = `
     );
 
     -- DIET MEALS TABLE (Links food items to diet plans)
-    CREATE TABLE diet_meals (
+    CREATE TABLE IF NOT EXISTS diet_meals (
         id SERIAL PRIMARY KEY,
         diet_plan_id INT REFERENCES diet_plans(id) ON DELETE CASCADE,
         food_id INT REFERENCES foods(id) ON DELETE CASCADE,
