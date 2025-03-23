@@ -1,12 +1,12 @@
 import express from "express";
 import * as ExerciseController from "../controllers/exercise.controller.js";
 
-const router = express.Router();
+const exerciseRouter = express.Router();
 
-router.get("/", ExerciseController.getAllExercises);
-router.get("/:id", ExerciseController.getExerciseById);
-router.post("/", ExerciseController.createExercise);
-router.put("/:id", ExerciseController.updateExercise);
-router.delete("/:id", ExerciseController.deleteExercise);
+exerciseRouter.get("/", ExerciseController.getAllExercises); //works
+exerciseRouter.get("/:id", ExerciseController.getExerciseById); //works
+exerciseRouter.post("/", ExerciseController.createExercise); //works
+exerciseRouter.put("/:id", ExerciseController.updateExercise); //works
+exerciseRouter.delete("/:id", ExerciseController.deleteExercise); //works
 
-export default router;
+export default exerciseRouter;

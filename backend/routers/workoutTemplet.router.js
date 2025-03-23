@@ -1,18 +1,24 @@
 import express from "express";
 import {
   getAllWorkoutTemplates,
-  getWorkoutTemplateById,
-  createWorkoutTemplate,
-  updateWorkoutTemplate,
+  getWorkoutTemplate,
+  createOrUpdateWorkoutTemplate,
   deleteWorkoutTemplate,
 } from "../controllers/workoutTemplet.controller.js";
 
 const router = express.Router();
 
+// 📌 Get all workout templates
 router.get("/", getAllWorkoutTemplates);
-router.get("/:id", getWorkoutTemplateById);
-router.post("/", createWorkoutTemplate);
-router.put("/:id", updateWorkoutTemplate);
+
+// 📌 Get a specific workout template by ID
+router.get("/:id", getWorkoutTemplate);
+
+// 📌 Create or update a workout template (also handles adding/removing exercises)
+router.post("/", createOrUpdateWorkoutTemplate);
+router.put("/:id", createOrUpdateWorkoutTemplate);
+
+// 📌 Delete a workout template
 router.delete("/:id", deleteWorkoutTemplate);
 
 export default router;

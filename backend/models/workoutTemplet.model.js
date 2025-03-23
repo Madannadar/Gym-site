@@ -1,51 +1,80 @@
-import db from "../config/db.js";
+import db from "../config/database.js";
 
-export const getAllWorkoutTemplates = async () => {
-  const result = await db.query("SELECT * FROM workout_templates");
-  return result.rows;
+// 📌 Get all workout templates
+export const getAllTemplates = async () => {
+  const { rows } = await db.query("SELECT * FROM workout_templates");
+  return rows;
 };
 
-export const getWorkoutTemplateById = async (id) => {
-  const result = await db.query(
+// 📌 Get a specific workout template by ID
+export const getTemplateById = async (id) => {
+  const { rows } = await db.query(
     "SELECT * FROM workout_templates WHERE id = $1",
     [id],
   );
-  return result.rows[0];
-};
+  if (rows.length === 0) return null;
 
-export const createWorkoutTemplate = async (
-  name,
-  description,
-  coverImage,
-  difficulty,
-  duration,
-) => {
-  const result = await db.query(
-    "INSERT INTO workout_templates (name, description, cover_image, difficulty, duration) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-    [name, description, coverImage, difficulty, duration],
+  // Fetch exercises linked to this template
+  const exercises = await db.query(
+    "SELECT e.* FROM workout_exercises we JOIN exercises e ON we.exercise_id = e.id WHERE we.workout_template_id = $1",
+    [id],
   );
-  return result.rows[0];
+
+  return { ...rows[0], exercises: exercises.rows };
 };
 
-export const updateWorkoutTemplate = async (
+// 📌 Create or update a workout template
+export const createOrUpdateTemplate = async ({
   id,
   name,
   description,
-  coverImage,
+  cover_image,
   difficulty,
   duration,
-) => {
-  const result = await db.query(
-    "UPDATE workout_templates SET name = $1, description = $2, cover_image = $3, difficulty = $4, duration = $5 WHERE id = $6 RETURNING *",
-    [name, description, coverImage, difficulty, duration, id],
-  );
-  return result.rows[0];
+  exercises,
+}) => {
+  let template;
+  if (id) {
+    // Update existing template
+    const { rows } = await db.query(
+      "UPDATE workout_templates SET name = $1, description = $2, cover_image = $3, difficulty = $4, duration = $5 WHERE id = $6 RETURNING *",
+      [name, description, cover_image, difficulty, duration, id],
+    );
+    template = rows[0];
+  } else {
+    // Create a new template
+    const { rows } = await db.query(
+      "INSERT INTO workout_templates (name, description, cover_image, difficulty, duration) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+      [name, description, cover_image, difficulty, duration],
+    );
+    template = rows[0];
+    id = template.id; // Set new ID
+  }
+
+  if (exercises && exercises.length > 0) {
+    // Remove existing exercises
+    await db.query(
+      "DELETE FROM workout_exercises WHERE workout_template_id = $1",
+      [id],
+    );
+
+    // Add new exercises
+    for (const exercise of exercises) {
+      await db.query(
+        "INSERT INTO workout_exercises (workout_template_id, exercise_id, reps, units) VALUES ($1, $2, $3, $4)",
+        [id, exercise.exercise_id, exercise.reps, exercise.units],
+      );
+    }
+  }
+
+  return getTemplateById(id);
 };
 
-export const deleteWorkoutTemplate = async (id) => {
-  const result = await db.query(
-    "DELETE FROM workout_templates WHERE id = $1 RETURNING *",
+// 📌 Delete a workout template
+export const deleteTemplate = async (id) => {
+  await db.query(
+    "DELETE FROM workout_exercises WHERE workout_template_id = $1",
     [id],
-  );
-  return result.rows[0];
+  ); // Remove related exercises first
+  await db.query("DELETE FROM workout_templates WHERE id = $1", [id]);
 };
