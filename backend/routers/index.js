@@ -1,9 +1,9 @@
-import express from 'express';
-import { getSampleData } from '../controllers/sampleController.js';
+import express from "express";
+import eventRouter from "./event.router.js";
 
 const router = express.Router();
 
-// Sample route
-router.get('/sample', getSampleData);
+// Use event routes
+router.use("/events", eventRouter);
 
 export default router;
