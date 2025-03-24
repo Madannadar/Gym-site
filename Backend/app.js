@@ -1,6 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
-import dietPlanRoutes from "./routes/dietPlanRoutes.js";
+import { createDietPlanController } from "./controller/dietPlanController.js";
 import { createDietPlanTable } from "./models/DietPlan.js";
 
 dotenv.config();
@@ -12,7 +12,7 @@ app.use(express.json());
 createDietPlanTable().then(() => console.log("DietPlan table ready!"));
 
 // Routes
-app.use("/api", dietPlanRoutes);
+app.use("/api", createDietPlanController);
 
 // Start the server
 const PORT = process.env.PORT || 5000;
