@@ -1,6 +1,18 @@
-import db from "../config/db.js";
+// controllers/eventController.js
+import {
+  createEvent,
+  addWorkoutTemplates,
+  getAllEvents,
+  getEventById,
+  updateEvent,
+  deleteEventWorkouts,
+  getUserEvents,
+  enrollUserInEvent,
+  removeUserFromEvent,
+  deleteEvent,
+} from "../models/event.model.js";
 
-export const createEvent = async (req, res) => {
+export const createEventHandler = async (req, res) => {
   const {
     name,
     description,
@@ -10,20 +22,19 @@ export const createEvent = async (req, res) => {
     workout_templates,
   } = req.body;
   try {
-    const eventResult = await db.query(
-      "INSERT INTO events (name, description, cover_image, event_date, location) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [name, description, cover_image, date_time, location],
+    const eventResult = await createEvent(
+      name,
+      description,
+      cover_image,
+      date_time,
+      location,
     );
     const event = eventResult.rows[0];
 
     if (workout_templates && workout_templates.length > 0) {
-      for (const templateId of workout_templates) {
-        await db.query(
-          "INSERT INTO event_workouts (event_id, workout_template_id) VALUES ($1, $2)",
-          [event.id, templateId],
-        );
-      }
+      await addWorkoutTemplates(event.id, workout_templates);
     }
+
     res.status(201).json(event);
   } catch (error) {
     console.error("Error creating event:", error);
@@ -31,11 +42,9 @@ export const createEvent = async (req, res) => {
   }
 };
 
-export const getAllEvents = async (req, res) => {
+export const getAllEventsHandler = async (req, res) => {
   try {
-    const result = await db.query(
-      "SELECT e.*, json_agg(wt.id) AS workout_templates FROM events e LEFT JOIN event_workouts ew ON e.id = ew.event_id LEFT JOIN workout_templates wt ON ew.workout_template_id = wt.id GROUP BY e.id",
-    );
+    const result = await getAllEvents();
     res.json(result.rows);
   } catch (error) {
     console.error("Error fetching events:", error);
@@ -43,12 +52,9 @@ export const getAllEvents = async (req, res) => {
   }
 };
 
-export const getEventById = async (req, res) => {
+export const getEventByIdHandler = async (req, res) => {
   try {
-    const result = await db.query(
-      "SELECT e.*, json_agg(wt.id) AS workout_templates FROM events e LEFT JOIN event_workouts ew ON e.id = ew.event_id LEFT JOIN workout_templates wt ON ew.workout_template_id = wt.id WHERE e.id = $1 GROUP BY e.id",
-      [req.params.id],
-    );
+    const result = await getEventById(req.params.id);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Event not found" });
     }
@@ -59,7 +65,7 @@ export const getEventById = async (req, res) => {
   }
 };
 
-export const updateEvent = async (req, res) => {
+export const updateEventHandler = async (req, res) => {
   const {
     name,
     description,
@@ -69,24 +75,21 @@ export const updateEvent = async (req, res) => {
     workout_templates,
   } = req.body;
   try {
-    const eventResult = await db.query(
-      "UPDATE events SET name = $1, description = $2, cover_image = $3, event_date = $4, location = $5 WHERE id = $6 RETURNING *",
-      [name, description, cover_image, date_time, location, req.params.id],
+    const eventResult = await updateEvent(
+      req.params.id,
+      name,
+      description,
+      cover_image,
+      date_time,
+      location,
     );
     if (eventResult.rows.length === 0) {
       return res.status(404).json({ error: "Event not found" });
     }
 
-    await db.query("DELETE FROM event_workouts WHERE event_id = $1", [
-      req.params.id,
-    ]);
+    await deleteEventWorkouts(req.params.id);
     if (workout_templates && workout_templates.length > 0) {
-      for (const templateId of workout_templates) {
-        await db.query(
-          "INSERT INTO event_workouts (event_id, workout_template_id) VALUES ($1, $2)",
-          [req.params.id, templateId],
-        );
-      }
+      await addWorkoutTemplates(req.params.id, workout_templates);
     }
 
     res.json(eventResult.rows[0]);
@@ -96,12 +99,9 @@ export const updateEvent = async (req, res) => {
   }
 };
 
-export const getUserEvents = async (req, res) => {
+export const getUserEventsHandler = async (req, res) => {
   try {
-    const result = await db.query(
-      "SELECT e.* FROM events e JOIN event_participants ep ON e.id = ep.event_id WHERE ep.user_id = $1",
-      [req.params.userId],
-    );
+    const result = await getUserEvents(req.params.userId);
     res.json(result.rows);
   } catch (error) {
     console.error("Error fetching user events:", error);
@@ -109,26 +109,9 @@ export const getUserEvents = async (req, res) => {
   }
 };
 
-export const enrollUserInEvent = async (req, res) => {
-  const { userId } = req.body;
+export const getUserEnrolledEventsHandler = async (req, res) => {
   try {
-    await db.query(
-      "INSERT INTO event_participants (event_id, user_id) VALUES ($1, $2) RETURNING *",
-      [req.params.eventId, userId],
-    );
-    res.status(201).json({ message: "User enrolled successfully" });
-  } catch (error) {
-    console.error("Error enrolling user:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-};
-
-export const getUserEnrolledEvents = async (req, res) => {
-  try {
-    const result = await db.query(
-      "SELECT e.* FROM events e JOIN event_participants ep ON e.id = ep.event_id WHERE ep.user_id = $1",
-      [req.params.userId],
-    );
+    const result = await getUserEnrolledEvents(req.params.userId);
     res.json(result.rows);
   } catch (error) {
     console.error("Error fetching enrolled events:", error);
@@ -136,13 +119,21 @@ export const getUserEnrolledEvents = async (req, res) => {
   }
 };
 
-export const removeUserFromEvent = async (req, res) => {
+export const enrollUserInEventHandler = async (req, res) => {
   const { userId } = req.body;
   try {
-    const result = await db.query(
-      "DELETE FROM event_participants WHERE event_id = $1 AND user_id = $2 RETURNING *",
-      [req.params.eventId, userId],
-    );
+    await enrollUserInEvent(req.params.eventId, userId);
+    res.status(201).json({ message: "User enrolled successfully" });
+  } catch (error) {
+    console.error("Error enrolling user:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const removeUserFromEventHandler = async (req, res) => {
+  const { userId } = req.body;
+  try {
+    const result = await removeUserFromEvent(req.params.eventId, userId);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "User not found in event" });
     }
@@ -153,12 +144,9 @@ export const removeUserFromEvent = async (req, res) => {
   }
 };
 
-export const deleteEvent = async (req, res) => {
+export const deleteEventHandler = async (req, res) => {
   try {
-    const result = await db.query(
-      "DELETE FROM events WHERE id = $1 RETURNING *",
-      [req.params.id],
-    );
+    const result = await deleteEvent(req.params.id);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Event not found" });
     }
