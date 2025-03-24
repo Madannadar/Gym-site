@@ -8,12 +8,12 @@ import {
 const dietplanRouter = express.Router();
 
 // Route to create a new diet plan
-dietplanRouter.post("/diet-plans", createDietPlanController);
+dietplanRouter.post("/", createDietPlanController);
 
 // Route to get all diet plans
-dietplanRouter.get("/diet-plans", getAllDietPlansController);
+dietplanRouter.get("/", getAllDietPlansController);
 
 // Route to get a single diet plan by ID
-dietplanRouter.get("/diet-plans/:id", getDietPlanByIdController);
+dietplanRouter.get("/:id", getDietPlanByIdController);
 
 export default dietplanRouter;
