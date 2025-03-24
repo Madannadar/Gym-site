@@ -9,6 +9,7 @@ import {
   getUserEvents,
   enrollUserInEvent,
   removeUserFromEvent,
+  getUserEnrolledEvents,
   deleteEvent,
 } from "../models/event.model.js";
 
