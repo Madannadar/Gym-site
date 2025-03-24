@@ -14,13 +14,14 @@ import {
 const eventRouter = express.Router();
 
 // Event Routes
-eventRouter.post("/", createEvent);
-eventRouter.get("/", getAllEvents);
-eventRouter.get("/:id", getEventById);
-eventRouter.put("/:id", updateEvent);
+eventRouter.post("/", createEvent); //works
+eventRouter.get("/", getAllEvents); //works
+eventRouter.get("/:id", getEventById); //works
+eventRouter.put("/:id", updateEvent); //works
 eventRouter.delete("/:id", deleteEvent);
 
 // User Event Routes
+// //not tested bcz of user constraints will test later
 eventRouter.get("/users/:userId/events", getUserEvents); // Fetch events created by a user
 eventRouter.get("/users/:userId/enrolled-events", getUserEnrolledEvents); // Fetch events a user is enrolled in
 eventRouter.post("/:eventId/enroll", enrollUserInEvent); // Enroll a user in an event
