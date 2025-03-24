@@ -6,19 +6,15 @@ import {
   deleteWorkoutTemplate,
 } from "../controllers/workoutTemplet.controller.js";
 
-const router = express.Router();
+const workoutTempletRouter = express.Router();
 
-// 📌 Get all workout templates
-router.get("/", getAllWorkoutTemplates);
+workoutTempletRouter.get("/", getAllWorkoutTemplates); //works
 
-// 📌 Get a specific workout template by ID
-router.get("/:id", getWorkoutTemplate);
+workoutTempletRouter.get("/:id", getWorkoutTemplate); //works
 
-// 📌 Create or update a workout template (also handles adding/removing exercises)
-router.post("/", createOrUpdateWorkoutTemplate);
-router.put("/:id", createOrUpdateWorkoutTemplate);
+workoutTempletRouter.post("/", createOrUpdateWorkoutTemplate); // works
+workoutTempletRouter.put("/:id", createOrUpdateWorkoutTemplate); //works
 
-// 📌 Delete a workout template
-router.delete("/:id", deleteWorkoutTemplate);
+workoutTempletRouter.delete("/:id", deleteWorkoutTemplate); //works
 
-export default router;
+export default workoutTempletRouter;

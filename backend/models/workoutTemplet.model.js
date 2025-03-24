@@ -1,12 +1,10 @@
-import db from "../config/database.js";
+import db from "../config/db.js";
 
-// 📌 Get all workout templates
 export const getAllTemplates = async () => {
   const { rows } = await db.query("SELECT * FROM workout_templates");
   return rows;
 };
 
-// 📌 Get a specific workout template by ID
 export const getTemplateById = async (id) => {
   const { rows } = await db.query(
     "SELECT * FROM workout_templates WHERE id = $1",
@@ -23,7 +21,6 @@ export const getTemplateById = async (id) => {
   return { ...rows[0], exercises: exercises.rows };
 };
 
-// 📌 Create or update a workout template
 export const createOrUpdateTemplate = async ({
   id,
   name,
@@ -70,7 +67,6 @@ export const createOrUpdateTemplate = async ({
   return getTemplateById(id);
 };
 
-// 📌 Delete a workout template
 export const deleteTemplate = async (id) => {
   await db.query(
     "DELETE FROM workout_exercises WHERE workout_template_id = $1",

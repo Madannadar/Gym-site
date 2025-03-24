@@ -5,7 +5,6 @@ import {
   deleteTemplate,
 } from "../models/workoutTemplet.model.js";
 
-// 📌 Get all workout templates
 export const getAllWorkoutTemplates = async (req, res) => {
   try {
     const templates = await getAllTemplates();
@@ -17,7 +16,6 @@ export const getAllWorkoutTemplates = async (req, res) => {
   }
 };
 
-// 📌 Get a specific workout template
 export const getWorkoutTemplate = async (req, res) => {
   try {
     const { id } = req.params;
@@ -30,7 +28,6 @@ export const getWorkoutTemplate = async (req, res) => {
   }
 };
 
-// 📌 Create or update a workout template (also handles adding/removing exercises)
 export const createOrUpdateWorkoutTemplate = async (req, res) => {
   try {
     const { id } = req.params; // If provided, update; otherwise, create
@@ -60,7 +57,6 @@ export const createOrUpdateWorkoutTemplate = async (req, res) => {
   }
 };
 
-// 📌 Delete a workout template
 export const deleteWorkoutTemplate = async (req, res) => {
   try {
     const { id } = req.params;

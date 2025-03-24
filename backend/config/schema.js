@@ -1,8 +1,6 @@
 const schema = `
 
 
-  -- DROP TABLES IF THEY ALREADY EXIST (FOR CLEAN EXECUTION)
-    DROP TABLE IF EXISTS event_diets, diet_meals, diet_plans, foods, workout_exercises, exercises, event_workouts, workout_templates, event_participants, events, users CASCADE;
 
     -- USERS TABLE (Stores user details and dietary preferences)
     CREATE TABLE IF NOT EXISTS users (

@@ -1,11 +1,12 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import router from "./routers/index.js";
+import router from "./routers/user.router.js";
 import { loggerMiddleware } from "./middlewares/logger.js";
 import db from "./config/db.js";
 import exerciseRouter from "./routers/exercise.router.js";
 import workoutTempletRouter from "./routers/workoutTemplet.router.js";
+import eventRouter from "./routers/event.router.js";
 
 dotenv.config();
 
@@ -17,8 +18,8 @@ app.use(express.json());
 app.use(loggerMiddleware);
 
 // Routes
-app.use("/api", router);
+app.use("/user", router);
 app.use("/exercise", exerciseRouter);
 app.use("/workouttemplet", workoutTempletRouter);
-
+app.use("/event", eventRouter);
 export default app;
