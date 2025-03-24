@@ -7,7 +7,7 @@ import db from "./config/db.js";
 import exerciseRouter from "./routers/exercise.router.js";
 import workoutTempletRouter from "./routers/workoutTemplet.router.js";
 import eventRouter from "./routers/event.router.js";
-
+import dietplanRouter from "./routers/dietPlanRoutes.js";
 dotenv.config();
 
 const app = express();
@@ -22,4 +22,5 @@ app.use("/user", router);
 app.use("/exercise", exerciseRouter);
 app.use("/workouttemplet", workoutTempletRouter);
 app.use("/event", eventRouter);
+app.use("/dietplan", dietplanRouter);
 export default app;
