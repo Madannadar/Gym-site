@@ -96,15 +96,14 @@ const schema = `
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
-    -- DIET MEALS TABLE (Links food items to diet plans)
-    CREATE TABLE IF NOT EXISTS diet_meals (
-        id SERIAL PRIMARY KEY,
-        diet_plan_id INT REFERENCES diet_plans(id) ON DELETE CASCADE,
-        food_id INT REFERENCES foods(id) ON DELETE CASCADE,
-        meal_type VARCHAR(20) CHECK (meal_type IN ('Breakfast', 'Lunch', 'Dinner', 'Snack')) NOT NULL,
-        serving_size DECIMAL(5, 2) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
+    CREATE TABLE diet_plan_foods (
+  id SERIAL PRIMARY KEY,
+  diet_plan_id INTEGER REFERENCES diet_plans(id),
+  food_id INTEGER REFERENCES foods(id),
+  portion_size VARCHAR(50),
+  meal_type VARCHAR(50),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
     `;
 
