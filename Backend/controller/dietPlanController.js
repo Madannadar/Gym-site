@@ -4,6 +4,7 @@ import { createDietPlan, getAllDietPlans, getDietPlanById } from "../models/Diet
 export const createDietPlanController = async (req, res) => {
   try {
     const { name, description, difficulty, diet_type, tags } = req.body;
+
     const newDietPlan = await createDietPlan({
       name,
       description,
@@ -11,12 +12,14 @@ export const createDietPlanController = async (req, res) => {
       diet_type,
       tags,
     });
+
     res.status(201).json(newDietPlan);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to create diet plan" });
   }
 };
+
 
 // Controller to fetch all diet plans
 export const getAllDietPlansController = async (req, res) => {

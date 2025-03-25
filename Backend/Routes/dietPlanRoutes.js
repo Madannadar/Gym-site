@@ -5,15 +5,15 @@ import {
   getDietPlanByIdController,
 } from "../controller/dietPlanController.js";
 
-const router = express.Router();
+const dietplan = express.Router();
 
 // Route to create a new diet plan
-router.post("/diet-plans", createDietPlanController);
+dietplan.post("/diet-plans", createDietPlanController);
 
 // Route to get all diet plans
-router.get("/diet-plans", getAllDietPlansController);
+dietplan.get("/diet-plans", getAllDietPlansController);
 
 // Route to get a single diet plan by ID
-router.get("/diet-plans/:id", getDietPlanByIdController);
+dietplan.get("/diet-plans/:id", getDietPlanByIdController);
 
-export default router;
+export default dietplan;
