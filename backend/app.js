@@ -9,6 +9,7 @@ import workoutTempletRouter from "./routers/workoutTemplet.router.js";
 import eventRouter from "./routers/event.router.js";
 import dietplanRouter from "./routers/dietPlanRoutes.js";
 import foodRoutes from "./routers/foodRoutes.js";
+import DietFood from "./routers/dietPlanfoodRoutes.js";
 dotenv.config();
 
 const app = express();
@@ -25,6 +26,7 @@ app.use("/workouttemplet", workoutTempletRouter);
 app.use("/event", eventRouter);
 app.use("/dietplan", dietplanRouter);
 app.use('/food',foodRoutes)
+app.use('/foodTODiet',DietFood)
 
 
 // better
