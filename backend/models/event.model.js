@@ -5,12 +5,12 @@ export const createEvent = async (
   name,
   description,
   cover_image,
-  date_time,
+  event_date,
   location,
 ) => {
   return db.query(
-    "INSERT INTO events (name, description, cover_image, date_time, location) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-    [name, description, cover_image, date_time, location],
+    "INSERT INTO events (name, description, cover_image, event_date, location) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+    [name, description, cover_image, event_date, location],
   );
 };
 
@@ -42,12 +42,12 @@ export const updateEvent = async (
   name,
   description,
   cover_image,
-  date_time,
+  event_date,
   location,
 ) => {
   return db.query(
-    "UPDATE events SET name = $1, description = $2, cover_image = $3, date_time = $4, location = $5 WHERE id = $6 RETURNING *",
-    [name, description, cover_image, date_time, location, eventId],
+    "UPDATE events SET name = $1, description = $2, cover_image = $3, event_date = $4, location = $5 WHERE id = $6 RETURNING *",
+    [name, description, cover_image, event_date, location, eventId],
   );
 };
 
@@ -78,7 +78,7 @@ export const enrollUserInEvent = async (eventId, userId) => {
 
 export const removeUserFromEvent = async (eventId, userId) => {
   return db.query(
-    "DELETE FROM event_users WHERE event_id = $1 AND user_id = $2 RETURNING *",
+    "DELETE FROM event_participants WHERE event_id = $1 AND user_id = $2 RETURNING *",
     [eventId, userId],
   );
 };
