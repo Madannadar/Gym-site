@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import dietplan from "./Routes/dietPlanRoutes.js";
 // import { createDietPlanTable } from "./models/DietPlan.js";
 import Food from "./Routes/foodRoutes.js";
+import DietFood from "./Routes/dietPlanfoodRoutes.js";
 
 dotenv.config();
 
@@ -15,6 +16,7 @@ app.use(express.json());
 // Routes
 app.use("/api", dietplan);
 app.use('/api',Food);
+app.use('/api',DietFood)
 
 // Start the server
 const PORT = process.env.PORT || 5000;
