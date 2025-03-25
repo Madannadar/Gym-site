@@ -18,7 +18,7 @@ export const createEventHandler = async (req, res) => {
     name,
     description,
     cover_image,
-    date_time,
+    event_date,
     location,
     workout_templates,
   } = req.body;
@@ -27,7 +27,7 @@ export const createEventHandler = async (req, res) => {
       name,
       description,
       cover_image,
-      date_time,
+      event_date,
       location,
     );
     const event = eventResult.rows[0];
@@ -71,7 +71,7 @@ export const updateEventHandler = async (req, res) => {
     name,
     description,
     cover_image,
-    date_time,
+    event_date,
     location,
     workout_templates,
   } = req.body;
@@ -81,7 +81,7 @@ export const updateEventHandler = async (req, res) => {
       name,
       description,
       cover_image,
-      date_time,
+      event_date,
       location,
     );
     if (eventResult.rows.length === 0) {
