@@ -1,32 +1,32 @@
 import db from "../config/db.js";
 
 // Function to create the diet_plans table if it doesn't exist
-const createDietPlanTable = async () => {
-  const query = `
-    CREATE TABLE IF NOT EXISTS diet_plans (
-      id SERIAL PRIMARY KEY,
-      name VARCHAR(255) NOT NULL,
-      description TEXT,
-      difficulty VARCHAR(50) NOT NULL,
-      diet_type VARCHAR(50) NOT NULL,
-      tags TEXT[]
-    );
-  `;
-  await db.query(query);
-};
+// const createDietPlanTable = async () => {
+//   const query = `
+//     CREATE TABLE IF NOT EXISTS diet_plans (
+//       id SERIAL PRIMARY KEY,
+//       name VARCHAR(255) NOT NULL,
+//       description TEXT,
+//       difficulty VARCHAR(50) NOT NULL,
+//       diet_type VARCHAR(50) NOT NULL,
+//       tags TEXT[]
+//     );
+//   `;
+//   await db.query(query);
+// };
 
-// Function to insert a new diet plan
-const createDietPlan = async (dietPlanData) => {
-  const { name, description, difficulty, diet_type, tags } = dietPlanData;
+const createDietPlan = async ({ name, description, difficulty, diet_type, tags }) => {
   const query = `
     INSERT INTO diet_plans (name, description, difficulty, diet_type, tags)
     VALUES ($1, $2, $3, $4, $5)
     RETURNING *;
   `;
   const values = [name, description, difficulty, diet_type, tags];
-  const result = await db.query(query, values);
-  return result.rows[0];
+  
+  const { rows } = await pool.query(query, values);
+  return rows[0];
 };
+
 
 // Function to get all diet plans
 const getAllDietPlans = async () => {
@@ -45,4 +45,4 @@ const getDietPlanById = async (id) => {
   return result.rows[0];
 };
 
-export { createDietPlanTable, createDietPlan, getAllDietPlans, getDietPlanById };
+export { createDietPlan, getAllDietPlans, getDietPlanById };
