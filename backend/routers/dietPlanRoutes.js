@@ -3,17 +3,24 @@ import {
   createDietPlanController,
   getAllDietPlansController,
   getDietPlanByIdController,
+  updateDietPlanController,
+  deleteDietPlanController
 } from "../controllers/dietPlanController.js";
 
-const dietplanRouter = express.Router();
+const dietplan = express.Router();
 
 // Route to create a new diet plan
-dietplanRouter.post("/", createDietPlanController);
+dietplan.post("/diet-plans", createDietPlanController);
 
 // Route to get all diet plans
-dietplanRouter.get("/", getAllDietPlansController);
+dietplan.get("/diet-plans", getAllDietPlansController);
 
 // Route to get a single diet plan by ID
-dietplanRouter.get("/:id", getDietPlanByIdController);
+dietplan.get("/diet-plans/:id", getDietPlanByIdController);
 
-export default dietplanRouter;
+dietplan.put("/diet-plans/:id", updateDietPlanController);
+
+// Route to delete a diet plan
+dietplan.delete("/diet-plans/:id", deleteDietPlanController);
+
+export default dietplan;
