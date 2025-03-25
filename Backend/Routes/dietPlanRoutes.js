@@ -3,6 +3,8 @@ import {
   createDietPlanController,
   getAllDietPlansController,
   getDietPlanByIdController,
+  updateDietPlanController,
+  deleteDietPlanController
 } from "../controller/dietPlanController.js";
 
 const dietplan = express.Router();
@@ -15,5 +17,10 @@ dietplan.get("/diet-plans", getAllDietPlansController);
 
 // Route to get a single diet plan by ID
 dietplan.get("/diet-plans/:id", getDietPlanByIdController);
+
+dietplan.put("/diet-plans/:id", updateDietPlanController);
+
+// Route to delete a diet plan
+dietplan.delete("/diet-plans/:id", deleteDietPlanController);
 
 export default dietplan;

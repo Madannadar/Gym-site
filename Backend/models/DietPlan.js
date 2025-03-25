@@ -30,4 +30,45 @@ const getDietPlanById = async (id) => {
   return result.rows[0];
 };
 
-export { createDietPlan, getAllDietPlans, getDietPlanById };
+const updateDietPlan = async (id, { name, description, difficulty, diet_type, tags }) => {
+  const query = `
+    UPDATE diet_plans 
+    SET 
+      name = COALESCE($1, name), 
+      description = COALESCE($2, description), 
+      difficulty = COALESCE($3, difficulty), 
+      diet_type = COALESCE($4, diet_type), 
+      tags = COALESCE($5, tags)
+    WHERE id = $6
+    RETURNING *;
+  `;
+  const values = [name, description, difficulty, diet_type, tags, id];
+  
+  const { rows } = await pool.query(query, values);
+  
+  if (rows.length === 0) {
+    throw new Error('Diet plan not found');
+  }
+  
+  return rows[0];
+};
+
+// Function to delete a diet plan
+const deleteDietPlan = async (id) => {
+  const query = 'DELETE FROM diet_plans WHERE id = $1 RETURNING *;';
+  const result = await pool.query(query, [id]);
+  
+  if (result.rows.length === 0) {
+    throw new Error('Diet plan not found');
+  }
+  
+  return result.rows[0];
+};
+
+export { 
+  createDietPlan, 
+  getAllDietPlans, 
+  getDietPlanById, 
+  updateDietPlan, 
+  deleteDietPlan 
+};
