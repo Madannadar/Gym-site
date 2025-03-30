@@ -48,7 +48,7 @@ const MealTracker = () => {
         <h3 className="text-xl sm:text-2xl font-semibold text-gray-800">Recent Meals</h3>
         <button
           className="flex items-center gap-2 px-4 py-1.5 bg-[#4B9CD3] text-white rounded-lg hover:bg-[#3588a2] transition duration-200 ease-in-out"
-          onClick={() => navigate("/log-meal")}  // Change to your log meal page if needed
+          onClick={() => navigate("/new-meal")}  // Navigate to NewMeal.jsx
         >
           <FaPlus />
           Log New Meal
