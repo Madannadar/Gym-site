@@ -51,6 +51,40 @@ const CustomDiet = () => {
           />
         </div>
 
+        {/* Description */}
+        <div>
+          <label className="block text-gray-700 font-medium mb-2">Description</label>
+          <textarea
+            placeholder="Enter diet description"
+            className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
+            rows="4"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </div>
+
+        {/* Diet Plan Image */}
+        <div>
+          <label className="block text-gray-700 font-medium mb-2">Diet Plan Image</label>
+          <div className="relative w-full">
+            <input
+              type="file"
+              accept="image/*"
+              className="absolute inset-0 opacity-0 cursor-pointer"
+              onChange={handleImageChange}
+            />
+            <div className="w-full py-4 px-6 border border-gray-300 rounded-lg text-sm text-gray-600 bg-gray-50 flex items-center justify-center gap-3">
+              {image ? (
+                <img src={image} alt="Diet Plan" className="w-32 h-32 object-cover rounded-lg" />
+              ) : (
+                <>
+                  <span className="text-gray-400">Click to upload an image</span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Calories */}
         <div>
           <label className="block text-gray-700 font-medium mb-2">Calories</label>
@@ -90,18 +124,6 @@ const CustomDiet = () => {
           </select>
         </div>
 
-        {/* Description */}
-        <div>
-          <label className="block text-gray-700 font-medium mb-2">Description</label>
-          <textarea
-            placeholder="Enter diet description"
-            className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
-            rows="4"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </div>
-
         {/* Difficulty Level */}
         <div>
           <label className="block text-gray-700 font-medium mb-2">Difficulty</label>
@@ -116,35 +138,15 @@ const CustomDiet = () => {
           </select>
         </div>
 
-        {/* Image Upload */}
-        <div>
-          <label className="block text-gray-700 font-medium mb-2">Diet Plan Image</label>
-          <div className="relative w-full">
-            <input
-              type="file"
-              accept="image/*"
-              className="absolute inset-0 opacity-0 cursor-pointer"
-              onChange={handleImageChange}
-            />
-            <div className="w-full py-4 px-6 border border-gray-300 rounded-lg text-sm text-gray-600 bg-gray-50 flex items-center justify-center gap-3">
-              {image ? (
-                <img src={image} alt="Diet Plan" className="w-32 h-32 object-cover rounded-lg" />
-              ) : (
-                <>
-                  <span className="text-gray-400">Click to upload an image</span>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-
         {/* Save Button */}
-        <button
-          onClick={handleSave}
-          className="flex items-center justify-center gap-2 px-5 py-2 bg-[#4B9CD3] text-white rounded-lg text-sm hover:bg-blue-600 transition-all duration-200"
-        >
-          <FaCheck /> Save Custom Plan
-        </button>
+        <div className="flex justify-center">
+          <button
+            onClick={handleSave}
+            className="flex items-center justify-center gap-2 px-5 py-2 bg-[#4B9CD3] text-white rounded-lg text-sm hover:bg-blue-600 transition-all duration-200"
+          >
+            <FaCheck /> Save Custom Plan
+          </button>
+        </div>
       </div>
     </div>
   );
