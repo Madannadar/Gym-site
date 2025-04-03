@@ -1,41 +1,50 @@
-import { FaBowlFood, FaCheck } from 'react-icons/fa6';
+import { FaBowlFood, FaCheck } from "react-icons/fa6";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const CustomDiet = () => {
   const navigate = useNavigate();
-  
+
   const [dietName, setDietName] = useState("");
   const [calories, setCalories] = useState("");
   const [meals, setMeals] = useState(3);
   const [dietType, setDietType] = useState("Weight Loss");
   const [description, setDescription] = useState("");
   const [difficulty, setDifficulty] = useState("Medium");
-  const [image, setImage] = useState(null);
+  const [protein, setProtein] = useState("");
+  const [carbs, setCarbs] = useState("");
+  const [fats, setFats] = useState("");
 
   const handleSave = () => {
+    // Create the custom diet plan object
+    const customPlan = {
+      name: dietName || "Custom Plan", // Default name if empty
+      description: description || "A custom diet plan tailored to your needs.",
+      calories: `${calories} kcal` || "0 kcal",
+      meals: meals.toString(),
+      difficulty,
+      protein: protein || "0",
+      carbs: carbs || "0",
+      fats: fats || "0",
+    };
+
     // Show popup alert
     alert("Custom Diet Plan Created!");
 
-    // Navigate to Diet page after alert
-    navigate("/diet");
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImage(URL.createObjectURL(file));
-    }
+    // Navigate to Diet page with the custom plan as the followed plan
+    navigate("/diet", { state: { followedPlan: customPlan } });
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <FaBowlFood className="text-4xl text-[#4B9CD3]" />
-        <h1 className="text-3xl font-semibold text-gray-900">Create Custom Diet Plan</h1>
+      <div className="flex items-center gap-2 sm:gap-4 mb-6">
+        <FaBowlFood className="text-3xl sm:text-4xl text-[#4B9CD3]" />
+        <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">Create Custom Diet Plan</h1>
       </div>
-      <p className="text-gray-600 text-sm sm:text-lg mb-6">Customize your diet plan by providing the necessary details.</p>
+      <p className="text-gray-600 text-sm sm:text-lg mb-6">
+        Customize your diet plan by providing the necessary details.
+      </p>
 
       {/* Form for Custom Diet Plan */}
       <div className="space-y-6">
@@ -63,31 +72,9 @@ const CustomDiet = () => {
           />
         </div>
 
-        {/* Diet Plan Image */}
-        <div>
-          <label className="block text-gray-700 font-medium mb-2">Diet Plan Image</label>
-          <div className="relative w-full">
-            <input
-              type="file"
-              accept="image/*"
-              className="absolute inset-0 opacity-0 cursor-pointer"
-              onChange={handleImageChange}
-            />
-            <div className="w-full py-4 px-6 border border-gray-300 rounded-lg text-sm text-gray-600 bg-gray-50 flex items-center justify-center gap-3">
-              {image ? (
-                <img src={image} alt="Diet Plan" className="w-32 h-32 object-cover rounded-lg" />
-              ) : (
-                <>
-                  <span className="text-gray-400">Click to upload an image</span>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-
         {/* Calories */}
         <div>
-          <label className="block text-gray-700 font-medium mb-2">Calories</label>
+          <label className="block text-gray-700 font-medium mb-2">Calories (kcal)</label>
           <input
             type="number"
             placeholder="Enter total calories"
@@ -136,6 +123,43 @@ const CustomDiet = () => {
             <option value="Medium">Medium</option>
             <option value="Hard">Hard</option>
           </select>
+        </div>
+
+        {/* Macronutrients */}
+        <div>
+          <label className="block text-gray-700 font-medium mb-2">Daily Macronutrient Requirements</label>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-gray-600 text-sm mb-1">Protein (g)</label>
+              <input
+                type="number"
+                placeholder="Protein"
+                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
+                value={protein}
+                onChange={(e) => setProtein(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-gray-600 text-sm mb-1">Carbs (g)</label>
+              <input
+                type="number"
+                placeholder="Carbs"
+                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
+                value={carbs}
+                onChange={(e) => setCarbs(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-gray-600 text-sm mb-1">Fats (g)</label>
+              <input
+                type="number"
+                placeholder="Fats"
+                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
+                value={fats}
+                onChange={(e) => setFats(e.target.value)}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Save Button */}
