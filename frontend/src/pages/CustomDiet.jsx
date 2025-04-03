@@ -8,7 +8,6 @@ const CustomDiet = () => {
   const [dietName, setDietName] = useState("");
   const [calories, setCalories] = useState("");
   const [meals, setMeals] = useState(3);
-  const [dietType, setDietType] = useState("Weight Loss");
   const [description, setDescription] = useState("");
   const [difficulty, setDifficulty] = useState("Medium");
   const [protein, setProtein] = useState("");
@@ -94,22 +93,7 @@ const CustomDiet = () => {
             value={meals}
             onChange={(e) => setMeals(e.target.value)}
           />
-        </div>
-
-        {/* Diet Type */}
-        <div>
-          <label className="block text-gray-700 font-medium mb-2">Diet Type</label>
-          <select
-            className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
-            value={dietType}
-            onChange={(e) => setDietType(e.target.value)}
-          >
-            <option value="Weight Loss">Weight Loss</option>
-            <option value="Muscle Building">Muscle Building</option>
-            <option value="Maintenance">Maintenance</option>
-            <option value="Vegetarian">Vegetarian</option>
-          </select>
-        </div>
+        </div> 
 
         {/* Difficulty Level */}
         <div>

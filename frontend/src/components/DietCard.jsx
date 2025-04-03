@@ -1,5 +1,4 @@
 import { useState } from "react";
-import DietDetails from "./DietDetails.jsx";
 
 const DietCard = ({
   name,
@@ -11,18 +10,8 @@ const DietCard = ({
   carbs,
   fats,
   onFollow,
-  isFollowed, // New prop to differentiate followed card
+  isFollowed,
 }) => {
-  const [showModal, setShowModal] = useState(false);
-
-  const handleViewDetails = () => {
-    setShowModal(true);
-  };
-
-  const handleCloseModal = () => {
-    setShowModal(false);
-  };
-
   return (
     <div
       className={`shadow-lg rounded-xl w-full overflow-hidden hover:shadow-xl transition-all duration-200 ease-in-out border border-gray-200 ${
@@ -46,13 +35,18 @@ const DietCard = ({
             <p>{difficulty}</p>
           </div>
         </div>
-        <div className="mt-3 flex gap-2">
-          <button
-            onClick={handleViewDetails}
-            className="flex-1 bg-[#4B9CD3] text-white py-2 px-4 rounded-lg text-sm hover:bg-blue-600 transition-all duration-200"
-          >
-            View
-          </button>
+
+        {/* Macronutrient Info */}
+        <div className="mt-3 text-gray-700 text-sm">
+          <p className="font-bold">Macronutrient Breakdown</p>
+          <ul className="list-disc pl-5">
+            <li>Protein: {protein}g</li>
+            <li>Carbs: {carbs}g</li>
+            <li>Fats: {fats}g</li>
+          </ul>
+        </div>
+
+        <div className="mt-3 flex">
           <button
             onClick={onFollow}
             className={`flex-1 text-white py-2 px-4 rounded-lg text-sm transition-all duration-200 ${
@@ -65,13 +59,6 @@ const DietCard = ({
           </button>
         </div>
       </div>
-
-      {showModal && (
-        <DietDetails
-          diet={{ name, description, calories, meals, difficulty, protein, carbs, fats }}
-          onClose={handleCloseModal}
-        />
-      )}
     </div>
   );
 };
