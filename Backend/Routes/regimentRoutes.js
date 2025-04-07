@@ -4,7 +4,8 @@ import {
   addWorkoutController,
   addExerciseController,
   addSetController,
-  getAllRegimentsController
+  getAllRegimentsController,
+  logActualSetController
 } from '../controller/regimentController.js';
 
 const RegimentRoutes = express.Router();
@@ -23,5 +24,9 @@ RegimentRoutes.post('/workouts/:workoutId/exercises', addExerciseController);
 
 // Add a set to a specific exercise
 RegimentRoutes.post('/exercises/:exerciseId/sets', addSetController);
+
+// POST /sets/:setId/log
+RegimentRoutes.post('/sets/:setId/log', logActualSetController);
+
 
 export default RegimentRoutes;

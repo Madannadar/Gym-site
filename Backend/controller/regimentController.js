@@ -4,7 +4,8 @@ import {
     addExerciseToWorkout,
     addSetToExercise,
     getAllRegiments,
-  } from '../models/regiment.js';
+    logActualSetPerformance 
+  } from '../models/regiment.model.js';
   
   export const createRegimentController = async (req, res) => {
     try {
@@ -44,14 +45,61 @@ import {
   export const addSetController = async (req, res) => {
     try {
       const { exerciseId } = req.params;
-      const { setName, unitType, value } = req.body;
-      const newSet = await addSetToExercise({ exerciseId, setName, unitType, value });
+      const { set_name, reps, weight, weight_label, time, time_label } = req.body;
+  
+      const newSet = await addSetToExercise({
+        exerciseId,
+        set_name,
+        reps,
+        weight,
+        weight_label,
+        time,
+        time_label,
+      });
+  
       res.status(201).json(newSet);
+      console.log(newSet);
+      
     } catch (err) {
       console.error("Error adding set:", err);
       res.status(500).json({ error: "Failed to add set" });
     }
   };
+  
+  export const logActualSetController = async (req, res) => {
+    try {
+      const { setId } = req.params;
+      const {
+        userId,
+        actualReps,
+        actualWeight,
+        actualWeightLabel,
+        actualTime,
+        actualTimeLabel,
+      } = req.body;
+  
+      if (!userId) {
+        return res.status(400).json({ error: "Missing userId in request body" });
+      }
+  
+      const log = await logActualSetPerformance({
+        setId,
+        userId,
+        actualReps,
+        actualWeight,
+        actualWeightLabel,
+        actualTime,
+        actualTimeLabel,
+      });
+  
+      res.status(201).json(log);
+    } catch (err) {
+      console.error("Error logging actual set performance:", err);
+      res.status(500).json({ error: "Failed to log actual set performance" });
+    }
+  };
+  
+  
   
   export const getAllRegimentsController = async (req, res) => {
     try {
