@@ -52,7 +52,6 @@ const Diet = () => {
     },
   ];
 
-  // Check for custom plan from navigation state
   useEffect(() => {
     if (location.state?.followedPlan) {
       setFollowedPlan(location.state.followedPlan);
@@ -79,18 +78,14 @@ const Diet = () => {
 
   return (
     <div className="p-4 max-w-6xl mx-auto">
-      {/* Header */}
       <div className="flex items-center gap-2">
         <FaBowlFood className="text-3xl sm:text-4xl text-[#4B9CD3]" />
-        <h1 className="text-2xl sm:text-4xl font-bold text-black">
-          Diet Management
-        </h1>
+        <h1 className="text-2xl sm:text-4xl font-bold text-black px-0.5">Diet Management</h1>
       </div>
       <p className="text-gray-700 mt-2 text-sm sm:text-lg">
         Track your nutrition, create meal plans, and achieve your dietary goals with our comprehensive diet management tools.
       </p>
 
-      {/* Feature Boxes */}
       <div className="flex justify-between items-center gap-3 mt-5 text-xs sm:text-sm">
         <div className="flex-1 px-2 py-2 sm:py-3 bg-white rounded-lg text-center font-medium text-gray-800 shadow hover:shadow-md transition-all duration-200 ease-in-out">
           Diet Plans
@@ -109,7 +104,6 @@ const Diet = () => {
         </div>
       </div>
 
-      {/* Followed Plan */}
       {followedPlan && (
         <div className="mt-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-2">Your Plan</h3>
@@ -128,10 +122,8 @@ const Diet = () => {
         </div>
       )}
 
-      {/* Explore Plans Section */}
       <div className="mt-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-2">Explore Plans</h3>
-        {/* Search Bar & Create Plan Button */}
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <div className="relative w-full sm:w-1/2">
             <input
@@ -151,7 +143,6 @@ const Diet = () => {
           </button>
         </div>
 
-        {/* Diet Templates */}
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
           {filteredPlans.length > 0 ? (
             filteredPlans.map((plan, index) => (

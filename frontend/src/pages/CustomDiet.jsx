@@ -15,9 +15,8 @@ const CustomDiet = () => {
   const [fats, setFats] = useState("");
 
   const handleSave = () => {
-    // Create the custom diet plan object
     const customPlan = {
-      name: dietName || "Custom Plan", // Default name if empty
+      name: dietName || "Custom Plan",
       description: description || "A custom diet plan tailored to your needs.",
       calories: `${calories} kcal` || "0 kcal",
       meals: meals.toString(),
@@ -27,16 +26,12 @@ const CustomDiet = () => {
       fats: fats || "0",
     };
 
-    // Show popup alert
     alert("Custom Diet Plan Created!");
-
-    // Navigate to Diet page with the custom plan as the followed plan
     navigate("/diet", { state: { followedPlan: customPlan } });
   };
 
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto">
-      {/* Header */}
       <div className="flex items-center gap-2 sm:gap-4 mb-6">
         <FaBowlFood className="text-3xl sm:text-4xl text-[#4B9CD3]" />
         <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">Create Custom Diet Plan</h1>
@@ -45,9 +40,7 @@ const CustomDiet = () => {
         Customize your diet plan by providing the necessary details.
       </p>
 
-      {/* Form for Custom Diet Plan */}
       <div className="space-y-6">
-        {/* Diet Plan Name */}
         <div>
           <label className="block text-gray-700 font-medium mb-2">Diet Plan Name</label>
           <input
@@ -59,7 +52,6 @@ const CustomDiet = () => {
           />
         </div>
 
-        {/* Description */}
         <div>
           <label className="block text-gray-700 font-medium mb-2">Description</label>
           <textarea
@@ -71,7 +63,6 @@ const CustomDiet = () => {
           />
         </div>
 
-        {/* Calories */}
         <div>
           <label className="block text-gray-700 font-medium mb-2">Calories (kcal)</label>
           <input
@@ -83,7 +74,6 @@ const CustomDiet = () => {
           />
         </div>
 
-        {/* Number of Meals */}
         <div>
           <label className="block text-gray-700 font-medium mb-2">Number of Meals</label>
           <input
@@ -93,9 +83,8 @@ const CustomDiet = () => {
             value={meals}
             onChange={(e) => setMeals(e.target.value)}
           />
-        </div> 
+        </div>
 
-        {/* Difficulty Level */}
         <div>
           <label className="block text-gray-700 font-medium mb-2">Difficulty</label>
           <select
@@ -109,7 +98,6 @@ const CustomDiet = () => {
           </select>
         </div>
 
-        {/* Macronutrients */}
         <div>
           <label className="block text-gray-700 font-medium mb-2">Daily Macronutrient Requirements</label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -146,7 +134,6 @@ const CustomDiet = () => {
           </div>
         </div>
 
-        {/* Save Button */}
         <div className="flex justify-center">
           <button
             onClick={handleSave}

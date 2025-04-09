@@ -19,24 +19,26 @@ const DietCard = ({
       }`}
     >
       <div className="p-4">
-        <h2 className="text-lg font-bold">{name}</h2>
-        <p className="text-gray-600 text-sm">{description}</p>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-bold">{name}</h2>
+          {/* Removed veg/non-veg span */}
+        </div>
+        <p className="text-gray-600 text-sm py-2">{description}</p>
         <div className="flex justify-between text-gray-700 text-sm mt-3 text-center">
           <div className="flex-1">
-            <p className="font-bold">Calories</p>
+            <p className="font-bold text-gray-900">Calories</p>
             <p>{calories}</p>
           </div>
           <div className="flex-1">
-            <p className="font-bold">Meals</p>
+            <p className="font-bold text-gray-900">Meals</p>
             <p>{meals}</p>
           </div>
           <div className="flex-1">
-            <p className="font-bold">Difficulty</p>
+            <p className="font-bold text-gray-900">Difficulty</p>
             <p>{difficulty}</p>
           </div>
         </div>
 
-        {/* Macronutrient Info */}
         <div className="mt-3 text-gray-700 text-sm">
           <p className="font-bold">Macronutrient Breakdown</p>
           <ul className="list-disc pl-5">
@@ -52,7 +54,7 @@ const DietCard = ({
             className={`flex-1 text-white py-2 px-4 rounded-lg text-sm transition-all duration-200 ${
               isFollowed
                 ? "bg-red-500 hover:bg-red-600"
-                : "bg-green-500 hover:bg-green-600"
+                : "bg-[#4B9CD3] hover:bg-green-600"
             }`}
           >
             {isFollowed ? "Unfollow" : "Follow"}
