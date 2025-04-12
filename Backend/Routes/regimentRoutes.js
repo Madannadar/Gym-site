@@ -1,11 +1,9 @@
 import express from 'express';
 import {
   createRegimentController,
-  addWorkoutController,
-  addExerciseController,
-  addSetController,
-  getAllRegimentsController,
-  logActualSetController
+  createWorkoutController,
+  createExerciseController,
+  getAllRegimentsController
 } from '../controller/regimentController.js';
 
 const RegimentRoutes = express.Router();
@@ -13,20 +11,13 @@ const RegimentRoutes = express.Router();
 // Create a new regiment
 RegimentRoutes.post('/regiments', createRegimentController);
 
-// Get all regiments with workouts, exercises, and sets
+// Get all regiments with workouts
 RegimentRoutes.get('/regiments', getAllRegimentsController);
 
-// Add a workout to a specific regiment
-RegimentRoutes.post('/regiments/:regimentId/workouts', addWorkoutController);
+// Create a new workout
+RegimentRoutes.post('/workouts', createWorkoutController);
 
-// Add an exercise to a specific workout
-RegimentRoutes.post('/workouts/:workoutId/exercises', addExerciseController);
-
-// Add a set to a specific exercise
-RegimentRoutes.post('/exercises/:exerciseId/sets', addSetController);
-
-// POST /sets/:setId/log
-RegimentRoutes.post('/sets/:setId/log', logActualSetController);
-
+// Create a new exercise
+RegimentRoutes.post('/exercises', createExerciseController);
 
 export default RegimentRoutes;
