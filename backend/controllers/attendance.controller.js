@@ -4,7 +4,8 @@ import {
   getLogsByUser,
   deleteLog,
   deleteTodaysLogByUserId,
-  getTodaysLogs
+  getTodaysLogs,
+  getCurrentMonthLogs
 } from "../models/attendance.model.js";
 
 export const createAttendance = async (req, res) => {
@@ -80,5 +81,15 @@ export const getTodaysAttendance = async (req, res) => {
   } catch (err) {
     console.error("❌ Error fetching today's attendance:", err.stack);
     res.status(500).json({ error: "Failed to fetch today's attendance." });
+  }
+};
+
+export const getCurrentMonthAttendance = async (req, res) => {
+  try {
+    const rows = await getCurrentMonthLogs();
+    res.status(200).json({ monthly_attendance: rows });
+  } catch (err) {
+    console.error("❌ Error fetching current month's attendance:", err.stack);
+    res.status(500).json({ error: "Failed to fetch current month's attendance." });
   }
 };
