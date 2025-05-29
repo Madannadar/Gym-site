@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+:root {
+    --intense: #8b0000;
+    --high: #ff4500;
+    --medium: #ffcc00;
+    --low: #54da2f;
+    --quick: #00a6ff;
+    --minimal: #bcc1ca;
+  }
