@@ -52,7 +52,7 @@ const Home = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Attendance Section */}
         <div
-          className="bg-[#4B9CD3] text-white p-2 sm:p-3 rounded-lg cursor-pointer hover:bg-blue-500 transition-all duration-200 flex justify-center items-center h-[180px] sm:h-[200px]"
+          className="bg-[#4B9CD3] text-white p-2 sm:p-3 rounded-lg cursor-pointer hover:bg-blue-500 transition-all duration-200 flex justify-center items-center h-[140px] sm:h-[200px]"
           onClick={handleScanQR}
         >
           <div className="flex items-center space-x-4">
@@ -72,13 +72,15 @@ const Home = () => {
 
         {/* Today's Workout */}
         <div
-          className="bg-white p-4 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-all duration-200 cursor-default"
+          className="bg-white p-4 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-all duration-200 cursor-default "
         >
           <h3 className="text-lg font-semibold text-gray-800 mb-2">Today's Workout</h3>
-          <div className="flex flex-col items-center bg-green-400 text-white px-4 py-2 rounded-full">
-            <span className="text-sm font-semibold">{workoutData.day}, {workoutData.date}</span>
-            <span className="text-xl font-bold mt-1">Workout: {workoutData.minutes}</span>
-          </div>
+          <div className="h-auto md:h-[100px] flex flex-col md:justify-center">
+            <div className="flex flex-col items-center bg-green-400 text-white px-4 py-2 rounded-full ">
+              <span className="text-sm font-semibold">{workoutData.day}, {workoutData.date}</span>
+              <span className="text-xl font-bold mt-1">Workout: {workoutData.minutes}</span>
+            </div>
+          </div> 
         </div>
 
         {/* Today's Nutrition Summary */}
