@@ -1,5 +1,5 @@
 import db from "../config/db.js";
-
+import crypto from "crypto";
 // Insert attendance log
 export const insertAttendance = async (user_id, qr_id) => {
   const query = `
@@ -106,4 +106,34 @@ export const getCurrentMonthLogsByUser = async (user_id) => {
   );
 
   return result.rows;
+};
+
+//
+//attendence qr code handlers
+//
+export const getTodayQR = async () => {
+  const today = new Date().toISOString().split("T")[0];
+  const { rows } = await db.query(
+    "SELECT * FROM daily_qr_codes WHERE valid_date = $1",
+    [today],
+  );
+  return rows[0];
+};
+
+export const createTodayQR = async () => {
+  const today = new Date().toISOString().split("T")[0];
+  const qr_code = crypto.randomBytes(32).toString("hex");
+  const { rows } = await db.query(
+    "INSERT INTO daily_qr_codes (qr_code, valid_date) VALUES ($1, $2) RETURNING *",
+    [qr_code, today],
+  );
+  return rows[0];
+};
+
+export const ensureTodayQR = async () => {
+  let qr = await getTodayQR();
+  if (!qr) {
+    qr = await createTodayQR();
+  }
+  return qr;
 };

@@ -1,3 +1,5 @@
+import QRCode from "qrcode";
+import { ensureTodayQR } from "../models/qrModel.js";
 import {
   insertAttendance,
   getAllLogs,
@@ -116,5 +118,29 @@ export const getCurrentMonthAttendanceByUser = async (req, res) => {
     res
       .status(500)
       .json({ error: "Failed to fetch current month's attendance for user." });
+  }
+};
+
+//
+// today attendence qr image
+//
+export const getTodayQRString = async (req, res) => {
+  try {
+    const qr = await ensureTodayQR();
+    res.json({ qr_code: qr.qr_code });
+  } catch (err) {
+    console.error("Failed to get QR string:", err);
+    res.status(500).json({ error: "Failed to get QR code." });
+  }
+};
+
+export const getTodayQRImage = async (req, res) => {
+  try {
+    const qr = await ensureTodayQR();
+    const qrImage = await QRCode.toDataURL(qr.qr_code);
+    res.json({ qr_image: qrImage });
+  } catch (err) {
+    console.error("Failed to generate QR image:", err);
+    res.status(500).json({ error: "Failed to generate QR code image." });
   }
 };

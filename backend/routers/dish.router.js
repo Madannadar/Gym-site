@@ -1,18 +1,18 @@
 import express from "express";
 import {
-  createDish,
   getAllDishesController,
   getDishByIdController,
   updateDishController,
   deleteDishController,
   getDishesByUserIdController,
   deleteAllDishesByUserIdController,
+  createDishController,
 } from "../controllers/dish.controller.js";
 
 const router = express.Router();
 
 // Create a new dish
-router.post("/", createDish);
+router.post("/", createDishController);
 
 // Get all dishes
 router.get("/", getAllDishesController);

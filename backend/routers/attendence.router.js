@@ -8,10 +8,14 @@ import {
   getTodaysAttendance,
   getCurrentMonthAttendance,
   getCurrentMonthAttendanceByUser,
+  getTodayQRImage,
+  getTodayQRString,
 } from "../controllers/attendance.controller.js";
 
 const router = express.Router();
 
+router.get("/qr/string", getTodayQRString);
+router.get("/qr/image", getTodayQRImage);
 router.post("/log", createAttendance);
 router.get("/logs", getAllAttendance);
 router.get("/user/:user_id", getAttendanceByUser);
