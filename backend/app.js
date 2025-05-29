@@ -10,8 +10,8 @@ import db from "./config/db.js";
 // import dietplanRouter from "./routers/dietPlanRoutes.js";
 // import foodRoutes from "./routers/foodRoutes.js";
 // import DietFood from "./routers/dietPlanfoodRoutes.js";
-import dietRoutes from './routers/dietRoutes.js'
-import userRoutes from './routers/userRoutes.js'
+import dietRoutes from "./routers/dish.router.js";
+import userRoutes from "./routers/userRoutes.js";
 dotenv.config();
 
 const app = express();
@@ -30,7 +30,6 @@ app.use(loggerMiddleware);
 // app.use('/food',foodRoutes)
 // app.use('/foodTODiet',DietFood)
 
-
 // better
 // app.use("/api", router);
 // app.use("/api", exerciseRouter);
@@ -39,20 +38,16 @@ app.use(loggerMiddleware);
 // app.use("/api", dietplanRouter);
 // app.use('/api',foodRoutes)
 
-
-
-
 // new code
 app.get("/", (req, res) => {
   res.send("Gym Site API is running 🚀");
 });
 
-app.use("/api/diet", dietRoutes); 
+app.use("/api/diet", dietRoutes);
 app.use("/api/user", userRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: "Route not found" });
 });
-
 
 export default app;
