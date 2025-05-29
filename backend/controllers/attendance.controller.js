@@ -12,19 +12,26 @@ import {
 } from "../models/attendance.model.js";
 
 export const createAttendance = async (req, res) => {
-  const { user_id, qr_id } = req.body;
-  if (!user_id || !qr_id)
-    return res.status(400).json({ error: "user_id and qr_id are required." });
+  const { user_id, scanned_qr_code } = req.body;
+  if (!user_id || !scanned_qr_code)
+    return res
+      .status(400)
+      .json({ error: "user_id and scanned_qr_code are required." });
 
   try {
-    const rows = await insertAttendance(user_id, qr_id);
+    const todayQR = await ensureTodayQR();
+
+    if (scanned_qr_code !== todayQR.qr_code)
+      return res.status(403).json({ error: "Invalid or expired QR code." });
+
+    const rows = await insertAttendance(user_id, todayQR.id);
     if (rows.length === 0)
       return res.status(409).json({ message: "Attendance already marked." });
 
     res.status(201).json({ attendance: rows[0] });
   } catch (err) {
-    console.error("❌ Error inserting attendance:", err.stack);
-    res.status(500).json({ error: "Failed to create attendance." });
+    console.error("❌ Error verifying QR and inserting attendance:", err.stack);
+    res.status(500).json({ error: "Failed to verify and create attendance." });
   }
 };
 
@@ -122,7 +129,7 @@ export const getCurrentMonthAttendanceByUser = async (req, res) => {
 };
 
 //
-// today attendence qr image
+// today attendance QR string
 //
 export const getTodayQRString = async (req, res) => {
   try {
