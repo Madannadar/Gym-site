@@ -12,6 +12,8 @@ import db from "./config/db.js";
 // import DietFood from "./routers/dietPlanfoodRoutes.js";
 import dietRoutes from './routers/dietRoutes.js'
 import userRoutes from './routers/userRoutes.js'
+import attendanceRoutes from './routers/attendanceRoutes.js'
+import qrRoutes from "./routers/qrRoutes.js";
 dotenv.config();
 
 const app = express();
@@ -49,6 +51,8 @@ app.get("/", (req, res) => {
 
 app.use("/api/diet", dietRoutes); 
 app.use("/api/user", userRoutes);
+app.use("/api/attendance", attendanceRoutes);
+app.use("/api/qrcode", qrRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: "Route not found" });
