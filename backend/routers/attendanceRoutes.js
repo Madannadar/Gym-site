@@ -6,7 +6,8 @@ import {
   deleteAttendance,
   deleteTodaysAttendanceByUserId,
   getTodaysAttendance,
-  getCurrentMonthAttendance
+  getCurrentMonthAttendance,
+  getCurrentMonthAttendanceByUser
 } from "../controllers/attendance.controller.js";
 
 const router = express.Router();
@@ -18,5 +19,6 @@ router.delete("/delete/:id", deleteAttendance);
 router.delete("/user/today/:user_id", deleteTodaysAttendanceByUserId); 
 router.get("/today", getTodaysAttendance);
 router.get("/month", getCurrentMonthAttendance);
+router.get("/user/month/:user_id", getCurrentMonthAttendanceByUser);
 
 export default router;

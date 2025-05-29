@@ -83,3 +83,17 @@ export const getCurrentMonthLogs = async () => {
   `);
   return result.rows;
 };
+
+export const getCurrentMonthLogsByUser = async (user_id) => {
+  const result = await db.query(`
+    SELECT al.*, u.name, q.valid_for
+    FROM attendance_logs al
+    JOIN users u ON u.user_id = al.user_id
+    JOIN daily_qr_codes q ON q.qr_id = al.qr_id
+    WHERE al.user_id = $1
+      AND DATE_TRUNC('month', q.valid_for) = DATE_TRUNC('month', CURRENT_DATE)
+    ORDER BY al.scanned_at DESC;
+  `, [user_id]);
+
+  return result.rows;
+};
