@@ -1,715 +1,352 @@
-class ExercisesController {
-  // Create a new exercise
-  static async createExercise(req, res) {
+import {
+  recordExercise,
+  fetchAllExercises,
+  fetchExerciseById,
+  updateExerciseById,
+  deleteExerciseById,
+  recordWorkout,
+  fetchAllWorkouts,
+  fetchWorkoutById,
+  updateWorkoutById,
+  deleteWorkoutById,
+  recordWorkoutLog,
+  fetchUserWorkoutLogs,
+  fetchWorkoutLogById,
+  updateWorkoutLogById,
+  deleteWorkoutLogById,
+  recordRegiment,
+  fetchAllRegiments,
+  fetchRegimentById,
+  updateRegimentById,
+  deleteRegimentById,
+} from "../models/workout.model.js";
+
+const recordExerciseEntry = async (req, res) => {
+  try {
     const { name, description, muscle_group, units, created_by } = req.body;
-    
-    try {
-      const query = `
-        INSERT INTO exercises (name, description, muscle_group, units, created_by)
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING *
-      `;
-      
-      const result = await pool.query(query, [name, description, muscle_group, units, created_by]);
-      
-      res.status(201).json({
-        success: true,
-        data: result.rows[0],
-        message: 'Exercise created successfully'
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Error creating exercise',
-        error: error.message
-      });
-    }
+    const exercise = await recordExercise({
+      name,
+      description,
+      muscle_group,
+      units,
+      created_by,
+    });
+    res
+      .status(201)
+      .json({ item: exercise, message: "Exercise recorded successfully" });
+  } catch (err) {
+    console.error("❌ Record Exercise Error:", err.stack);
+    res.status(500).json({ error: { message: "Failed to record exercise" } });
   }
+};
 
-  // Get all exercises
-  static async getAllExercises(req, res) {
-    try {
-      const query = `
-        SELECT e.*, u.username as created_by_name
-        FROM exercises e
-        LEFT JOIN users u ON e.created_by = u.user_id
-        ORDER BY e.created_at DESC
-      `;
-      
-      const result = await pool.query(query);
-      
-      res.status(200).json({
-        success: true,
-        data: result.rows,
-        count: result.rows.length
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Error fetching exercises',
-        error: error.message
-      });
-    }
+const fetchAllExercisesList = async (req, res) => {
+  try {
+    const exercises = await fetchAllExercises();
+    res.json({ items: exercises, count: exercises.length });
+  } catch (err) {
+    console.error("❌ Fetch Exercises Error:", err.stack);
+    res.status(500).json({ error: { message: "Failed to fetch exercises" } });
   }
+};
 
-  // Get exercise by ID
-  static async getExerciseById(req, res) {
-    const { id } = req.params;
-    
-    try {
-      const query = `
-        SELECT e.*, u.username as created_by_name
-        FROM exercises e
-        LEFT JOIN users u ON e.created_by = u.user_id
-        WHERE e.exercise_id = $1
-      `;
-      
-      const result = await pool.query(query, [id]);
-      
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Exercise not found'
-        });
-      }
-      
-      res.status(200).json({
-        success: true,
-        data: result.rows[0]
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Error fetching exercise',
-        error: error.message
-      });
-    }
+const fetchExerciseByIdEntry = async (req, res) => {
+  try {
+    const exercise = await fetchExerciseById(req.params.id);
+    if (!exercise)
+      return res.status(404).json({ error: { message: "Exercise not found" } });
+    res.json({ item: exercise });
+  } catch (err) {
+    console.error("❌ Fetch Exercise Error:", err.stack);
+    res.status(500).json({ error: { message: "Failed to fetch exercise" } });
   }
+};
 
-  // Update exercise
-  static async updateExercise(req, res) {
+const updateExerciseByIdEntry = async (req, res) => {
+  try {
     const { id } = req.params;
     const { name, description, muscle_group, units } = req.body;
-    
-    try {
-      const query = `
-        UPDATE exercises 
-        SET name = COALESCE($1, name),
-            description = COALESCE($2, description),
-            muscle_group = COALESCE($3, muscle_group),
-            units = COALESCE($4, units)
-        WHERE exercise_id = $5
-        RETURNING *
-      `;
-      
-      const result = await pool.query(query, [name, description, muscle_group, units, id]);
-      
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Exercise not found'
-        });
-      }
-      
-      res.status(200).json({
-        success: true,
-        data: result.rows[0],
-        message: 'Exercise updated successfully'
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Error updating exercise',
-        error: error.message
-      });
-    }
+    const exercise = await updateExerciseById(id, {
+      name,
+      description,
+      muscle_group,
+      units,
+    });
+    if (!exercise)
+      return res.status(404).json({ error: { message: "Exercise not found" } });
+    res.json({ item: exercise, message: "Exercise updated successfully" });
+  } catch (err) {
+    console.error("❌ Update Exercise Error:", err.stack);
+    res.status(500).json({ error: { message: "Failed to update exercise" } });
   }
+};
 
-  // Delete exercise
-  static async deleteExercise(req, res) {
-    const { id } = req.params;
-    
-    try {
-      const query = 'DELETE FROM exercises WHERE exercise_id = $1 RETURNING *';
-      const result = await pool.query(query, [id]);
-      
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Exercise not found'
-        });
-      }
-      
-      res.status(200).json({
-        success: true,
-        message: 'Exercise deleted successfully'
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Error deleting exercise',
-        error: error.message
-      });
-    }
+const deleteExerciseByIdEntry = async (req, res) => {
+  try {
+    const exercise = await deleteExerciseById(req.params.id);
+    if (!exercise)
+      return res.status(404).json({ error: { message: "Exercise not found" } });
+    res.json({ message: "Exercise deleted successfully", item: exercise });
+  } catch (err) {
+    console.error("❌ Delete Exercise Error:", err.stack);
+    res.status(500).json({ error: { message: "Failed to delete exercise" } });
   }
-}
+};
 
-// WORKOUTS CONTROLLER
-class WorkoutsController {
-  // Create a new workout
-  static async createWorkout(req, res) {
+const recordWorkoutEntry = async (req, res) => {
+  try {
     const { name, created_by, description, structure, score } = req.body;
-    
-    try {
-      const query = `
-        INSERT INTO workouts (name, created_by, description, structure, score)
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING *
-      `;
-      
-      const result = await pool.query(query, [name, created_by, description, JSON.stringify(structure), score]);
-      
-      res.status(201).json({
-        success: true,
-        data: result.rows[0],
-        message: 'Workout created successfully'
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Error creating workout',
-        error: error.message
-      });
-    }
+    const workout = await recordWorkout({
+      name,
+      created_by,
+      description,
+      structure,
+      score,
+    });
+    res
+      .status(201)
+      .json({ item: workout, message: "Workout recorded successfully" });
+  } catch (err) {
+    console.error("❌ Record Workout Error:", err.stack);
+    res.status(500).json({ error: { message: "Failed to record workout" } });
   }
+};
 
-  // Get all workouts
-  static async getAllWorkouts(req, res) {
-    try {
-      const query = `
-        SELECT w.*, u.username as created_by_name
-        FROM workouts w
-        LEFT JOIN users u ON w.created_by = u.user_id
-        ORDER BY w.created_at DESC
-      `;
-      
-      const result = await pool.query(query);
-      
-      res.status(200).json({
-        success: true,
-        data: result.rows,
-        count: result.rows.length
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Error fetching workouts',
-        error: error.message
-      });
-    }
+const fetchAllWorkoutsList = async (req, res) => {
+  try {
+    const workouts = await fetchAllWorkouts();
+    res.json({ items: workouts, count: workouts.length });
+  } catch (err) {
+    console.error("❌ Fetch Workouts Error:", err.stack);
+    res.status(500).json({ error: { message: "Failed to fetch workouts" } });
   }
+};
 
-  // Get workout by ID with exercise details
-  static async getWorkoutById(req, res) {
-    const { id } = req.params;
-    
-    try {
-      const workoutQuery = `
-        SELECT w.*, u.username as created_by_name
-        FROM workouts w
-        LEFT JOIN users u ON w.created_by = u.user_id
-        WHERE w.workout_id = $1
-      `;
-      
-      const workoutResult = await pool.query(workoutQuery, [id]);
-      
-      if (workoutResult.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Workout not found'
-        });
-      }
-
-      // Get exercise details for the workout structure
-      const workout = workoutResult.rows[0];
-      const exerciseIds = workout.structure.map(item => item.exercise_id);
-      
-      if (exerciseIds.length > 0) {
-        const exercisesQuery = `
-          SELECT exercise_id, name, description, muscle_group, units
-          FROM exercises
-          WHERE exercise_id = ANY($1)
-        `;
-        
-        const exercisesResult = await pool.query(exercisesQuery, [exerciseIds]);
-        const exercisesMap = exercisesResult.rows.reduce((acc, exercise) => {
-          acc[exercise.exercise_id] = exercise;
-          return acc;
-        }, {});
-
-        // Enrich workout structure with exercise details
-        workout.structure = workout.structure.map(item => ({
-          ...item,
-          exercise_details: exercisesMap[item.exercise_id] || null
-        }));
-      }
-      
-      res.status(200).json({
-        success: true,
-        data: workout
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Error fetching workout',
-        error: error.message
-      });
-    }
+const fetchWorkoutByIdEntry = async (req, res) => {
+  try {
+    const workout = await fetchWorkoutById(req.params.id);
+    if (!workout)
+      return res.status(404).json({ error: { message: "Workout not found" } });
+    res.json({ item: workout });
+  } catch (err) {
+    console.error("❌ Fetch Workout Error:", err.stack);
+    res.status(500).json({ error: { message: "Failed to fetch workout" } });
   }
+};
 
-  // Update workout
-  static async updateWorkout(req, res) {
+const updateWorkoutByIdEntry = async (req, res) => {
+  try {
     const { id } = req.params;
     const { name, description, structure, score } = req.body;
-    
-    try {
-      const query = `
-        UPDATE workouts 
-        SET name = COALESCE($1, name),
-            description = COALESCE($2, description),
-            structure = COALESCE($3, structure),
-            score = COALESCE($4, score)
-        WHERE workout_id = $5
-        RETURNING *
-      `;
-      
-      const result = await pool.query(query, [
-        name, 
-        description, 
-        structure ? JSON.stringify(structure) : null, 
-        score, 
-        id
-      ]);
-      
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Workout not found'
-        });
-      }
-      
-      res.status(200).json({
-        success: true,
-        data: result.rows[0],
-        message: 'Workout updated successfully'
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Error updating workout',
-        error: error.message
-      });
-    }
+    const workout = await updateWorkoutById(id, {
+      name,
+      description,
+      structure,
+      score,
+    });
+    if (!workout)
+      return res.status(404).json({ error: { message: "Workout not found" } });
+    res.json({ item: workout, message: "Workout updated successfully" });
+  } catch (err) {
+    console.error("❌ Update Workout Error:", err.stack);
+    res.status(500).json({ error: { message: "Failed to update workout" } });
   }
+};
 
-  // Delete workout
-  static async deleteWorkout(req, res) {
-    const { id } = req.params;
-    
-    try {
-      const query = 'DELETE FROM workouts WHERE workout_id = $1 RETURNING *';
-      const result = await pool.query(query, [id]);
-      
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Workout not found'
-        });
-      }
-      
-      res.status(200).json({
-        success: true,
-        message: 'Workout deleted successfully'
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Error deleting workout',
-        error: error.message
-      });
-    }
+const deleteWorkoutByIdEntry = async (req, res) => {
+  try {
+    const workout = await deleteWorkoutById(req.params.id);
+    if (!workout)
+      return res.status(404).json({ error: { message: "Workout not found" } });
+    res.json({ message: "Workout deleted successfully", item: workout });
+  } catch (err) {
+    console.error("❌ Delete Workout Error:", err.stack);
+    res.status(500).json({ error: { message: "Failed to delete workout" } });
   }
-}
+};
 
-// WORKOUT LOGS CONTROLLER
-class WorkoutLogsController {
-  // Create a new workout log
-  static async createWorkoutLog(req, res) {
-    const { user_id, regiment_id, regiment_day_index, log_date, planned_workout_id, actual_workout, score } = req.body;
-    
-    try {
-      const query = `
-        INSERT INTO workout_logs (user_id, regiment_id, regiment_day_index, log_date, planned_workout_id, actual_workout, score)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING *
-      `;
-      
-      const result = await pool.query(query, [
-        user_id, 
-        regiment_id, 
-        regiment_day_index, 
-        log_date, 
-        planned_workout_id, 
-        JSON.stringify(actual_workout), 
-        score || 0
-      ]);
-      
-      res.status(201).json({
-        success: true,
-        data: result.rows[0],
-        message: 'Workout log created successfully'
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Error creating workout log',
-        error: error.message
-      });
-    }
+const recordWorkoutLogEntry = async (req, res) => {
+  try {
+    const {
+      user_id,
+      regiment_id,
+      regiment_day_index,
+      log_date,
+      planned_workout_id,
+      actual_workout,
+      score,
+    } = req.body;
+    const log = await recordWorkoutLog({
+      user_id,
+      regiment_id,
+      regiment_day_index,
+      log_date,
+      planned_workout_id,
+      actual_workout,
+      score,
+    });
+    res
+      .status(201)
+      .json({ item: log, message: "Workout log recorded successfully" });
+  } catch (err) {
+    console.error("❌ Record Workout Log Error:", err.stack);
+    res
+      .status(500)
+      .json({ error: { message: "Failed to record workout log" } });
   }
+};
 
-  // Get all workout logs for a user
-  static async getUserWorkoutLogs(req, res) {
+const fetchUserWorkoutLogsList = async (req, res) => {
+  try {
     const { userId } = req.params;
     const { limit = 50, offset = 0 } = req.query;
-    
-    try {
-      const query = `
-        SELECT wl.*, 
-               u.username,
-               w.name as planned_workout_name,
-               r.name as regiment_name
-        FROM workout_logs wl
-        LEFT JOIN users u ON wl.user_id = u.user_id
-        LEFT JOIN workouts w ON wl.planned_workout_id = w.workout_id
-        LEFT JOIN regiments r ON wl.regiment_id = r.regiment_id
-        WHERE wl.user_id = $1
-        ORDER BY wl.log_date DESC, wl.created_at DESC
-        LIMIT $2 OFFSET $3
-      `;
-      
-      const result = await pool.query(query, [userId, limit, offset]);
-      
-      res.status(200).json({
-        success: true,
-        data: result.rows,
-        count: result.rows.length
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Error fetching workout logs',
-        error: error.message
-      });
-    }
+    const logs = await fetchUserWorkoutLogs(userId, limit, offset);
+    res.json({ items: logs, count: logs.length });
+  } catch (err) {
+    console.error("❌ Fetch Workout Logs Error:", err.stack);
+    res
+      .status(500)
+      .json({ error: { message: "Failed to fetch workout logs" } });
   }
+};
 
-  // Get workout log by ID
-  static async getWorkoutLogById(req, res) {
-    const { id } = req.params;
-    
-    try {
-      const query = `
-        SELECT wl.*, 
-               u.username,
-               w.name as planned_workout_name,
-               w.structure as planned_workout_structure,
-               r.name as regiment_name
-        FROM workout_logs wl
-        LEFT JOIN users u ON wl.user_id = u.user_id
-        LEFT JOIN workouts w ON wl.planned_workout_id = w.workout_id
-        LEFT JOIN regiments r ON wl.regiment_id = r.regiment_id
-        WHERE wl.workout_log_id = $1
-      `;
-      
-      const result = await pool.query(query, [id]);
-      
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Workout log not found'
-        });
-      }
-      
-      res.status(200).json({
-        success: true,
-        data: result.rows[0]
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Error fetching workout log',
-        error: error.message
-      });
-    }
+const fetchWorkoutLogByIdEntry = async (req, res) => {
+  try {
+    const log = await fetchWorkoutLogById(req.params.id);
+    if (!log)
+      return res
+        .status(404)
+        .json({ error: { message: "Workout log not found" } });
+    res.json({ item: log });
+  } catch (err) {
+    console.error("❌ Fetch Workout Log Error:", err.stack);
+    res.status(500).json({ error: { message: "Failed to fetch workout log" } });
   }
+};
 
-  // Update workout log
-  static async updateWorkoutLog(req, res) {
+const updateWorkoutLogByIdEntry = async (req, res) => {
+  try {
     const { id } = req.params;
     const { actual_workout, score } = req.body;
-    
-    try {
-      const query = `
-        UPDATE workout_logs 
-        SET actual_workout = COALESCE($1, actual_workout),
-            score = COALESCE($2, score)
-        WHERE workout_log_id = $3
-        RETURNING *
-      `;
-      
-      const result = await pool.query(query, [
-        actual_workout ? JSON.stringify(actual_workout) : null,
-        score,
-        id
-      ]);
-      
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Workout log not found'
-        });
-      }
-      
-      res.status(200).json({
-        success: true,
-        data: result.rows[0],
-        message: 'Workout log updated successfully'
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Error updating workout log',
-        error: error.message
-      });
-    }
+    const log = await updateWorkoutLogById(id, { actual_workout, score });
+    if (!log)
+      return res
+        .status(404)
+        .json({ error: { message: "Workout log not found" } });
+    res.json({ item: log, message: "Workout log updated successfully" });
+  } catch (err) {
+    console.error("❌ Update Workout Log Error:", err.stack);
+    res
+      .status(500)
+      .json({ error: { message: "Failed to update workout log" } });
   }
+};
 
-  // Delete workout log
-  static async deleteWorkoutLog(req, res) {
-    const { id } = req.params;
-    
-    try {
-      const query = 'DELETE FROM workout_logs WHERE workout_log_id = $1 RETURNING *';
-      const result = await pool.query(query, [id]);
-      
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Workout log not found'
-        });
-      }
-      
-      res.status(200).json({
-        success: true,
-        message: 'Workout log deleted successfully'
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Error deleting workout log',
-        error: error.message
-      });
-    }
+const deleteWorkoutLogByIdEntry = async (req, res) => {
+  try {
+    const log = await deleteWorkoutLogById(req.params.id);
+    if (!log)
+      return res
+        .status(404)
+        .json({ error: { message: "Workout log not found" } });
+    res.json({ message: "Workout log deleted successfully", item: log });
+  } catch (err) {
+    console.error("❌ Delete Workout Log Error:", err.stack);
+    res
+      .status(500)
+      .json({ error: { message: "Failed to delete workout log" } });
   }
-}
+};
 
-// REGIMENTS CONTROLLER
-class RegimentsController {
-  // Create a new regiment
-  static async createRegiment(req, res) {
+const recordRegimentEntry = async (req, res) => {
+  try {
     const { created_by, name, description, workout_structure } = req.body;
-    
-    try {
-      const query = `
-        INSERT INTO regiments (created_by, name, description, workout_structure)
-        VALUES ($1, $2, $3, $4)
-        RETURNING *
-      `;
-      
-      const result = await pool.query(query, [
-        created_by, 
-        name, 
-        description, 
-        JSON.stringify(workout_structure)
-      ]);
-      
-      res.status(201).json({
-        success: true,
-        data: result.rows[0],
-        message: 'Regiment created successfully'
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Error creating regiment',
-        error: error.message
-      });
-    }
+    const regiment = await recordRegiment({
+      created_by,
+      name,
+      description,
+      workout_structure,
+    });
+    res
+      .status(201)
+      .json({ item: regiment, message: "Regiment recorded successfully" });
+  } catch (err) {
+    console.error("❌ Record Regiment Error:", err.stack);
+    res.status(500).json({ error: { message: "Failed to record regiment" } });
   }
+};
 
-  // Get all regiments
-  static async getAllRegiments(req, res) {
-    try {
-      const query = `
-        SELECT r.*, u.username as created_by_name
-        FROM regiments r
-        LEFT JOIN users u ON r.created_by = u.user_id
-        ORDER BY r.created_at DESC
-      `;
-      
-      const result = await pool.query(query);
-      
-      res.status(200).json({
-        success: true,
-        data: result.rows,
-        count: result.rows.length
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Error fetching regiments',
-        error: error.message
-      });
-    }
+const fetchAllRegimentsList = async (req, res) => {
+  try {
+    const regiments = await fetchAllRegiments();
+    res.json({ items: regiments, count: regiments.length });
+  } catch (err) {
+    console.error("❌ Fetch Regiments Error:", err.stack);
+    res.status(500).json({ error: { message: "Failed to fetch regiments" } });
   }
+};
 
-  // Get regiment by ID with workout details
-  static async getRegimentById(req, res) {
-    const { id } = req.params;
-    
-    try {
-      const regimentQuery = `
-        SELECT r.*, u.username as created_by_name
-        FROM regiments r
-        LEFT JOIN users u ON r.created_by = u.user_id
-        WHERE r.regiment_id = $1
-      `;
-      
-      const regimentResult = await pool.query(regimentQuery, [id]);
-      
-      if (regimentResult.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Regiment not found'
-        });
-      }
-
-      // Get workout details for the regiment structure
-      const regiment = regimentResult.rows[0];
-      const workoutIds = regiment.workout_structure.map(day => day.workout_id);
-      
-      if (workoutIds.length > 0) {
-        const workoutsQuery = `
-          SELECT workout_id, name, description, structure, score
-          FROM workouts
-          WHERE workout_id = ANY($1)
-        `;
-        
-        const workoutsResult = await pool.query(workoutsQuery, [workoutIds]);
-        const workoutsMap = workoutsResult.rows.reduce((acc, workout) => {
-          acc[workout.workout_id] = workout;
-          return acc;
-        }, {});
-
-        // Enrich regiment structure with workout details
-        regiment.workout_structure = regiment.workout_structure.map(day => ({
-          ...day,
-          workout_details: workoutsMap[day.workout_id] || null
-        }));
-      }
-      
-      res.status(200).json({
-        success: true,
-        data: regiment
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Error fetching regiment',
-        error: error.message
-      });
-    }
+const fetchRegimentByIdEntry = async (req, res) => {
+  try {
+    const regiment = await fetchRegimentById(req.params.id);
+    if (!regiment)
+      return res.status(404).json({ error: { message: "Regiment not found" } });
+    res.json({ item: regiment });
+  } catch (err) {
+    console.error("❌ Fetch Regiment Error:", err.stack);
+    res.status(500).json({ error: { message: "Failed to fetch regiment" } });
   }
+};
 
-  // Update regiment
-  static async updateRegiment(req, res) {
+const updateRegimentByIdEntry = async (req, res) => {
+  try {
     const { id } = req.params;
     const { name, description, workout_structure } = req.body;
-    
-    try {
-      const query = `
-        UPDATE regiments 
-        SET name = COALESCE($1, name),
-            description = COALESCE($2, description),
-            workout_structure = COALESCE($3, workout_structure)
-        WHERE regiment_id = $4
-        RETURNING *
-      `;
-      
-      const result = await pool.query(query, [
-        name, 
-        description, 
-        workout_structure ? JSON.stringify(workout_structure) : null, 
-        id
-      ]);
-      
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Regiment not found'
-        });
-      }
-      
-      res.status(200).json({
-        success: true,
-        data: result.rows[0],
-        message: 'Regiment updated successfully'
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Error updating regiment',
-        error: error.message
-      });
-    }
+    const regiment = await updateRegimentById(id, {
+      name,
+      description,
+      workout_structure,
+    });
+    if (!regiment)
+      return res.status(404).json({ error: { message: "Regiment not found" } });
+    res.json({ item: regiment, message: "Regiment updated successfully" });
+  } catch (err) {
+    console.error("❌ Update Regiment Error:", err.stack);
+    res.status(500).json({ error: { message: "Failed to update regiment" } });
   }
+};
 
-  // Delete regiment
-  static async deleteRegiment(req, res) {
-    const { id } = req.params;
-    
-    try {
-      const query = 'DELETE FROM regiments WHERE regiment_id = $1 RETURNING *';
-      const result = await pool.query(query, [id]);
-      
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Regiment not found'
-        });
-      }
-      
-      res.status(200).json({
-        success: true,
-        message: 'Regiment deleted successfully'
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Error deleting regiment',
-        error: error.message
-      });
-    }
+const deleteRegimentByIdEntry = async (req, res) => {
+  try {
+    const regiment = await deleteRegimentById(req.params.id);
+    if (!regiment)
+      return res.status(404).json({ error: { message: "Regiment not found" } });
+    res.json({ message: "Regiment deleted successfully", item: regiment });
+  } catch (err) {
+    console.error("❌ Delete Regiment Error:", err.stack);
+    res.status(500).json({ error: { message: "Failed to delete regiment" } });
   }
-}
+};
+
+export {
+  recordExerciseEntry,
+  fetchAllExercisesList,
+  fetchExerciseByIdEntry,
+  updateExerciseByIdEntry,
+  deleteExerciseByIdEntry,
+  recordWorkoutEntry,
+  fetchAllWorkoutsList,
+  fetchWorkoutByIdEntry,
+  updateWorkoutByIdEntry,
+  deleteWorkoutByIdEntry,
+  recordWorkoutLogEntry,
+  fetchUserWorkoutLogsList,
+  fetchWorkoutLogByIdEntry,
+  updateWorkoutLogByIdEntry,
+  deleteWorkoutLogByIdEntry,
+  recordRegimentEntry,
+  fetchAllRegimentsList,
+  fetchRegimentByIdEntry,
+  updateRegimentByIdEntry,
+  deleteRegimentByIdEntry,
+};
