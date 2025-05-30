@@ -1,17 +1,20 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-// import router from "./routers/user.router.js";
 import { loggerMiddleware } from "./middlewares/logger.js";
 import db from "./config/db.js";
-// import exerciseRouter from "./routers/exercise.router.js";
-// import workoutTempletRouter from "./routers/workoutTemplet.router.js";
-// import eventRouter from "./routers/event.router.js";
-// import dietplanRouter from "./routers/dietPlanRoutes.js";
-// import foodRoutes from "./routers/foodRoutes.js";
-// import DietFood from "./routers/dietPlanfoodRoutes.js";
-import dietRoutes from "./routers/dish.router.js";
-import userRoutes from "./routers/userRoutes.js";
+
+// Routers
+import dishRouter from "./routers/dish.router.js";
+import dietRouter from "./routers/diet.router.js"; // Corrected from duplicate import
+import dietTempletRouter from "./routers/diet_templet.router.js";
+import dietLogRouter from "./routers/diet_log.router.js";
+import workoutRouter from "./routers/workout.router.js";
+import userRouter from "./routers/user.router.js";
+import attendenceRouter from "./routers/attendence.router.js";
+import healthMatricRouter from "./routers/health_matric.router.js";
+import eventRouter from "./routers/event.router.js";
+
 dotenv.config();
 
 const app = express();
@@ -21,31 +24,23 @@ app.use(cors());
 app.use(express.json());
 app.use(loggerMiddleware);
 
-// Routes
-// app.use("/user", router);
-// app.use("/exercise", exerciseRouter);
-// app.use("/workouttemplet", workoutTempletRouter);
-// app.use("/event", eventRouter);
-// app.use("/dietplan", dietplanRouter);
-// app.use('/food',foodRoutes)
-// app.use('/foodTODiet',DietFood)
-
-// better
-// app.use("/api", router);
-// app.use("/api", exerciseRouter);
-// app.use("/api", workoutTempletRouter);
-// app.use("/api", eventRouter);
-// app.use("/api", dietplanRouter);
-// app.use('/api',foodRoutes)
-
-// new code
+// Base route
 app.get("/", (req, res) => {
   res.send("Gym Site API is running 🚀");
 });
 
-app.use("/api/diet", dietRoutes);
-app.use("/api/user", userRoutes);
+// API routes
+app.use("/api/dishes", dishRouter);
+app.use("/api/diets", dietRouter);
+app.use("/api/diet-templets", dietTempletRouter);
+app.use("/api/diet-logs", dietLogRouter);
+app.use("/api/workouts", workoutRouter);
+app.use("/api/users", userRouter);
+app.use("/api/attendence", attendenceRouter);
+app.use("/api/health-metrics", healthMatricRouter);
+app.use("/api/events", eventRouter);
 
+// 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: "Route not found" });
 });
