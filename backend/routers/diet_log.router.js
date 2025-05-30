@@ -6,7 +6,7 @@ import {
   getUserDietLogs,
   editDietLog,
   removeDietLog,
-} from "../controllers/dietLog.controller.js";
+} from "../controllers/diet_log.controller.js";
 
 const router = express.Router();
 

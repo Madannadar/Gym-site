@@ -6,7 +6,7 @@ import db from "./config/db.js";
 
 // Routers
 import dishRouter from "./routers/dish.router.js";
-import dietRouter from "./routers/diet.router.js"; // Corrected from duplicate import
+
 import dietTempletRouter from "./routers/diet_templet.router.js";
 import dietLogRouter from "./routers/diet_log.router.js";
 import workoutRouter from "./routers/workout.router.js";
@@ -31,7 +31,7 @@ app.get("/", (req, res) => {
 
 // API routes
 app.use("/api/dishes", dishRouter);
-app.use("/api/diets", dietRouter);
+
 app.use("/api/diet-templets", dietTempletRouter);
 app.use("/api/diet-logs", dietLogRouter);
 app.use("/api/workouts", workoutRouter);

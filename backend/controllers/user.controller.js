@@ -8,7 +8,7 @@ import {
   updatePassword,
   updateSubscription,
   deleteUser,
-} from "../models/user.model.js";
+} from "../model/user.model.js";
 import bcrypt from "bcrypt";
 
 // Create user

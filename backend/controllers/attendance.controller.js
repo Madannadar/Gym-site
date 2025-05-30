@@ -1,5 +1,5 @@
 import QRCode from "qrcode";
-import { ensureTodayQR } from "../models/qrModel.js";
+import { ensureTodayQR } from "../model/attendance.model.js";
 import {
   insertAttendance,
   getAllLogs,
@@ -9,7 +9,7 @@ import {
   getTodaysLogs,
   getCurrentMonthLogs,
   getCurrentMonthLogsByUser,
-} from "../models/attendance.model.js";
+} from "../model/attendance.model.js";
 
 export const createAttendance = async (req, res) => {
   const { user_id, scanned_qr_code } = req.body;

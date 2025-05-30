@@ -5,7 +5,7 @@ import {
   getDietLogsByUser,
   updateDietLog,
   deleteDietLog,
-} from "../models/dietLog.model.js";
+} from "../model/diet_log.model.js";
 
 export const createDietLog = async (req, res) => {
   try {
