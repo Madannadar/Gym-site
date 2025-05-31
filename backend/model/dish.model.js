@@ -70,6 +70,7 @@ const updateDishModel = async (dish_id, updateData) => {
     meal_type,
     is_vegetarian,
   } = updateData;
+  console.log(updateData);
 
   const query = `
     UPDATE diet_dishes

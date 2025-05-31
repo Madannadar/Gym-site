@@ -11,13 +11,13 @@ import {
 const router = Router();
 
 // Event Template Routes
-router.post("/events", handleCreateEvent);
-router.get("/events", handleGetAllEvents);
-router.get("/events/:event_id", handleGetEventById);
+router.post("/", handleCreateEvent);
+router.get("/", handleGetAllEvents);
+router.get("/:event_id", handleGetEventById);
 
 // Event Logs Routes
-router.post("/event-logs", handleLogParticipation);
-router.get("/event-logs/event/:event_id", handleGetLogsByEventId);
-router.get("/event-logs/user/:user_id", handleGetLogsByUserId);
+router.post("/logs", handleLogParticipation); //problem with generating log of participation
+router.get("/logs/:event_id", handleGetLogsByEventId);
+router.get("/logs/user/:user_id", handleGetLogsByUserId);
 
 export default router;

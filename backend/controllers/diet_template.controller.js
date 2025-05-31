@@ -1,16 +1,16 @@
 import {
-  insertDietTemplate,
-  getAllDietTemplates,
-  getDietTemplateById,
-  updateDietTemplate,
-  deleteDietTemplate,
-  getDietTemplatesByUserId,
-  deleteAllDietTemplatesByUserId,
-} from "../models/dietTemplate.model.js";
+  insertDietTemplateModel,
+  getAllDietTemplatesModel,
+  getDietTemplateByIdModel,
+  updateDietTemplateModel,
+  deleteDietTemplateModel,
+  getDietTemplatesByUserIdModel,
+  deleteAllDietTemplatesByUserIdModel,
+} from "../model/diet_template.model.js";
 
 const createDietTemplateController = async (req, res) => {
   try {
-    const template = await insertDietTemplate(req.body);
+    const template = await insertDietTemplateModel(req.body);
     res.status(201).json({ template });
   } catch (err) {
     console.error("❌ Failed to insert template:", err.stack);
@@ -20,7 +20,7 @@ const createDietTemplateController = async (req, res) => {
 
 const getAllDietTemplatesController = async (req, res) => {
   try {
-    const templates = await getAllDietTemplates();
+    const templates = await getAllDietTemplatesModel();
     res.status(200).json({ templates });
   } catch (err) {
     console.error("❌ Failed to fetch templates:", err.stack);
@@ -31,7 +31,7 @@ const getAllDietTemplatesController = async (req, res) => {
 const getDietTemplateByIdController = async (req, res) => {
   const { id } = req.params;
   try {
-    const template = await getDietTemplateById(id);
+    const template = await getDietTemplateByIdModel(id);
     if (!template) return res.status(404).json({ error: "Template not found" });
     res.status(200).json({ template });
   } catch (err) {
@@ -43,7 +43,7 @@ const getDietTemplateByIdController = async (req, res) => {
 const updateDietTemplateController = async (req, res) => {
   const { id } = req.params;
   try {
-    const template = await updateDietTemplate(id, req.body);
+    const template = await updateDietTemplateModel(id, req.body);
     if (!template)
       return res
         .status(404)
@@ -58,7 +58,7 @@ const updateDietTemplateController = async (req, res) => {
 const deleteDietTemplateController = async (req, res) => {
   const { id } = req.params;
   try {
-    const template = await deleteDietTemplate(id);
+    const template = await deleteDietTemplateModel(id);
     if (!template)
       return res
         .status(404)
@@ -75,7 +75,7 @@ const deleteDietTemplateController = async (req, res) => {
 const getDietTemplatesByUserIdController = async (req, res) => {
   const { userId } = req.params;
   try {
-    const templates = await getDietTemplatesByUserId(userId);
+    const templates = await getDietTemplatesByUserIdModel(userId);
     res.status(200).json({ templates });
   } catch (err) {
     console.error("❌ Failed to fetch templates by user:", err.stack);
@@ -86,7 +86,7 @@ const getDietTemplatesByUserIdController = async (req, res) => {
 const deleteAllDietTemplatesByUserIdController = async (req, res) => {
   const { userId } = req.params;
   try {
-    const templates = await deleteAllDietTemplatesByUserId(userId);
+    const templates = await deleteAllDietTemplatesByUserIdModel(userId);
     res
       .status(200)
       .json({ message: "Templates deleted successfully", templates });

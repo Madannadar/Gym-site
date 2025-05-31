@@ -19,7 +19,7 @@ import {
   fetchRegimentById,
   updateRegimentById,
   deleteRegimentById,
-} from "../models/workout.model.js";
+} from "../model/workout.model.js";
 
 const recordExerciseEntry = async (req, res) => {
   try {

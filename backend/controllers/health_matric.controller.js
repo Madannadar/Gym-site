@@ -23,6 +23,7 @@ export const addLog = async (req, res) => {
 
     res.status(201).json({ log });
   } catch (err) {
+    console.log(err);
     res.status(500).json({ error: "Failed to add log" });
   }
 };

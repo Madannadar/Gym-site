@@ -9,19 +9,21 @@ import {
 
 const router = Router();
 
+//all works
+
 // POST /health-matric
-router.post("/health-matric", addLog);
+router.post("/", addLog);
 
 // GET /health-matric/:type/:user_id → Get last 5 bmi/weight logs
-router.get("/health-matric/:type/:user_id", getLogs);
+router.get("/:type/:user_id", getLogs);
 
 // GET /health-matric/entry/:log_id/:user_id → Get single log
-router.get("/health-matric/entry/:log_id/:user_id", getSingleLog);
+router.get("/entry/:log_id/:user_id", getSingleLog);
 
 // PUT /health-matric/:log_id/:user_id
-router.put("/health-matric/:log_id/:user_id", updateLog);
+router.put("/:log_id/:user_id", updateLog);
 
 // DELETE /health-matric/:log_id/:user_id
-router.delete("/health-matric/:log_id/:user_id", deleteLog);
+router.delete("/:log_id/:user_id", deleteLog);
 
 export default router;
