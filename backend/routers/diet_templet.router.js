@@ -11,9 +11,9 @@ import {
 } from "../controllers/diet_template.controller.js";
 
 const router = express.Router();
-
+//all works
 // POST: Create a new diet template
-router.post("/", createDietTemplateController);
+router.post("/", createDietTemplateController); // problem with foregin key check --does not check for the foregin key constraint
 
 // GET: Fetch all diet templates
 router.get("/", getAllDietTemplatesController);

@@ -13,6 +13,7 @@ const createDietTemplateController = async (req, res) => {
     const template = await insertDietTemplateModel(req.body);
     res.status(201).json({ template });
   } catch (err) {
+    console.log(err);
     console.error("❌ Failed to insert template:", err.stack);
     res.status(500).json({ error: "Failed to insert template." });
   }
