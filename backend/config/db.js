@@ -11,7 +11,7 @@ const dbUrl =
   "postgres://your-db-user:your-db-password@localhost:5432/your-db-name";
 
 const isLocal = dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1");
-
+console.log(dbUrl);
 const db = new Client({
   connectionString: dbUrl,
   connectionTimeoutMillis: 10000,
@@ -25,9 +25,9 @@ async function connectAndCreateTables() {
     await db.connect();
     console.log("✅ Connected to PostgreSQL");
 
-    await db.query(schema);
-    console.log("✅ Database tables created successfully!");
-    
+    // await db.query(schema);
+    // console.log("✅ Database tables created successfully!");
+
     // DON'T disconnect here, keep connection alive
   } catch (err) {
     console.error("❌ PostgreSQL connection error", err.stack);

@@ -12,15 +12,17 @@ import {
 
 const router = Router();
 
-router.post("/users", handleCreateUser);
-router.get("/users", handleGetAllUsers);
-router.get("/users/:user_id", handleGetUserById);
+//all works
+//
+router.post("/", handleCreateUser);
+router.get("/", handleGetAllUsers);
+router.get("/:user_id", handleGetUserById);
 
-router.put("/users/:user_id/name", handleUpdateName);
-router.put("/users/:user_id/vegetarian", handleUpdateVegetarian);
-router.put("/users/:user_id/password", handleUpdatePassword);
-router.put("/users/:user_id/subscription", handleUpdateSubscription);
+router.put("/:user_id/name", handleUpdateName);
+router.put("/:user_id/vegetarian", handleUpdateVegetarian);
+router.put("/:user_id/password", handleUpdatePassword);
+router.put("/:user_id/subscription", handleUpdateSubscription);
 
-router.delete("/users/:user_id", handleDeleteUser);
+router.delete("/:user_id", handleDeleteUser);
 
 export default router;

@@ -2,7 +2,6 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { loggerMiddleware } from "./middlewares/logger.js";
-import db from "./config/db.js";
 
 // Routers
 import dishRouter from "./routers/dish.router.js";

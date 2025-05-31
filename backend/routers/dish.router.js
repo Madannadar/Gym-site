@@ -11,6 +11,8 @@ import {
 
 const router = express.Router();
 
+//all routes work here as expected
+
 // Create a new dish
 router.post("/", createDishController);
 

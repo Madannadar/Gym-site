@@ -15,7 +15,7 @@ export const insertAttendance = async (user_id, qr_id) => {
 // Get all attendance logs
 export const getAllLogs = async () => {
   const result = await db.query(`
-    SELECT al.*, u.name, q.valid_for
+    SELECT al.*, u.name, q.valid_date
     FROM attendance_logs al
     JOIN users u ON u.user_id = al.user_id
     JOIN daily_qr_codes q ON q.qr_id = al.qr_id
@@ -57,7 +57,7 @@ export const deleteTodaysLogByUserId = async (user_id) => {
     DELETE FROM attendance_logs al
     USING daily_qr_codes q
     WHERE al.qr_id = q.qr_id
-      AND q.valid_for = CURRENT_DATE
+      AND q.valid_date = CURRENT_DATE
       AND al.user_id = $1
     RETURNING al.*;
   `,
@@ -69,11 +69,11 @@ export const deleteTodaysLogByUserId = async (user_id) => {
 
 export const getTodaysLogs = async () => {
   const result = await db.query(`
-    SELECT al.*, u.name, q.valid_for
+    SELECT al.*, u.name, q.valid_date
     FROM attendance_logs al
     JOIN users u ON u.user_id = al.user_id
     JOIN daily_qr_codes q ON q.qr_id = al.qr_id
-    WHERE q.valid_for = CURRENT_DATE
+    WHERE q.valid_date = CURRENT_DATE
     ORDER BY al.scanned_at DESC;
   `);
   return result.rows;
@@ -81,11 +81,11 @@ export const getTodaysLogs = async () => {
 
 export const getCurrentMonthLogs = async () => {
   const result = await db.query(`
-    SELECT al.*, u.name, q.valid_for
+    SELECT al.*, u.name, q.valid_date
     FROM attendance_logs al
     JOIN users u ON u.user_id = al.user_id
     JOIN daily_qr_codes q ON q.qr_id = al.qr_id
-    WHERE DATE_TRUNC('month', q.valid_for) = DATE_TRUNC('month', CURRENT_DATE)
+    WHERE DATE_TRUNC('month', q.valid_date) = DATE_TRUNC('month', CURRENT_DATE)
     ORDER BY al.scanned_at DESC;
   `);
   return result.rows;
@@ -94,12 +94,12 @@ export const getCurrentMonthLogs = async () => {
 export const getCurrentMonthLogsByUser = async (user_id) => {
   const result = await db.query(
     `
-    SELECT al.*, u.name, q.valid_for
+    SELECT al.*, u.name, q.valid_date
     FROM attendance_logs al
     JOIN users u ON u.user_id = al.user_id
     JOIN daily_qr_codes q ON q.qr_id = al.qr_id
     WHERE al.user_id = $1
-      AND DATE_TRUNC('month', q.valid_for) = DATE_TRUNC('month', CURRENT_DATE)
+      AND DATE_TRUNC('month', q.valid_date) = DATE_TRUNC('month', CURRENT_DATE)
     ORDER BY al.scanned_at DESC;
   `,
     [user_id],
