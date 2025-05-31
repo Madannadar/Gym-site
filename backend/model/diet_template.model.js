@@ -21,16 +21,19 @@ const insertDietTemplateModel = async (templateData) => {
     RETURNING *;
   `;
 
+  const safeJson = (val) => (val ? JSON.stringify(val) : null);
+
   const values = [
     created_by || null,
     name,
     description || null,
-    breakfast || null,
-    lunch || null,
-    dinner || null,
-    snacks || null,
+    safeJson(breakfast),
+    safeJson(lunch),
+    safeJson(dinner),
+    safeJson(snacks),
     difficulty || null,
   ];
+  console.log(values);
 
   const result = await db.query(query, values);
   return result.rows[0];
@@ -68,17 +71,19 @@ const updateDietTemplateModel = async (template_id, updateData) => {
     RETURNING *;
   `;
 
+  const safeJson = (val) => (val ? JSON.stringify(val) : null);
+
   const values = [
     name,
     description,
-    breakfast,
-    lunch,
-    dinner,
-    snacks,
+    safeJson(breakfast),
+    safeJson(lunch),
+    safeJson(dinner),
+    safeJson(snacks),
     difficulty,
     template_id,
   ];
-
+  console.log(values);
   const result = await db.query(query, values);
   return result.rows[0];
 };

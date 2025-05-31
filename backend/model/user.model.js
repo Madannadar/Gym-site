@@ -5,7 +5,7 @@ export const createUser = async ({
   email,
   password_hash,
   is_vegetarian = false,
-  subscription = "free",
+  subscription = "inactive",
 }) => {
   const query = `
     INSERT INTO users (name, email, password_hash, is_vegetarian, subscription)

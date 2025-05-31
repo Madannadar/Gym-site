@@ -1,6 +1,5 @@
 import pool from "../config/db.js";
 
-// Create a new diet log
 export const insertDietLog = async (logData) => {
   const {
     user_id,
@@ -17,27 +16,36 @@ export const insertDietLog = async (logData) => {
     adherence,
   } = logData;
 
-  const result = await pool.query(
-    `INSERT INTO diet_logs (
-      user_id, template_id, log_date, breakfast, lunch, dinner, snacks,
+  const safeJson = (val) => (val ? JSON.stringify(val) : null);
+
+  const query = `
+    INSERT INTO diet_logs (
+      user_id, template_id, log_date,
+      breakfast, lunch, dinner, snacks,
       total_calories, proteins, fats, carbs, adherence
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
-    RETURNING *`,
-    [
-      user_id,
-      template_id,
-      log_date,
-      breakfast,
-      lunch,
-      dinner,
-      snacks,
-      total_calories,
-      proteins,
-      fats,
-      carbs,
-      adherence,
-    ],
-  );
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    RETURNING *;
+  `;
+
+  const values = [
+    user_id,
+    template_id,
+    log_date,
+    safeJson(breakfast),
+    safeJson(lunch),
+    safeJson(dinner),
+    safeJson(snacks),
+    total_calories,
+    proteins,
+    fats,
+    carbs,
+    adherence,
+  ];
+
+  console.log("🧪 Executing Query:", query);
+  console.log("📦 With Values:", values);
+
+  const result = await pool.query(query, values);
   return result.rows[0];
 };
 
@@ -75,15 +83,59 @@ export const getDietLogsByUser = async (user_id, log_date = null) => {
 };
 
 // Update a diet log by ID
-export const updateDietLog = async (log_id, updates) => {
-  const fields = Object.keys(updates);
-  const values = Object.values(updates);
+export const updateDietLog = async (log_id, logData) => {
+  const {
+    template_id,
+    log_date,
+    breakfast,
+    lunch,
+    dinner,
+    snacks,
+    total_calories,
+    proteins,
+    fats,
+    carbs,
+    adherence,
+  } = logData;
 
-  const setClause = fields.map((field, i) => `${field} = $${i + 1}`).join(", ");
-  const result = await pool.query(
-    `UPDATE diet_logs SET ${setClause} WHERE log_id = $${fields.length + 1} RETURNING *`,
-    [...values, log_id],
-  );
+  const safeJson = (val) => (val ? JSON.stringify(val) : null);
+
+  const query = `
+    UPDATE diet_logs SET
+      template_id = $1,
+      log_date = $2,
+      breakfast = $3,
+      lunch = $4,
+      dinner = $5,
+      snacks = $6,
+      total_calories = $7,
+      proteins = $8,
+      fats = $9,
+      carbs = $10,
+      adherence = $11
+    WHERE log_id = $12
+    RETURNING *;
+  `;
+
+  const values = [
+    template_id,
+    log_date,
+    safeJson(breakfast),
+    safeJson(lunch),
+    safeJson(dinner),
+    safeJson(snacks),
+    total_calories,
+    proteins,
+    fats,
+    carbs,
+    safeJson(adherence),
+    log_id,
+  ];
+
+  console.log("🧪 Executing Query:", query);
+  console.log("📦 With Values:", values);
+
+  const result = await pool.query(query, values);
   return result.rows[0];
 };
 

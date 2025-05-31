@@ -10,6 +10,8 @@ import {
 
 const router = express.Router();
 
+//everythin works but there is issue with foregin key constraint of the breakfast and all fields
+
 // POST /api/diet-logs - create a new diet log
 router.post("/", createDietLog);
 
