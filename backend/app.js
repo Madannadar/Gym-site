@@ -13,7 +13,7 @@ import userRouter from "./routers/user.router.js";
 import attendenceRouter from "./routers/attendence.router.js";
 import healthMatricRouter from "./routers/health_matric.router.js";
 import eventRouter from "./routers/event.router.js";
-
+const rateLimit = require("express-rate-limit");
 dotenv.config();
 
 const app = express();
@@ -22,6 +22,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(loggerMiddleware);
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+});
+app.use(limiter);
 
 // Base route
 app.get("/", (req, res) => {

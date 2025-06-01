@@ -1,5 +1,6 @@
 import db from "../config/db.js";
 
+//unnecessory
 export const createUser = async ({
   name,
   email,
@@ -24,6 +25,7 @@ export const getAllUsers = async () => {
   return rows;
 };
 
+//unnecessory
 export const getUserById = async (user_id) => {
   const { rows } = await db.query("SELECT * FROM users WHERE user_id = $1;", [
     user_id,
@@ -31,6 +33,7 @@ export const getUserById = async (user_id) => {
   return rows[0];
 };
 
+//unnecessory
 export const getUserByEmail = async (email) => {
   const { rows } = await db.query("SELECT * FROM users WHERE email = $1;", [
     email,
@@ -54,6 +57,7 @@ export const updateVegetarian = async (user_id, is_vegetarian) => {
   return rows[0];
 };
 
+//unnecessory
 export const updatePassword = async (user_id, password_hash) => {
   const { rows } = await db.query(
     "UPDATE users SET password_hash = $1 WHERE user_id = $2 RETURNING *;",
@@ -70,6 +74,7 @@ export const updateSubscription = async (user_id, subscription) => {
   return rows[0];
 };
 
+//unnecessory
 export const deleteUser = async (user_id) => {
   const { rows } = await db.query(
     "DELETE FROM users WHERE user_id = $1 RETURNING *;",
