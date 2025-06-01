@@ -1,39 +1,28 @@
-import express from "express";
+import { Router } from "express";
 import {
-  recordUserAccount,
-  fetchAllUsers,
-  fetchUserById,
-  updateUserNameById,
-  updateUserVegetarianById,
-  updateUserPasswordById,
-  updateUserSubscriptionById,
-  deleteUserById,
+  handleCreateUser,
+  handleGetAllUsers,
+  handleGetUserById,
+  handleUpdateName,
+  handleUpdateVegetarian,
+  handleUpdatePassword,
+  handleUpdateSubscription,
+  handleDeleteUser,
 } from "../controllers/user.controller.js";
 
-const router = express.Router();
+const router = Router();
 
-// POST /api/users - create a new user
-router.post("/", recordUserAccount);
+//all works
+//
+router.post("/", handleCreateUser);
+router.get("/", handleGetAllUsers);
+router.get("/:user_id", handleGetUserById);
 
-// GET /api/users - fetch all users
-router.get("/", fetchAllUsers);
+router.put("/:user_id/name", handleUpdateName);
+router.put("/:user_id/vegetarian", handleUpdateVegetarian);
+router.put("/:user_id/password", handleUpdatePassword);
+router.put("/:user_id/subscription", handleUpdateSubscription);
 
-// GET /api/users/:user_id - fetch a user by ID
-router.get("/:user_id", fetchUserById);
-
-// PUT /api/users/:user_id/name - update user name
-router.put("/:user_id/name", updateUserNameById);
-
-// PUT /api/users/:user_id/vegetarian - update vegetarian preference
-router.put("/:user_id/vegetarian", updateUserVegetarianById);
-
-// PUT /api/users/:user_id/password - update user password
-router.put("/:user_id/password", updateUserPasswordById);
-
-// PUT /api/users/:user_id/subscription - update user subscription
-router.put("/:user_id/subscription", updateUserSubscriptionById);
-
-// DELETE /api/users/:user_id - delete a user
-router.delete("/:user_id", deleteUserById);
+router.delete("/:user_id", handleDeleteUser);
 
 export default router;

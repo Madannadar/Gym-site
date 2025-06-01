@@ -1,17 +1,17 @@
 import QRCode from "qrcode";
-import { ensureDailyQRCode } from "../models/qrModel.js";
+import { ensureTodayQR } from "../model/attendance.model.js";
 import {
-  recordAttendance,
-  fetchAllAttendanceLogs,
-  fetchUserAttendanceLogs,
-  removeAttendanceLog,
-  removeUserTodayAttendance,
-  fetchTodayAttendanceLogs,
-  fetchCurrentMonthAttendanceLogs,
-  fetchUserCurrentMonthAttendanceLogs,
-} from "../models/attendance.model.js";
+  insertAttendance,
+  getAllLogs,
+  getLogsByUser,
+  deleteLog,
+  deleteTodaysLogByUserId,
+  getTodaysLogs,
+  getCurrentMonthLogs,
+  getCurrentMonthLogsByUser,
+} from "../model/attendance.model.js";
 
-const recordUserAttendance = async (req, res) => {
+export const createAttendance = async (req, res) => {
   const { user_id, scanned_qr_code } = req.body;
   if (!user_id || !scanned_qr_code)
     return res
@@ -19,25 +19,25 @@ const recordUserAttendance = async (req, res) => {
       .json({ error: "user_id and scanned_qr_code are required." });
 
   try {
-    const todayQR = await ensureDailyQRCode();
+    const todayQR = await ensureTodayQR();
 
     if (scanned_qr_code !== todayQR.qr_code)
       return res.status(403).json({ error: "Invalid or expired QR code." });
 
-    const rows = await recordAttendance(user_id, todayQR.id);
+    const rows = await insertAttendance(user_id, todayQR.id);
     if (rows.length === 0)
       return res.status(409).json({ message: "Attendance already marked." });
 
     res.status(201).json({ attendance: rows[0] });
   } catch (err) {
-    console.error("❌ Error verifying QR and recording attendance:", err.stack);
-    res.status(500).json({ error: "Failed to verify and record attendance." });
+    console.error("❌ Error verifying QR and inserting attendance:", err.stack);
+    res.status(500).json({ error: "Failed to verify and create attendance." });
   }
 };
 
-const fetchAllAttendance = async (req, res) => {
+export const getAllAttendance = async (req, res) => {
   try {
-    const rows = await fetchAllAttendanceLogs();
+    const rows = await getAllLogs();
     res.status(200).json({ attendance_logs: rows });
   } catch (err) {
     console.error("❌ Error fetching attendance:", err.stack);
@@ -45,9 +45,9 @@ const fetchAllAttendance = async (req, res) => {
   }
 };
 
-const fetchUserAttendance = async (req, res) => {
+export const getAttendanceByUser = async (req, res) => {
   try {
-    const rows = await fetchUserAttendanceLogs(req.params.user_id);
+    const rows = await getLogsByUser(req.params.user_id);
     res.status(200).json({ logs: rows });
   } catch (err) {
     console.error("❌ Error fetching user's attendance:", err.stack);
@@ -55,9 +55,9 @@ const fetchUserAttendance = async (req, res) => {
   }
 };
 
-const deleteAttendanceRecord = async (req, res) => {
+export const deleteAttendance = async (req, res) => {
   try {
-    const rows = await removeAttendanceLog(req.params.id);
+    const rows = await deleteLog(req.params.id);
     if (rows.length === 0)
       return res.status(404).json({ error: "Attendance not found." });
 
@@ -68,11 +68,11 @@ const deleteAttendanceRecord = async (req, res) => {
   }
 };
 
-const deleteUserTodayAttendanceRecord = async (req, res) => {
+export const deleteTodaysAttendanceByUserId = async (req, res) => {
   const { user_id } = req.params;
 
   try {
-    const rows = await removeUserTodayAttendance(user_id);
+    const rows = await deleteTodaysLogByUserId(user_id);
     if (rows.length === 0)
       return res
         .status(404)
@@ -89,9 +89,9 @@ const deleteUserTodayAttendanceRecord = async (req, res) => {
   }
 };
 
-const fetchTodayAttendance = async (req, res) => {
+export const getTodaysAttendance = async (req, res) => {
   try {
-    const rows = await fetchTodayAttendanceLogs();
+    const rows = await getTodaysLogs();
     res.status(200).json({ todays_attendance: rows });
   } catch (err) {
     console.error("❌ Error fetching today's attendance:", err.stack);
@@ -99,9 +99,9 @@ const fetchTodayAttendance = async (req, res) => {
   }
 };
 
-const fetchCurrentMonthAttendance = async (req, res) => {
+export const getCurrentMonthAttendance = async (req, res) => {
   try {
-    const rows = await fetchCurrentMonthAttendanceLogs();
+    const rows = await getCurrentMonthLogs();
     res.status(200).json({ monthly_attendance: rows });
   } catch (err) {
     console.error("❌ Error fetching current month's attendance:", err.stack);
@@ -111,16 +111,16 @@ const fetchCurrentMonthAttendance = async (req, res) => {
   }
 };
 
-const fetchUserCurrentMonthAttendance = async (req, res) => {
+export const getCurrentMonthAttendanceByUser = async (req, res) => {
   const { user_id } = req.params;
 
   try {
-    const rows = await fetchUserCurrentMonthAttendanceLogs(user_id);
+    const rows = await getCurrentMonthLogsByUser(user_id);
     res.status(200).json({ monthly_attendance: rows });
   } catch (err) {
     console.error(
       "❌ Error fetching current month attendance for user:",
-      err.stack
+      err.stack,
     );
     res
       .status(500)
@@ -128,9 +128,12 @@ const fetchUserCurrentMonthAttendance = async (req, res) => {
   }
 };
 
-const getTodayQRCodeString = async (req, res) => {
+//
+// today attendance QR string
+//
+export const getTodayQRString = async (req, res) => {
   try {
-    const qr = await ensureDailyQRCode();
+    const qr = await ensureTodayQR();
     res.json({ qr_code: qr.qr_code });
   } catch (err) {
     console.error("Failed to get QR string:", err);
@@ -138,26 +141,13 @@ const getTodayQRCodeString = async (req, res) => {
   }
 };
 
-const getTodayQRCodeImage = async (req, res) => {
+export const getTodayQRImage = async (req, res) => {
   try {
-    const qr = await ensureDailyQRCode();
+    const qr = await ensureTodayQR();
     const qrImage = await QRCode.toDataURL(qr.qr_code);
     res.json({ qr_image: qrImage });
   } catch (err) {
     console.error("Failed to generate QR image:", err);
     res.status(500).json({ error: "Failed to generate QR code image." });
   }
-};
-
-export {
-  recordUserAttendance,
-  fetchAllAttendance,
-  fetchUserAttendance,
-  deleteAttendanceRecord,
-  deleteUserTodayAttendanceRecord,
-  fetchTodayAttendance,
-  fetchCurrentMonthAttendance,
-  fetchUserCurrentMonthAttendance,
-  getTodayQRCodeString,
-  getTodayQRCodeImage,
 };

@@ -1,14 +1,14 @@
 import {
-  recordDish,
-  fetchAllDishes,
-  fetchDishById,
-  updateDishById,
-  deleteDishById,
-  fetchDishesByUserId,
-  deleteAllDishesByUserId,
-} from "../models/dish.model.js";
+  insertDishModel,
+  getAllDishesModel,
+  getDishByIdModel,
+  updateDishModel,
+  deleteDishModel,
+  getDishByUserIdModel,
+  deleteAllDishCreatedByUserIdModel,
+} from "../model/dish.model.js";
 
-const recordUserDish = async (req, res) => {
+const createDishController = async (req, res) => {
   const {
     created_by,
     dish_name,
@@ -28,7 +28,7 @@ const recordUserDish = async (req, res) => {
   }
 
   try {
-    const dish = await recordDish({
+    const dish = await insertDishModel({
       created_by,
       dish_name,
       calories,
@@ -41,14 +41,14 @@ const recordUserDish = async (req, res) => {
     });
     return res.status(201).json({ dish });
   } catch (err) {
-    console.error("❌ Failed to record dish:", err.stack);
-    return res.status(500).json({ error: "Failed to record dish." });
+    console.error("❌ Failed to insert dish:", err.stack);
+    return res.status(500).json({ error: "Failed to insert dish." });
   }
 };
 
-const fetchAllDishes = async (req, res) => {
+const getAllDishesController = async (req, res) => {
   try {
-    const dishes = await fetchAllDishes();
+    const dishes = await getAllDishesModel();
     return res.status(200).json({ dishes });
   } catch (err) {
     console.error("❌ Failed to fetch dishes:", err.stack);
@@ -56,11 +56,11 @@ const fetchAllDishes = async (req, res) => {
   }
 };
 
-const fetchDishById = async (req, res) => {
+const getDishByIdController = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const dish = await fetchDishById(id);
+    const dish = await getDishByIdModel(id);
     if (!dish) {
       return res.status(404).json({ error: "Dish not found" });
     }
@@ -71,11 +71,11 @@ const fetchDishById = async (req, res) => {
   }
 };
 
-const updateDishById = async (req, res) => {
+const updateDishController = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const updatedDish = await updateDishById(id, req.body);
+    const updatedDish = await updateDishModel(id, req.body);
     if (!updatedDish) {
       return res.status(404).json({ error: "Dish not found or not updated" });
     }
@@ -86,11 +86,11 @@ const updateDishById = async (req, res) => {
   }
 };
 
-const deleteDishById = async (req, res) => {
+const deleteDishController = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const deletedDish = await deleteDishById(id);
+    const deletedDish = await deleteDishModel(id);
     if (!deletedDish) {
       return res
         .status(404)
@@ -105,11 +105,11 @@ const deleteDishById = async (req, res) => {
   }
 };
 
-const fetchUserDishes = async (req, res) => {
+const getDishesByUserIdController = async (req, res) => {
   const { userId } = req.params;
 
   try {
-    const dishes = await fetchDishesByUserId(userId);
+    const dishes = await getDishByUserIdModel(userId);
     if (!dishes || dishes.length === 0) {
       return res.status(404).json({ error: "No dishes found for this user" });
     }
@@ -120,11 +120,11 @@ const fetchUserDishes = async (req, res) => {
   }
 };
 
-const deleteUserDishes = async (req, res) => {
+const deleteAllDishesByUserIdController = async (req, res) => {
   const { userId } = req.params;
 
   try {
-    const deletedDishes = await deleteAllDishesByUserId(userId);
+    const deletedDishes = await deleteAllDishCreatedByUserIdModel(userId);
     if (!deletedDishes || deletedDishes.length === 0) {
       return res
         .status(404)
@@ -141,11 +141,11 @@ const deleteUserDishes = async (req, res) => {
 };
 
 export {
-  recordUserDish,
-  fetchAllDishes,
-  fetchDishById,
-  updateDishById,
-  deleteDishById,
-  fetchUserDishes,
-  deleteUserDishes,
+  deleteAllDishesByUserIdController,
+  getDishByIdController,
+  updateDishController,
+  getDishesByUserIdController,
+  deleteDishController,
+  getAllDishesController,
+  createDishController,
 };

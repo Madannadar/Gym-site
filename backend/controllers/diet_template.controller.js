@@ -1,26 +1,27 @@
 import {
-  recordDietTemplate,
-  fetchAllDietTemplates,
-  fetchDietTemplateById,
-  updateDietTemplateById,
-  deleteDietTemplateById,
-  fetchDietTemplatesByUserId,
-  deleteAllDietTemplatesByUserId,
-} from "../models/diet_template.model.js";
+  insertDietTemplateModel,
+  getAllDietTemplatesModel,
+  getDietTemplateByIdModel,
+  updateDietTemplateModel,
+  deleteDietTemplateModel,
+  getDietTemplatesByUserIdModel,
+  deleteAllDietTemplatesByUserIdModel,
+} from "../model/diet_template.model.js";
 
-const recordUserDietTemplate = async (req, res) => {
+const createDietTemplateController = async (req, res) => {
   try {
-    const template = await recordDietTemplate(req.body);
+    const template = await insertDietTemplateModel(req.body);
     res.status(201).json({ template });
   } catch (err) {
-    console.error("❌ Failed to record template:", err.stack);
-    res.status(500).json({ error: "Failed to record template." });
+    console.log(err);
+    console.error("❌ Failed to insert template:", err.stack);
+    res.status(500).json({ error: "Failed to insert template." });
   }
 };
 
-const fetchAllDietTemplates = async (req, res) => {
+const getAllDietTemplatesController = async (req, res) => {
   try {
-    const templates = await fetchAllDietTemplates();
+    const templates = await getAllDietTemplatesModel();
     res.status(200).json({ templates });
   } catch (err) {
     console.error("❌ Failed to fetch templates:", err.stack);
@@ -28,10 +29,10 @@ const fetchAllDietTemplates = async (req, res) => {
   }
 };
 
-const fetchDietTemplateById = async (req, res) => {
+const getDietTemplateByIdController = async (req, res) => {
   const { id } = req.params;
   try {
-    const template = await fetchDietTemplateById(id);
+    const template = await getDietTemplateByIdModel(id);
     if (!template) return res.status(404).json({ error: "Template not found" });
     res.status(200).json({ template });
   } catch (err) {
@@ -40,10 +41,10 @@ const fetchDietTemplateById = async (req, res) => {
   }
 };
 
-const updateDietTemplateById = async (req, res) => {
+const updateDietTemplateController = async (req, res) => {
   const { id } = req.params;
   try {
-    const template = await updateDietTemplateById(id, req.body);
+    const template = await updateDietTemplateModel(id, req.body);
     if (!template)
       return res
         .status(404)
@@ -55,10 +56,10 @@ const updateDietTemplateById = async (req, res) => {
   }
 };
 
-const deleteDietTemplateById = async (req, res) => {
+const deleteDietTemplateController = async (req, res) => {
   const { id } = req.params;
   try {
-    const template = await deleteDietTemplateById(id);
+    const template = await deleteDietTemplateModel(id);
     if (!template)
       return res
         .status(404)
@@ -72,10 +73,10 @@ const deleteDietTemplateById = async (req, res) => {
   }
 };
 
-const fetchUserDietTemplates = async (req, res) => {
+const getDietTemplatesByUserIdController = async (req, res) => {
   const { userId } = req.params;
   try {
-    const templates = await fetchDietTemplatesByUserId(userId);
+    const templates = await getDietTemplatesByUserIdModel(userId);
     res.status(200).json({ templates });
   } catch (err) {
     console.error("❌ Failed to fetch templates by user:", err.stack);
@@ -83,10 +84,10 @@ const fetchUserDietTemplates = async (req, res) => {
   }
 };
 
-const deleteUserDietTemplates = async (req, res) => {
+const deleteAllDietTemplatesByUserIdController = async (req, res) => {
   const { userId } = req.params;
   try {
-    const templates = await deleteAllDietTemplatesByUserId(userId);
+    const templates = await deleteAllDietTemplatesByUserIdModel(userId);
     res
       .status(200)
       .json({ message: "Templates deleted successfully", templates });
@@ -97,11 +98,11 @@ const deleteUserDietTemplates = async (req, res) => {
 };
 
 export {
-  recordUserDietTemplate,
-  fetchAllDietTemplates,
-  fetchDietTemplateById,
-  updateDietTemplateById,
-  deleteDietTemplateById,
-  fetchUserDietTemplates,
-  deleteUserDietTemplates,
+  createDietTemplateController,
+  getAllDietTemplatesController,
+  getDietTemplateByIdController,
+  updateDietTemplateController,
+  deleteDietTemplateController,
+  getDietTemplatesByUserIdController,
+  deleteAllDietTemplatesByUserIdController,
 };

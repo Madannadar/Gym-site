@@ -1,92 +1,87 @@
 import {
-  recordDietLog,
-  fetchAllDietLogs,
-  fetchDietLogById,
-  fetchUserDietLogs,
-  updateDietLogById,
-  deleteDietLogById,
-} from "../models/diet_log.model.js";
+  insertDietLog,
+  getAllDietLogs,
+  getDietLogById,
+  getDietLogsByUser,
+  updateDietLog,
+  deleteDietLog,
+} from "../model/diet_log.model.js";
 
-const recordUserDietLogController = async (req, res) => {
+export const createDietLog = async (req, res) => {
   try {
-    const dietLog = await recordDietLog(req.body);
-    res.status(201).json({ item: dietLog, message: "Diet log recorded successfully" });
+    const dietLog = await insertDietLog(req.body);
+    res.status(201).json({ dietLog });
   } catch (err) {
-    console.error("❌ Failed to record diet log:", err.stack);
-    res.status(500).json({ error: { message: "Failed to record diet log" } });
+    console.error("❌ Failed to insert diet log:", err.stack);
+    res.status(500).json({ error: "Failed to insert diet log" });
   }
 };
 
-const fetchAllDietLogsController = async (req, res) => {
+export const getDietLogs = async (req, res) => {
   try {
-    const logs = await fetchAllDietLogs();
-    res.status(200).json({ items: logs, count: logs.length });
+    const logs = await getAllDietLogs();
+    res.status(200).json({ logs });
   } catch (err) {
     console.error("❌ Failed to fetch diet logs:", err.stack);
-    res.status(500).json({ error: { message: "Failed to fetch diet logs" } });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
-const fetchDietLogByIdController = async (req, res) => {
+export const getDietLog = async (req, res) => {
   const { id } = req.params;
   try {
-    const log = await fetchDietLogById(id);
+    const log = await getDietLogById(id);
     if (!log) {
-      return res.status(404).json({ error: { message: "Diet log not found" } });
+      return res.status(404).json({ error: "Diet log not found" });
     }
-    res.status(200).json({ item: log });
+    res.status(200).json({ log });
   } catch (err) {
     console.error("❌ Failed to get diet log:", err.stack);
-    res.status(500).json({ error: { message: "Failed to get diet log" } });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
-const fetchUserDietLogsController = async (req, res) => {
+export const getUserDietLogs = async (req, res) => {
   const { user_id } = req.params;
   const { log_date } = req.query;
 
   try {
-    const logs = await fetchUserDietLogs(user_id, log_date);
-    res.status(200).json({ items: logs, count: logs.length });
+    const logs = await getDietLogsByUser(user_id, log_date);
+    res.status(200).json({ logs });
   } catch (err) {
     console.error("❌ Failed to get user diet logs:", err.stack);
-    res.status(500).json({ error: { message: "Failed to get user diet logs" } });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
-const updateDietLogByIdController = async (req, res) => {
+export const editDietLog = async (req, res) => {
   const { id } = req.params;
   try {
-    const updated = await updateDietLogById(id, req.body);
+    const updated = await updateDietLog(id, req.body);
     if (!updated) {
-      return res.status(404).json({ error: { message: "Diet log not found or not updated" } });
+      return res
+        .status(404)
+        .json({ error: "Diet log not found or not updated" });
     }
-    res.status(200).json({ item: updated, message: "Diet log updated successfully" });
+    res.status(200).json({ updated });
   } catch (err) {
     console.error("❌ Failed to update diet log:", err.stack);
-    res.status(500).json({ error: { message: "Failed to update diet log" } });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
-const deleteDietLogByIdController = async (req, res) => {
+export const removeDietLog = async (req, res) => {
   const { id } = req.params;
   try {
-    const deleted = await deleteDietLogById(id);
+    const deleted = await deleteDietLog(id);
     if (!deleted) {
-      return res.status(404).json({ error: { message: "Diet log not found or already deleted" } });
+      return res
+        .status(404)
+        .json({ error: "Diet log not found or already deleted" });
     }
-    res.status(200).json({ message: "Diet log deleted successfully", item: deleted });
+    res.status(200).json({ message: "Diet log deleted successfully", deleted });
   } catch (err) {
     console.error("❌ Failed to delete diet log:", err.stack);
-    res.status(500).json({ error: { message: "Failed to delete diet log" } });
+    res.status(500).json({ error: "Internal Server Error" });
   }
-};
-
-export {
-  recordUserDietLogController,
-  fetchAllDietLogsController,
-  fetchDietLogByIdController,
-  fetchUserDietLogsController,
-  updateDietLogByIdController,
-  deleteDietLogByIdController,
 };

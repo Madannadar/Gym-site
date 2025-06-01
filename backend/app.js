@@ -2,15 +2,17 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { loggerMiddleware } from "./middlewares/logger.js";
-import db from "./config/db.js";
-import attendanceRouter from "./routers/attendance.router.js";
-import dietLogRouter from "./routers/diet_log.router.js";
-import dietTemplateRouter from "./routers/diet_template.router.js";
+
+// Routers
 import dishRouter from "./routers/dish.router.js";
-import eventRouter from "./routers/event.router.js";
-import healthMetricRouter from "./routers/health_matric.router.js";
-import userRouter from "./routers/user.router.js";
+
+import dietTempletRouter from "./routers/diet_templet.router.js";
+import dietLogRouter from "./routers/diet_log.router.js";
 import workoutRouter from "./routers/workout.router.js";
+import userRouter from "./routers/user.router.js";
+import attendenceRouter from "./routers/attendence.router.js";
+import healthMatricRouter from "./routers/health_matric.router.js";
+import eventRouter from "./routers/event.router.js";
 
 dotenv.config();
 
@@ -21,23 +23,23 @@ app.use(cors());
 app.use(express.json());
 app.use(loggerMiddleware);
 
-// Root Route
+// Base route
 app.get("/", (req, res) => {
   res.send("Gym Site API is running 🚀");
 });
 
-// API Routes
-app.use("/api/diet-logs", dietLogRouter);
+// API routes
 app.use("/api/dishes", dishRouter);
-app.use("/api/diet-templates", dietTemplateRouter);
-app.use("/api/users", userRouter);
-app.use("/api/attendance", attendanceRouter);
-app.use("/api/events", eventRouter);
-app.use("/api/health-metrics", healthMetricRouter);
-app.use("/api/workouts", workoutRouter);
-app.use("/api/qrcode", qrRouter);
 
-// 404 Error Handling
+app.use("/api/diet-templets", dietTempletRouter);
+app.use("/api/diet-logs", dietLogRouter);
+app.use("/api/workouts", workoutRouter);
+app.use("/api/users", userRouter);
+app.use("/api/attendence", attendenceRouter);
+app.use("/api/health-metrics", healthMatricRouter);
+app.use("/api/events", eventRouter);
+
+// 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: "Route not found" });
 });

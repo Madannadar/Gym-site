@@ -1,35 +1,37 @@
 import express from "express";
 import {
-  recordUserDish,
-  fetchAllDishes,
-  fetchDishById,
-  updateDishById,
-  deleteDishById,
-  fetchUserDishes,
-  deleteUserDishes,
+  getAllDishesController,
+  getDishByIdController,
+  updateDishController,
+  deleteDishController,
+  getDishesByUserIdController,
+  deleteAllDishesByUserIdController,
+  createDishController,
 } from "../controllers/dish.controller.js";
 
 const router = express.Router();
 
-// POST /api/dishes - create a new dish
-router.post("/", recordUserDish);
+//all routes work here as expected
 
-// GET /api/dishes - fetch all dishes
-router.get("/", fetchAllDishes);
+// Create a new dish
+router.post("/", createDishController);
 
-// GET /api/dishes/:id - fetch a dish by ID
-router.get("/:id", fetchDishById);
+// Get all dishes
+router.get("/", getAllDishesController);
 
-// PUT /api/dishes/:id - update a dish by ID
-router.put("/:id", updateDishById);
+// Get a dish by ID
+router.get("/:id", getDishByIdController);
 
-// DELETE /api/dishes/:id - delete a dish by ID
-router.delete("/:id", deleteDishById);
+// Update a dish by ID
+router.put("/:id", updateDishController);
 
-// GET /api/dishes/user/:userId - fetch all dishes created by a specific user
-router.get("/user/:userId", fetchUserDishes);
+// Delete a dish by ID
+router.delete("/:id", deleteDishController);
 
-// DELETE /api/dishes/user/:userId - delete all dishes created by a specific user
-router.delete("/user/:userId", deleteUserDishes);
+// Get all dishes created by a specific user
+router.get("/user/:userId", getDishesByUserIdController);
+
+// Delete all dishes created by a specific user
+router.delete("/user/:userId", deleteAllDishesByUserIdController);
 
 export default router;

@@ -1,78 +1,71 @@
 import {
-  recordEvent,
-  fetchAllEvents,
-  fetchEventById,
-  recordEventParticipation,
-  fetchEventLogsByEventId,
-  fetchEventLogsByUserId,
-} from "../models/event.model.js";
+  createEvent,
+  getAllEvents,
+  getEventById,
+  logEventParticipation,
+  getEventLogsByEventId,
+  getEventLogsByUserId,
+} from "../model/event.model.js";
 
-const recordEventTemplate = async (req, res) => {
+// Event Template Controllers
+export const handleCreateEvent = async (req, res) => {
   try {
-    const event = await recordEvent(req.body);
-    res.status(201).json({ item: event });
+    const event = await createEvent(req.body);
+    res.status(201).json({ event });
   } catch (err) {
-    console.error("❌ Record Event Error:", err.stack);
-    res.status(500).json({ error: "Failed to record event." });
+    console.error("❌ Failed to create event:", err.stack);
+    res.status(500).json({ error: "Failed to create event." });
   }
 };
 
-const fetchAllEvents = async (req, res) => {
+export const handleGetAllEvents = async (req, res) => {
   try {
-    const events = await fetchAllEvents();
-    res.json({ items: events });
+    const events = await getAllEvents();
+    res.json({ events });
   } catch (err) {
-    console.error("❌ Fetch Events Error:", err.stack);
+    console.error("❌ Failed to fetch events:", err.stack);
     res.status(500).json({ error: "Failed to fetch events." });
   }
 };
 
-const fetchEventById = async (req, res) => {
+export const handleGetEventById = async (req, res) => {
   try {
-    const event = await fetchEventById(req.params.event_id);
-    if (!event) return res.status(404).json({ error: "Event not found" });
-    res.json({ item: event });
+    const event = await getEventById(req.params.event_id);
+    if (!event) return res.status(404).json({ message: "Event not found" });
+    res.json({ event });
   } catch (err) {
-    console.error("❌ Fetch Event Error:", err.stack);
+    console.error("❌ Failed to fetch event:", err.stack);
     res.status(500).json({ error: "Failed to fetch event." });
   }
 };
 
-const recordEventParticipationLog = async (req, res) => {
+// Event Log Controllers
+export const handleLogParticipation = async (req, res) => {
   try {
-    const log = await recordEventParticipation(req.body);
-    res.status(201).json({ item: log });
+    const log = await logEventParticipation(req.body);
+    res.status(201).json({ log });
   } catch (err) {
-    console.error("❌ Record Event Participation Error:", err.stack);
+    console.error("❌ Failed to log event participation:", err.stack);
     res.status(500).json({ error: "Failed to log event participation." });
   }
 };
 
-const fetchEventLogsByEventId = async (req, res) => {
+export const handleGetLogsByEventId = async (req, res) => {
   try {
-    const logs = await fetchEventLogsByEventId(req.params.event_id);
-    res.json({ items: logs });
+    const logs = await getEventLogsByEventId(req.params.event_id);
+    res.json({ logs });
   } catch (err) {
-    console.error("❌ Fetch Event Logs Error:", err.stack);
-    res.status(500).json({ error: "Failed to fetch event logs." }));
+    console.error("❌ Failed to fetch logs:", err.stack);
+    res.status(500).json({ error: "Failed to fetch logs." });
   }
 };
 
-const fetchEventLogsByUserId = async (req, res) => {
+export const handleGetLogsByUserId = async (req, res) => {
   try {
-    const logs = await fetchEventLogsByUserId(req.params.user_id);
-    res.json({ items: logs });
+    const logs = await getEventLogsByUserId(req.params.user_id);
+    res.json({ logs });
   } catch (err) {
-    console.error("❌ Fetch Event Logs Error:", err.stack);
-    res.status(500).json({ error: "Failed to fetch event logs." });
+    console.error("❌ Failed to fetch logs:", err.stack);
+    res.status(500).json({ error: "Failed to fetch logs." });
   }
-};
-
-export {
-  recordEventTemplate,
-  fetchAllEvents,
-  fetchEventById,
-  recordEventParticipationLog,
-  fetchEventLogsByEventId,
-  fetchEventLogsByUserId,
 };
