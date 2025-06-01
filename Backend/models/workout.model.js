@@ -85,7 +85,30 @@ const recordWorkout = async ({
   structure,
   score,
 }) => {
-  const query = `
+  // Extract all exercise_ids from structure array
+  const exerciseIds = structure.map(item => item.exercise_id);
+
+  // Query to check if all exerciseIds exist in exercises table
+  const checkQuery = `
+    SELECT exercise_id
+    FROM exercises
+    WHERE exercise_id = ANY($1)
+  `;
+  const { rows: existingExercises } = await pool.query(checkQuery, [exerciseIds]);
+
+  const existingIds = existingExercises.map(e => e.exercise_id);
+
+  // Find missing ids
+  const missingIds = exerciseIds.filter(id => !existingIds.includes(id));
+
+  if (missingIds.length > 0) {
+    throw new Error(
+      `Invalid exercise_id(s) in structure: ${missingIds.join(', ')}`
+    );
+  }
+
+  // If all exercise_ids valid, insert workout
+  const insertQuery = `
     INSERT INTO workouts (name, created_by, description, structure, score)
     VALUES ($1, $2, $3, $4, $5)
     RETURNING *;
@@ -97,7 +120,7 @@ const recordWorkout = async ({
     JSON.stringify(structure),
     score,
   ];
-  const { rows } = await pool.query(query, values);
+  const { rows } = await pool.query(insertQuery, values);
   return rows[0];
 };
 
@@ -183,7 +206,12 @@ const deleteWorkoutById = async (id) => {
   return rows[0];
 };
 
-// Workout Log Functions
+const checkExists = async (table, idName, id) => {
+  const query = `SELECT 1 FROM ${table} WHERE ${idName} = $1 LIMIT 1`;
+  const { rowCount } = await pool.query(query, [id]);
+  return rowCount > 0;
+};
+
 const recordWorkoutLog = async ({
   user_id,
   regiment_id,
@@ -193,11 +221,39 @@ const recordWorkoutLog = async ({
   actual_workout,
   score,
 }) => {
+  // Check user exists
+  if (!(await checkExists('users', 'user_id', user_id))) {
+    throw new Error(`User with id ${user_id} does not exist.`);
+  }
+  // Check regiment exists
+  if (!(await checkExists('regiments', 'regiment_id', regiment_id))) {
+    throw new Error(`Regiment with id ${regiment_id} does not exist.`);
+  }
+  // Check planned workout exists
+  if (!(await checkExists('workouts', 'workout_id', planned_workout_id))) {
+    throw new Error(`Workout with id ${planned_workout_id} does not exist.`);
+  }
+
+  // Optional: check all exercise_ids in actual_workout exist in exercises table
+  for (const exercise of actual_workout) {
+    if (!(await checkExists('exercises', 'exercise_id', exercise.exercise_id))) {
+      throw new Error(`Exercise with id ${exercise.exercise_id} does not exist.`);
+    }
+  }
+
   const query = `
-    INSERT INTO workout_logs (user_id, regiment_id, regiment_day_index, log_date, planned_workout_id, actual_workout, score)
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
+    INSERT INTO workout_logs (
+      user_id,
+      regiment_id,
+      regiment_day_index,
+      log_date,
+      planned_workout_id,
+      actual_workout,
+      score
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
     RETURNING *;
   `;
+
   const values = [
     user_id,
     regiment_id,
@@ -207,14 +263,17 @@ const recordWorkoutLog = async ({
     JSON.stringify(actual_workout),
     score || 0,
   ];
+
   const { rows } = await pool.query(query, values);
   return rows[0];
 };
 
+
+
 const fetchUserWorkoutLogs = async (user_id, limit = 50, offset = 0) => {
   const query = `
     SELECT wl.*,
-           u.username,
+           u.name,
            w.name as planned_workout_name,
            r.name as regiment_name
     FROM workout_logs wl
@@ -232,7 +291,7 @@ const fetchUserWorkoutLogs = async (user_id, limit = 50, offset = 0) => {
 const fetchWorkoutLogById = async (id) => {
   const query = `
     SELECT wl.*,
-           u.username,
+           u.name,
            w.name as planned_workout_name,
            w.structure as planned_workout_structure,
            r.name as regiment_name
@@ -273,31 +332,72 @@ const deleteWorkoutLogById = async (id) => {
   return rows[0];
 };
 
-// Regiment Functions
+// Regiment Functions 
+// checkds if all workout_ids in workout_structure exist in workouts table before inserting regiment
 const recordRegiment = async ({
   created_by,
   name,
   description,
   workout_structure,
 }) => {
-  const query = `
-    INSERT INTO regiments (created_by, name, description, workout_structure)
+  // Extract all workout_ids from workout_structure array
+  const workoutIds = workout_structure.map(day => day.workout_id);
+
+  // Query to check if all workoutIds exist in workouts table
+  const checkQuery = `
+    SELECT workout_id
+    FROM workouts
+    WHERE workout_id = ANY($1)
+  `;
+  const { rows: existingWorkouts } = await pool.query(checkQuery, [workoutIds]);
+
+  const existingIds = existingWorkouts.map(w => w.workout_id);
+
+  // Find missing ids
+  const missingIds = workoutIds.filter(id => !existingIds.includes(id));
+
+  if (missingIds.length > 0) {
+    throw new Error(
+      `Invalid workout_id(s) in workout_structure: ${missingIds.join(', ')}`
+    );
+  }
+
+  // If all workout_ids valid, insert regiment
+  const insertQuery = `
+    INSERT INTO regiments (
+      created_by,
+      name,
+      description,
+      workout_structure
+    )
     VALUES ($1, $2, $3, $4)
     RETURNING *;
   `;
+
   const values = [
     created_by,
     name,
     description,
-    JSON.stringify(workout_structure),
+    JSON.stringify(workout_structure)
   ];
-  const { rows } = await pool.query(query, values);
+
+  const { rows } = await pool.query(insertQuery, values);
   return rows[0];
 };
 
+
+
+
 const fetchAllRegiments = async () => {
   const query = `
-    SELECT r.*, u.username as created_by_name
+    SELECT 
+      r.regiment_id,
+      r.created_by,
+      u.name AS created_by_name,
+      r.name,
+      r.description,
+      r.workout_structure,
+      r.created_at
     FROM regiments r
     LEFT JOIN users u ON r.created_by = u.user_id
     ORDER BY r.created_at DESC;
@@ -306,9 +406,10 @@ const fetchAllRegiments = async () => {
   return rows;
 };
 
+
 const fetchRegimentById = async (id) => {
   const regimentQuery = `
-    SELECT r.*, u.username as created_by_name
+    SELECT r.*, u.name  as created_by_name
     FROM regiments r
     LEFT JOIN users u ON r.created_by = u.user_id
     WHERE r.regiment_id = $1;

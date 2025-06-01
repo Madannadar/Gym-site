@@ -194,7 +194,6 @@ CREATE TABLE IF NOT EXISTS workouts (
 */
 
 
-
 CREATE TABLE IF NOT EXISTS workout_logs (
   workout_log_id SERIAL PRIMARY KEY,
   user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
@@ -202,37 +201,11 @@ CREATE TABLE IF NOT EXISTS workout_logs (
   regiment_day_index INT, -- index into workout_structure array
   log_date DATE NOT NULL,
   planned_workout_id INT REFERENCES workouts(workout_id),
-  actual_workout JSONB NOT NULL, -- e.g. exercises done
+  actual_workout JSONB NOT NULL, -- JSON validated in backend
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  score NUMERIC DEFAULT 0,
-
-  CHECK (
-    jsonb_typeof(actual_workout) = 'array' AND
-    (
-      SELECT bool_and(
-        exercise ? 'exercise_id' AND
-        exercise ? 'sets' AND
-        jsonb_typeof(exercise->'sets') = 'object' AND
-        (
-          SELECT bool_and(
-            jsonb_typeof(value) = 'object' AND
-            (
-              value ? 'reps' OR value ? 'weight' OR value ? 'time'
-            )
-          )
-          FROM jsonb_each(exercise->'sets')
-        ) AND
-        (
-          NOT (exercise ? 'weight_unit') OR exercise->>'weight_unit' IN ('kg', 'lbs')
-        ) AND
-        (
-          NOT (exercise ? 'time_unit') OR exercise->>'time_unit' IN ('seconds', 'minutes')
-        )
-      )
-      FROM jsonb_array_elements(actual_workout) AS exercise
-    )
-  )
+  score NUMERIC DEFAULT 0
 );
+
 
 /*example
 [
@@ -255,30 +228,15 @@ CREATE TABLE IF NOT EXISTS workout_logs (
 ]
 */
 
-
-
 CREATE TABLE IF NOT EXISTS regiments (
   regiment_id SERIAL PRIMARY KEY,
   created_by INT REFERENCES users(user_id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   description TEXT,
-  workout_structure JSONB NOT NULL, -- Array of day-wise entries like [{ name, workout_id }]
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-  CHECK (
-    jsonb_typeof(workout_structure) = 'array' AND
-    (
-      SELECT bool_and(
-        jsonb_typeof(day) = 'object' AND
-        day ? 'name' AND
-        day ? 'workout_id' AND
-        jsonb_typeof(day->'name') = 'string' AND
-        jsonb_typeof(day->'workout_id') = 'number'
-      )
-      FROM jsonb_array_elements(workout_structure) AS day
-    )
-  )
+  workout_structure JSONB NOT NULL, -- e.g., [{ name: "Day 1", workout_id: 1 }]
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
 
 /*example
 {
