@@ -12,37 +12,36 @@ export default function Events() {
   const [events, setEvents] = useState("discover");
 
   return (
-    <div className="events">
-      <AllHeader title="Fitness Events" logo={<EventsLogo />} />
-      {/* <EventsHead /> */}
-      <p className=" pt-3 mx-4 text-left text-gray-500 text-sm font-medium">
+    <div className="p-4 max-w-6xl mx-auto">
+      <div className="flex items-center gap-2">
+        <EventsLogo className="text-3xl sm:text-4xl text-[#4B9CD3]" />
+        <h1 className="text-2xl sm:text-4xl font-bold text-black px-0.5">Fitness Events</h1>
+      </div>
+    
+      <p className="text-gray-700 mt-2 text-sm sm:text-lg">
         Discover, join, and track fitness events in your community. Participate
         in challenges, competitions, and group activities
       </p>
-      <div className="flex flex-row gap-2 my-4 mx-7">
-        <button
-          style={{ borderRadius: "10px" }}
-          className="flex-1 bg-gray-100 text-gray-500 border-2 border-gray-700 text-sm sm:(text-base p-2) md:(text-lg h-20) lg:h-13 rounded-lg hover:text-gray-800 hover:scale-105 transition-transform"
-          onClick={() => setEvents("discover")}
-        >
+      <div className="flex justify-between items-center gap-3 mt-5 text-xs sm:text-sm">
+        <div className="flex-1 px-2 py-2 sm:py-3 bg-white rounded-lg text-center font-medium text-gray-800 shadow hover:shadow-md transition-all duration-200 ease-in-out"
+        onClick={() => setEvents("discover")}>
           Discover Events
-        </button>
-        <button
-          style={{ borderRadius: "10px" }}
-          className="flex-1 bg-gray-100 text-gray-500 border-2 border-gray-700 text-sm sm:(text-base py-2) md:(text-lg py-4) rounded-lg hover:text-gray-800 hover:scale-105 transition-transform"
-          onClick={() => setEvents("my")}
+        </div>
+        <div
+          className="flex-1 px-2 py-2 sm:py-3 bg-white rounded-lg text-center font-medium text-gray-800 shadow hover:shadow-md transition-all duration-200 ease-in-out cursor-pointer"
+        onClick={() => setEvents("my")}
         >
           My Events
-        </button>
-        <button
-          style={{ borderRadius: "10px" }}
-          className="flex-1 bg-gray-100 text-gray-500 border-2 border-gray-700 text-sm sm:(text-base py-2) md:(text-lg py-4) rounded-lg hover:text-gray-800 hover:scale-105 transition-transform"
-          onClick={() => setEvents("host")}
+        </div>
+        <div
+          className="flex-1 px-2 py-2 sm:py-3 bg-white rounded-lg text-center font-medium text-gray-800 shadow hover:shadow-md transition-all duration-200 ease-in-out cursor-pointer"
+           onClick={() => setEvents("host")}
         >
           Host Events
-        </button>
+        </div>
       </div>
-      <section className="eventsBody">
+      
+      <div className="eventsBody">
         {events === "discover" ? (
           <Discover />
         ) : events === "my" ? (
@@ -50,7 +49,7 @@ export default function Events() {
         ) : (
           <Host />
         )}
-      </section>
+      </div>
     </div>
   );
 }

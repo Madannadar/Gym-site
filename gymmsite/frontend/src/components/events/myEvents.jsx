@@ -4,7 +4,6 @@ import { FaCalendarAlt, FaMapMarkerAlt } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { Row, Col, Card, Button } from "react-bootstrap";
 
-
 export default function MyEvents() {
   const navigate = useNavigate();
   const dummyEvents = [
@@ -44,70 +43,62 @@ export default function MyEvents() {
   ];
 
   const goTonewPage = () => {
-    navigate('/eventLeaderboard');
+    navigate("/eventLeaderboard");
   };
 
-
-
   return (
-    <section className="my-5 mx-3">
-    <Row xs={1} sm={2} md={2} lg={3} className="g-4">
-      {dummyEvents.map((events) => (
-        <Col key={events.id}>
-          <Card className="shadow-md rounded-lg overflow-hidden">
-            <Card.Img
-              variant="top"
+    <section className="pt-4 sm:pt-6 mx-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {dummyEvents.map((events) => (
+          <div
+            key={events.id}
+            className="bg-white shadow-md rounded-lg overflow-hidden relative"
+          >
+            <img
               src={events.image}
-              className="w-full h-56 object-cover rounded-t-lg"
               alt={events.title}
+              className="w-full h-56 object-cover rounded-t-lg"
             />
             <p className="absolute top-2 right-2 bg-purple-500 text-white text-xs rounded-full px-2 py-1">
               {events.category}
             </p>
-            <Card.Body>
-              <Card.Title className="text-left text-lg font-medium">
-                {events.title}
-              </Card.Title>
-              <Card.Text>
-                <div className="grid grid-cols-2 grid-rows-2 gap-2 mt-3 mb-0">
-                  <span>
-                    <p className="text-left mb-1 text-sm font-medium flex items-center">
-                      <FaCalendarAlt className="mr-2 text-gray-500" />
-                      {events.date}
-                    </p>
-                    <p className="text-xs ml-6 mb-0 text-gray-500">{events.time}</p>
-                  </span>
-                  <p className="text-left text-sm font-medium flex items-center items-start">
-                    <FaMapMarkerAlt className="mr-2 text-gray-500" />
-                    {events.location}
+            <div className="p-4">
+              <h4 className="text-left text-lg font-medium">{events.title}</h4>
+              <div className="grid grid-cols-2 grid-rows-2 gap-2 mt-3 mb-0">
+                <div>
+                  <p className="text-left mb-1 text-sm font-medium flex items-center">
+                    <FaCalendarAlt className="mr-2 text-gray-500" />
+                    {events.date}
                   </p>
-                  <div className="col-span-2 flex h-10 items-center justify-center text-white text-[10px] rounded-full ">
-                    <p className="m-0 bg-green-600 px-3 py-2 rounded-full">Registered</p>
-                  </div>
+                  <p className="text-xs ml-6 mb-0 text-gray-500">
+                    {events.time}
+                  </p>
                 </div>
-              </Card.Text>
-              <div className="flex justify-center gap-5 mt-3 ">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="bg-gray-500 text-white text-sm px-4 py-2 w-1/2 sm:w-40 md:w-48 rounded-lg hover:bg-gray-600 transition duration-200"
-                >
+                <p className="text-left text-sm font-medium flex items-start">
+                  <FaMapMarkerAlt className="mr-2 text-gray-500" />
+                  {events.location}
+                </p>
+                <div className="col-span-2 flex h-10 items-center justify-center text-white text-[10px]">
+                  <p className="m-0 bg-green-600 px-3 py-2 rounded-full">
+                    Registered
+                  </p>
+                </div>
+              </div>
+              <div className="flex justify-center gap-5 mt-3">
+                <button className="bg-gray-500 text-white text-sm px-4 py-2 w-1/2 sm:w-40 md:w-48 rounded-lg hover:bg-gray-600 transition duration-200">
                   Details
-                </Button>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="bg-gray-500 text-white text-sm px-4 py-2 w-1/2 sm:w-40 md:w-48 rounded-lg hover:bg-gray-600 transition duration-200"
+                </button>
+                <button
                   onClick={goTonewPage}
+                  className="bg-blue-500 text-white text-sm px-4 py-2 w-1/2 sm:w-40 md:w-48 rounded-lg hover:bg-blue-600 transition duration-200"
                 >
                   Leaderboard
-                </Button>
+                </button>
               </div>
-            </Card.Body>
-          </Card>
-        </Col>
-      ))}
-    </Row>
-  </section>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

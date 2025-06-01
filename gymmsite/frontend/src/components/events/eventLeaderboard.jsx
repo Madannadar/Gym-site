@@ -17,7 +17,7 @@ export default function eventLeaderboard() {
   ];
 
   return (
-    <div className="event-leaderboard">
+    <div className="p-4 pb-0 sm:p-6 max-w-lg mx-auto">
       <AllHeader title="Event Leaderboard" />
       <div className="eventBody">
         <div className="topThree h-[40vh] flex justify-evenly items-end">

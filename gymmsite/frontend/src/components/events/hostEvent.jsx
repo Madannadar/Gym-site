@@ -1,8 +1,8 @@
 import React from "react";
 
-export default function eventLeaderboard() {
+export default function hostEvent() {
   return (
-    <div className="px-4">
+    <div className="pt-5 sm:pt-6 max-w-md mx-auto">
       <form method="post" className="max-w-sm mx-auto">
         <div class="mb-2">
           <label

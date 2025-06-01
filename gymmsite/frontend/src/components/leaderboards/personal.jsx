@@ -67,7 +67,7 @@ export default function Personal() {
   }
 
   return (
-    <div className="personal-leaderboard md:w-4/5 lg:w-3/5 flex flex-col items-center justify-center mx-auto">
+    <div className="personal-leaderboard md:w-4/5 lg:w-[65%] flex flex-col items-center justify-center mx-auto">
       <section className="weekly-stats w-[85%] shadow-[0px_0px_5px_rgba(0,0,0,0.3)] flex flex-col mx-[10%] my-[5%] rounded-[30px] pt-[4%]">
         <p
           className="stats flex font-semibold text-xl ml-[10%] mb-2"
@@ -75,8 +75,8 @@ export default function Personal() {
         >
           Weekly Stats:
         </p>
-        <div class="h_line flex w-[77%] h-px ml-[11%] bg-gray-200 mb-2"></div>
-        <ul className="mb-[2%]">
+        <div class="h_line flex w-[70%] h-px ml-[11%] bg-gray-200 mb-2"></div>
+        <ul className="mb-[2%] p-6 sm:p-6">
           {weeklyStats.map((stat, index) => (
             <li key={index} className="stat-item flex items-center mb-[4%]">
               <span
@@ -94,10 +94,10 @@ export default function Personal() {
         </ul>
       </section> 
 
-      <section className="weekly-activity w-[85%] shadow-[0px_0px_5px_rgba(0,0,0,0.3)] flex flex-col mx-[10%] my-[5%] rounded-[30px] pb-3">
+      <section className="weekly-activity w-[85%] shadow-[0px_0px_5px_rgba(0,0,0,0.3)] flex flex-col mx-[10%] my-[5%] rounded-[30px] pb-2">
         <p className="stats flex font-semibold text-xl ml-[10%] mt-4 mb-[2%] " style={{ fontWeight:"700" }}>Weekly Stats:</p>
         {weeklyActivity.map((activity, key) => (
-          <div key={key} className="activity-item flex flex-col items-start shadow-[1px_2px_5px_rgba(0,0,0,0.5)] mx-[5%] my-[2%] rounded-[20px] p-[4%]" style={{ backgroundColor: findColour(activity.hours) }}>
+          <div key={key} className="activity-item flex flex-col items-start shadow-[1px_2px_5px_rgba(0,0,0,0.5)] mx-[5%] my-[2%] rounded-[20px] p-[2%]" style={{ backgroundColor: findColour(activity.hours) }}>
             <p className="activity-day text-[white] text-xs font-medium ml-[5%] mr-[2%] mt-[2%] mb-2">{activity.day}</p>
             <p className="workout text-[white] font-semibold ml-[5%] mr-[2%] mb-0">Workout: {activity.hours} hours</p>
           </div>

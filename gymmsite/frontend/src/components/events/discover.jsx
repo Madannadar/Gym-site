@@ -12,6 +12,7 @@ import {
 export default function Discover() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filterevents, setFilterevents] = useState("");
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -75,6 +76,11 @@ export default function Discover() {
         "https://images.unsplash.com/photo-1541625602330-2277a4c46182?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
     },
   ];
+
+  const filteredEvents = dummyEvents.filter((event) =>
+    event.title.toLowerCase().includes(filterevents.toLowerCase()) ||
+    event.category.toLowerCase().includes(filterevents.toLowerCase())
+  )
   return (
     <>
       <div className="searchandFilter">
@@ -85,6 +91,7 @@ export default function Discover() {
               type="text"
               placeholder="Search events by name, category..."
               class="border-none bg-transparent outline-none flex-1"
+              onChange={(e) => setFilterevents(e.target.value)}
             />
           </div>
           <button class="filter-btn flex items-center bg-white border border-gray-300 rounded-md px-3 py-2 cursor-pointer">
@@ -92,92 +99,65 @@ export default function Discover() {
           </button>
         </div>
       </div>
+
       <section>
-        <div className="mx-4">
-          <Row xs={1} sm={2} md={2} lg={3} className="g-4">
-            {dummyEvents.map((events, index) => (
-              <Col key={index}>
-                <Card>
-                  <Card.Img
-                    className="event-image w-full rounded-t-lg h-56 object-cover"
-                    variant="top"
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">
+            Explore Events
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {
+            filteredEvents.length > 0 ? (
+              filteredEvents.map((events, index) => (
+                <div
+                  key={index}
+                  className="bg-white rounded-lg shadow-md overflow-hidden"
+                >
+                  <img
+                    className="w-full h-56 object-cover"
                     src={events.image}
+                    alt={events.title}
                   />
-                  <Card.Body >
-                    <div className="px-1 pb-1">
-                      <Card.Title className="m-2">{events.title}</Card.Title>
-                      <Card.Text className="mb-0">
-                        <div className="grid h-35 mb-0 grid-cols-2 grid-rows-2 gap-2 my-3">
-                          <span>
-                            <p className="txt mb-0  text-left m-2 text-sm font-medium flex-1">
-                              {" "}
-                              <FaCalendarAlt className="icon " />
-                              {events.date}
-                              <br />
-                            </p>
-                            <p className="time mt-0 text-xs m-2 text-gray-500 pl-">
-                              {events.time}
-                            </p>
-                          </span>
-                          <p className="txt">
-                            {" "}
-                            <FaMapMarkerAlt className="mx-1 text-gray-500" />{" "}
-                            {events.location}
-                          </p>
-
-                          <p className="part col-span-2 text-left mx-2 text-sm font-medium">
-                            <FaUsers className="icon" /> 30 participants
-                          </p>
-                        </div>
-                      </Card.Text>
-                      <div className="flex justify-center gap-5 mt-0 ">
-                        <Button className="bg-gray-500 text-white text-sm px-4 py-2 w-1/2 sm:w-40 md:w-48 rounded-lg hover:bg-gray-600 transition duration-200" variant="secondary" size="sm">
-                          Details
-                        </Button>
-                        <Button className="bg-blue-500 text-white text-sm px-4 py-2 w-1/2 sm:w-40 md:w-48  rounded-lg hover:bg-blue-600 transition duration-200" variant="primary" size="sm">
-                          Join Event
-                        </Button>
+                  <div className="p-4">
+                    <h4 className="text-base font-semibold mb-2">
+                      {events.title}
+                    </h4>
+                    <div className="grid grid-cols-2 grid-rows-2 gap-2 mb-3">
+                      <div>
+                        <p className="text-sm text-gray-700 flex items-center gap-1">
+                          <FaCalendarAlt className="text-gray-500" />
+                          {events.date}
+                        </p>
+                        <p className="text-xs text-gray-500 ml-5">
+                          {events.time}
+                        </p>
                       </div>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-            ))}
-          </Row>
-          {/* <div key={events.id} className="individual-event">
-                <img
-                  src={events.image}
-                  className="event-image"
-                  alt={events.title}
-                />
-                <p className="eventCat">{events.category}</p>
-                <div className="allText">
-                  <h3 className="title">{events.title}</h3>
-                  <div className="eventDetails">
-                    <span>
-                      <p className="txt">
-                        {" "}
-                        <FaCalendarAlt className="icon" />
-                        {events.date}
-                        <br />
+                      <p className="text-sm text-gray-700 flex items-center gap-1">
+                        <FaMapMarkerAlt className="text-gray-500" />
+                        {events.location}
                       </p>
-                      <p className="txt time">{events.time}</p>
-                    </span>
-                    <p className="txt">
-                      {" "}
-                      <FaMapMarkerAlt className="icon" /> {events.location}
-                    </p>
-
-                    <p className="txt part">
-                      <FaUsers className="icon" /> 30 participants
-                    </p>
-                  </div>
-                  <div className="buttons">
-                    <button className="btnn details-btn">Details</button>
-                    <button className=" btnn join-btn">Join Event</button>
+                      <p className="col-span-2 text-sm font-medium flex items-center gap-1 text-gray-700">
+                        <FaUsers className="text-gray-500" /> 30 participants
+                      </p>
+                    </div>
+                    <div className="flex justify-center gap-4">
+                      <button className="bg-gray-500 text-white text-sm px-4 py-2 w-1/2 sm:w-40 md:w-48 rounded-lg hover:bg-gray-600 transition duration-200">
+                        Details
+                      </button>
+                      <button className="bg-blue-500 text-white text-sm px-4 py-2 w-1/2 sm:w-40 md:w-48 rounded-lg hover:bg-blue-600 transition duration-200">
+                        Join Event
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div> */}
+              ))
+            ) : (
+              <p className="text-gray-600 text-center col-span-full">
+                No diet plans found matching "{filterevents}"
+              </p>
+            )
+          }
+          </div>
         </div>
       </section>
     </>
