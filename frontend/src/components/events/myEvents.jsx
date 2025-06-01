@@ -2,7 +2,7 @@ import React from "react";
 
 import { FaCalendarAlt, FaMapMarkerAlt } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { Row, Col, Card, Button } from "react-bootstrap";
+
 
 export default function MyEvents() {
   const navigate = useNavigate();
