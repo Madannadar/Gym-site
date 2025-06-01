@@ -1,6 +1,6 @@
-import * as jwtUtils from "../utils/jwt.utils.js";
-import * as tokenModel from "../models/token.model.js";
-import * as userModel from "../models/user.model.js";
+import * as jwtUtils from "../utils/jwt.util.js";
+import * as tokenModel from "../model/token.model.js";
+import * as userModel from "../model/user.model.js";
 
 /**
  * Issues both access and refresh tokens for a given user.
@@ -53,7 +53,7 @@ async function getNewAccessTokenUsingRefreshToken(refreshToken) {
  * Marks a given refresh token as revoked in the database.
  */
 async function revokeSingleRefreshToken(token) {
-  await tokenModel.revokeRefreshToken(token);
+  await tokenModel.revokeRefreshTokenByToken(token);
 }
 
 export {

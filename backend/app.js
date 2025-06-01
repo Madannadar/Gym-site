@@ -13,7 +13,8 @@ import userRouter from "./routers/user.router.js";
 import attendenceRouter from "./routers/attendence.router.js";
 import healthMatricRouter from "./routers/health_matric.router.js";
 import eventRouter from "./routers/event.router.js";
-const rateLimit = require("express-rate-limit");
+import rateLimit from "express-rate-limit";
+// const rateLimit = require("express-rate-limit");
 dotenv.config();
 
 const app = express();

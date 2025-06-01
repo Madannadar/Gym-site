@@ -1,5 +1,5 @@
 import db from "./db.js";
-import passwordUtils from "../utils/password.utils.js";
+import passwordUtils from "../utils/password.util.js";
 
 async function createUser({ email, password, firstName, lastName }) {
   const { hash, salt } = await passwordUtils.hashPassword(password);
