@@ -68,11 +68,11 @@ router.post("/logs", recordWorkoutLogEntry); // working  // checks if regiment, 
 // GET /api/workouts/logs/user/:userId - fetch workout logs by user
 router.get("/logs/user/:userId", fetchUserWorkoutLogsList);
 // GET /api/workouts/logs/:id - fetch a workout log by ID
-router.get("/logs/:id", fetchWorkoutLogByIdEntry);
+router.get("/logs/:id", fetchWorkoutLogByIdEntry); // working
 // PUT /api/workouts/logs/:id - update a workout log
-router.put("/logs/:id", updateWorkoutLogByIdEntry);
+router.put("/logs/:id", updateWorkoutLogByIdEntry); // working
 // DELETE /api/workouts/logs/:id - delete a workout log
-router.delete("/logs/:id", deleteWorkoutLogByIdEntry);
+router.delete("/logs/:id", deleteWorkoutLogByIdEntry); // working
 
 
 export default router;
