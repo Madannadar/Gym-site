@@ -1,4 +1,4 @@
-import { verifyAccessToken } from "../utils/jwt.utils.js";
+import { verifyAccessToken } from "../utils/jwt.util.js";
 
 function authenticate(req, res, next) {
   const authHeader = req.headers["authorization"];
@@ -30,4 +30,4 @@ function authenticate(req, res, next) {
   }
 }
 
-export { authenticate };
+export default authenticate;

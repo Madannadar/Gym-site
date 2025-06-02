@@ -15,6 +15,7 @@ import healthMatricRouter from "./routers/health_matric.router.js";
 import eventRouter from "./routers/event.router.js";
 import rateLimit from "express-rate-limit";
 import authRouter from "./routers/auth.router.js";
+import authenticate from "./middlewares/authenticate.middleware.js";
 // const rateLimit = require("express-rate-limit");
 dotenv.config();
 
@@ -44,7 +45,7 @@ app.use("/api/diet-templets", dietTempletRouter);
 app.use("/api/diet-logs", dietLogRouter);
 app.use("/api/workouts", workoutRouter);
 app.use("/api/users", userRouter);
-app.use("/api/attendence", attendenceRouter);
+app.use("/api/attendence", authenticate, attendenceRouter);
 app.use("/api/health-metrics", healthMatricRouter);
 app.use("/api/events", eventRouter);
 app.use("/api/auth", authRouter);
