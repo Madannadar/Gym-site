@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import rateLimit from "express-rate-limit";
 import { loggerMiddleware } from "./middlewares/logger.js";
 
 // Routers
@@ -13,7 +14,7 @@ import userRouter from "./routers/user.router.js";
 import attendenceRouter from "./routers/attendence.router.js";
 import healthMatricRouter from "./routers/health_matric.router.js";
 import eventRouter from "./routers/event.router.js";
-import rateLimit from "express-rate-limit";
+import leaderboardRouter from "./routers/leaderboard.router.js";
 import authRouter from "./routers/auth.router.js";
 import authenticate from "./middlewares/authenticate.middleware.js";
 // const rateLimit = require("express-rate-limit");
@@ -40,15 +41,16 @@ app.get("/", (req, res) => {
 
 // API routes
 app.use("/api/dishes", dishRouter);
-
 app.use("/api/diet-templets", dietTempletRouter);
-app.use("/api/diet-logs", dietLogRouter);
+app.use("/api/diet-logs", authenticate, dietLogRouter);
 app.use("/api/workouts", workoutRouter);
-app.use("/api/users", userRouter);
+app.use("/api/users", authenticate, userRouter);
 app.use("/api/attendence", authenticate, attendenceRouter);
-app.use("/api/health-metrics", healthMatricRouter);
+app.use("/api/health-metrics", authenticate, healthMatricRouter);
 app.use("/api/events", eventRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/leaderboard", leaderboardRouter);
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: "Route not found" });
