@@ -1,24 +1,24 @@
 import jwt from "jsonwebtoken";
-import config from "../config/index.js";
+import config from "../config/jwt.js";
 
 function generateAccessToken(payload) {
-  return jwt.sign(payload, config.jwt.accessTokenSecret, {
-    expiresIn: config.jwt.accessTokenExpiry,
+  return jwt.sign(payload, config.accessTokenSecret, {
+    expiresIn: config.tokenExpiry,
   });
 }
 
 function generateRefreshToken(payload) {
-  return jwt.sign(payload, config.jwt.refreshTokenSecret, {
-    expiresIn: config.jwt.refreshTokenExpiry,
+  return jwt.sign(payload, config.refreshTokenSecret, {
+    expiresIn: config.tokenExpiry,
   });
 }
 
 function verifyAccessToken(token) {
-  return jwt.verify(token, config.jwt.accessTokenSecret);
+  return jwt.verify(token, config.accessTokenSecret);
 }
 
 function verifyRefreshToken(token) {
-  return jwt.verify(token, config.jwt.refreshTokenSecret);
+  return jwt.verify(token, config.refreshTokenSecret);
 }
 
 export {

@@ -1,8 +1,8 @@
 import bcrypt from "bcrypt";
-import config from "../config/index.js";
+import config from "../config/hashSecurity.js";
 
 async function generatePasswordHash(password) {
-  const salt = await bcrypt.genSalt(config.security.saltRounds);
+  const salt = await bcrypt.genSalt(config.saltRounds);
   const hash = await bcrypt.hash(password, salt);
   return { hash, salt };
 }

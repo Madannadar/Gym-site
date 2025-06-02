@@ -1,8 +1,8 @@
-import db from "./db.js";
-import passwordUtils from "../utils/password.util.js";
+import db from "../config/db.js";
+import * as passwordUtils from "../utils/password.util.js";
 
 async function createUser({ email, password, firstName, lastName }) {
-  const { hash, salt } = await passwordUtils.hashPassword(password);
+  const { hash, salt } = await passwordUtils.generatePasswordHash(password);
 
   const result = await db.query(
     `INSERT INTO users (email, password_hash, salt, first_name, last_name)
@@ -41,7 +41,7 @@ async function markUserEmailVerified(userId) {
 }
 
 async function updateUserPassword(userId, newPassword) {
-  const { hash, salt } = await passwordUtils.hashPassword(newPassword);
+  const { hash, salt } = await passwordUtils.generatePasswordHash(newPassword);
 
   const result = await db.query(
     `UPDATE users

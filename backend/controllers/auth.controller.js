@@ -1,5 +1,6 @@
 import * as userModel from "../model/user.model.js";
 import * as tokenModel from "../model/token.model.js";
+import * as authModel from "../model/auth.model.js";
 import * as tokenService from "../services/token.service.js";
 import * as emailService from "../services/email.service.js";
 import * as passwordUtils from "../utils/password.util.js";
@@ -8,14 +9,14 @@ const registerUser = async (req, res) => {
   try {
     const { email, password, firstName, lastName } = req.body;
 
-    const existingUser = await userModel.findByEmail(email);
+    const existingUser = await authModel.getUserByEmail(email);
     if (existingUser) {
       return res
         .status(409)
         .json({ success: false, error: "Email already in use" });
     }
 
-    const user = await userModel.create({
+    const user = await authModel.createUser({
       email,
       password,
       firstName,
@@ -31,6 +32,7 @@ const registerUser = async (req, res) => {
       message: "User registered successfully. Please verify your email.",
     });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ success: false, error: "Registration failed" });
   }
 };
@@ -39,14 +41,14 @@ const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await userModel.findByEmail(email);
+    const user = await authModel.getUserByEmail(email);
     if (!user) {
       return res
         .status(401)
         .json({ success: false, error: "Invalid credentials" });
     }
 
-    const isValid = await passwordUtils.verifyPassword(
+    const isValid = await passwordUtils.isPasswordValid(
       password,
       user.password_hash,
       user.salt,
@@ -79,6 +81,7 @@ const loginUser = async (req, res) => {
       },
     });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ success: false, error: "Login failed" });
   }
 };
@@ -96,6 +99,7 @@ const refreshAccessToken = async (req, res) => {
       await tokenService.getNewAccessTokenUsingRefreshToken(refreshToken);
     res.json({ success: true, accessToken });
   } catch (error) {
+    console.log(error);
     res
       .status(403)
       .json({ success: false, error: "Invalid or expired refresh token" });
@@ -130,7 +134,7 @@ const verifyUserEmail = async (req, res) => {
       });
     }
 
-    await userModel.verifyEmail(verificationToken.user_id);
+    await authModel.markUserEmailVerified(verificationToken.user_id);
     await tokenModel.deleteEmailVerificationTokenById(verificationToken.id);
 
     res.json({ success: true, message: "Email verified successfully" });
@@ -145,7 +149,7 @@ const requestPasswordResetLink = async (req, res) => {
   try {
     const { email } = req.body;
 
-    const user = await userModel.findByEmail(email);
+    const user = await authModel.getUserByEmail(email);
     if (!user) {
       return res.status(404).json({ success: false, error: "User not found" });
     }
@@ -175,12 +179,13 @@ const resetUserPassword = async (req, res) => {
         .json({ success: false, error: "Invalid or expired reset token" });
     }
 
-    await userModel.updatePassword(resetToken.user_id, newPassword);
+    await authModel.updateUserPassword(resetToken.user_id, newPassword);
     await tokenModel.markPasswordResetTokenUsed(resetToken.id);
     await tokenModel.revokeAllRefreshTokensForUser(resetToken.user_id);
 
     res.json({ success: true, message: "Password reset successfully" });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ success: false, error: "Failed to reset password" });
   }
 };

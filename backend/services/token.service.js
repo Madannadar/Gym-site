@@ -1,7 +1,7 @@
 import * as jwtUtils from "../utils/jwt.util.js";
 import * as tokenModel from "../model/token.model.js";
 import * as userModel from "../model/user.model.js";
-
+import * as authModel from "../model/auth.model.js";
 /**
  * Issues both access and refresh tokens for a given user.
  * Stores the refresh token in the database.
@@ -29,13 +29,13 @@ async function issueTokenPairForUser(user) {
  * Validates a refresh token and returns a new access token if valid.
  */
 async function getNewAccessTokenUsingRefreshToken(refreshToken) {
-  const dbToken = await tokenModel.findRefreshToken(refreshToken);
+  const dbToken = await tokenModel.getValidRefreshToken(refreshToken);
   if (!dbToken) {
     throw new Error("Invalid refresh token");
   }
 
   const decoded = jwtUtils.verifyRefreshToken(refreshToken);
-  const user = await userModel.findById(decoded.userId);
+  const user = await authModel.getUserById(decoded.userId);
 
   if (!user) {
     throw new Error("User not found");
