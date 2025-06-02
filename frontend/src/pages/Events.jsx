@@ -1,10 +1,10 @@
 import React from "react";
 import { useState } from "react";
 
-import Discover from "../components/events/discover";
+import Discover from "../components/events/Discover.jsx";
 
 import EventsLogo from "../assets/logos/eventlogo";
-import MyEvents from "../components/events/myEvents";
+import MyEvents from "../components/events/MyEvents.jsx";
 import Host from "../components/events/hostEvent";
 
 export default function Events() {

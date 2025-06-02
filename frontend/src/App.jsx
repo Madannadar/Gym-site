@@ -9,10 +9,11 @@ import CustomDiet from './pages/CustomDiet.jsx'
 import NewMeal from './pages/NewMeal.jsx'
 import Attendance from './pages/Attendance.jsx'
 import TrainerAttendance from './pages/TrainerAttendance.jsx'
-import BMICalculator from './pages/BMICalculator.jsx'
+import BmiCalculator from './pages/BmiCalculator.jsx'
 import Workout from './pages/Workout.jsx'
-import Event from './pages/Event.jsx'
-import Leaderboard from './pages/Leaderboard.jsx'
+import Events from './pages/Events.jsx'
+import Leaderboards from './pages/Leaderboards.jsx'
+import EventLeaderboard from './components/events/EventLeaderboard.jsx'
 
 function App() {
   return (
@@ -27,10 +28,11 @@ function App() {
         <Route path="/new-meal" element={<NewMeal />} />
         <Route path="/user-attendance" element={<Attendance />} />
         <Route path="/trainer-attendance" element={<TrainerAttendance />} />
-        <Route path="/bmi-calculator" element={<BMICalculator />} />
+        <Route path="/bmi-calculator" element={<BmiCalculator />} />
         <Route path="/workouts" element={<Workout />} />
-        <Route path="/events" element={<Event />} />
-        <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/events" element={<Events />} />
+        <Route path="/leaderboard" element={<Leaderboards />} />
+        <Route path="/eventLeaderboard" element={<EventLeaderboard />} />
       </Routes>
     </Router>
   )
