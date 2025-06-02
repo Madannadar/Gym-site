@@ -1,0 +1,75 @@
+import express from "express";
+import {
+  recordExerciseEntry,
+  fetchAllExercisesList,
+  fetchExerciseByIdEntry,
+  updateExerciseByIdEntry,
+  deleteExerciseByIdEntry,
+  recordWorkoutEntry,
+  fetchAllWorkoutsList,
+  fetchWorkoutByIdEntry,
+  updateWorkoutByIdEntry,
+  deleteWorkoutByIdEntry,
+  recordWorkoutLogEntry,
+  fetchUserWorkoutLogsList,
+  fetchWorkoutLogByIdEntry,
+  updateWorkoutLogByIdEntry,
+  deleteWorkoutLogByIdEntry,
+  recordRegimentEntry,
+  fetchAllRegimentsList,
+  fetchRegimentByIdEntry,
+  updateRegimentByIdEntry,
+  deleteRegimentByIdEntry,
+} from "../controllers/workout.controller.js";
+
+const router = express.Router();
+
+// Exercise Routes
+// POST /api/workouts/exercises - create a new exercise
+router.post("/exercises", recordExerciseEntry);
+// GET /api/workouts/exercises - fetch all exercises
+router.get("/exercises", fetchAllExercisesList);
+// GET /api/workouts/exercises/:id - fetch an exercise by ID
+router.get("/exercises/:id", fetchExerciseByIdEntry);
+// PUT /api/workouts/exercises/:id - update an exercise
+router.put("/exercises/:id", updateExerciseByIdEntry);
+// DELETE /api/workouts/exercises/:id - delete an exercise
+router.delete("/exercises/:id", deleteExerciseByIdEntry);
+
+// Workout Routes
+// POST /api/workouts - create a new workout
+router.post("/", recordWorkoutEntry);
+// GET /api/workouts - fetch all workouts
+router.get("/", fetchAllWorkoutsList);
+// GET /api/workouts/:id - fetch a workout by ID
+router.get("/:id", fetchWorkoutByIdEntry);
+// PUT /api/workouts/:id - update a workout
+router.put("/:id", updateWorkoutByIdEntry);
+// DELETE /api/workouts/:id - delete a workout
+router.delete("/:id", deleteWorkoutByIdEntry);
+
+// Workout Log Routes
+// POST /api/workouts/logs - create a new workout log
+router.post("/logs", recordWorkoutLogEntry);
+// GET /api/workouts/logs/user/:userId - fetch workout logs by user
+router.get("/logs/user/:userId", fetchUserWorkoutLogsList);
+// GET /api/workouts/logs/:id - fetch a workout log by ID
+router.get("/logs/:id", fetchWorkoutLogByIdEntry);
+// PUT /api/workouts/logs/:id - update a workout log
+router.put("/logs/:id", updateWorkoutLogByIdEntry);
+// DELETE /api/workouts/logs/:id - delete a workout log
+router.delete("/logs/:id", deleteWorkoutLogByIdEntry);
+
+// Regiment Routes
+// POST /api/workouts/regiments - create a new regiment
+router.post("/regiments", recordRegimentEntry);
+// GET /api/workouts/regiments - fetch all regiments
+router.get("/regiments", fetchAllRegimentsList);
+// GET /api/workouts/regiments/:id - fetch a regiment by ID
+router.get("/regiments/:id", fetchRegimentByIdEntry);
+// PUT /api/workouts/regiments/:id - update a regiment
+router.put("/regiments/:id", updateRegimentByIdEntry);
+// DELETE /api/workouts/regiments/:id - delete a regiment
+router.delete("/regiments/:id", deleteRegimentByIdEntry);
+
+export default router;
