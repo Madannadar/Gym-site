@@ -11,8 +11,8 @@ import Attendance from './pages/Attendance.jsx'
 import TrainerAttendance from './pages/TrainerAttendance.jsx'
 import BMICalculator from './pages/BMICalculator.jsx'
 import Workout from './pages/Workout.jsx'
-import Event from './pages/Event.jsx'
-import Leaderboard from './pages/Leaderboard.jsx'
+import Event from './pages/AllEvents.jsx'
+import Leaderboard from './pages/Leaderboards.jsx'
 
 function App() {
   return (

@@ -7,7 +7,7 @@ import EventsLogo from "../assets/logos/eventlogo";
 import MyEvents from "../components/events/myEvents";
 import Host from "../components/events/hostEvent";
 
-export default function Events() {
+export default function AllEvents() {
   const [events, setEvents] = useState("discover");
 
   return (

@@ -4,8 +4,11 @@ import { useState } from "react";
 import BmiLogo from "../assets/logos/bmiLogo";
 
 export default function BmiCalculator() {
-  const [bmi, setBmi] = useState("34");
+  const [bmi, setBmi] = useState(null);
+  const [height, setHeight] = useState(null);
+  const [weight, setWeight] = useState(null);
   const [classification, setClassification] = useState("Obese");
+  const [color, setColor] = useState(null);
   const bmiData = [
     {
       bmi: 23.1,
@@ -63,6 +66,33 @@ export default function BmiCalculator() {
     },
   ];
 
+  const calculateBmi = (height, weight) => {
+    if (!height || !weight) {
+      alert("Please enter both height and weight.");
+      return;
+    }
+
+    const heightInMeters = height / 100; 
+    const bmiValue = (weight / (heightInMeters * heightInMeters)).toFixed(1);
+    setBmi(bmiValue);
+
+    let classification = "";
+    if (bmiValue < 18.5) {
+      classification = "Underweight";
+      setColor("red");
+    } else if (bmiValue >= 18.5 && bmiValue < 24.9) {
+      classification = "Normal weight";
+      setColor("green");
+    } else if (bmiValue >= 25 && bmiValue < 29.9) {
+      classification = "Overweight";
+      setColor("orange");
+    } else {
+      classification = "Obese";
+      setColor("red");
+    }
+    setClassification(classification);
+  }
+
   return (
     <div className="p-4 sm:p-6 max-w-lg mx-auto">
       <div className="p-6 bg-white shadow-lg rounded-lg border border-gray-200">
@@ -92,6 +122,7 @@ export default function BmiCalculator() {
             type="text"
             className="mt-1 block w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Enter your weight in kg"
+            onChange={(e) => setWeight(e.target.value) }
           />
         </div>
 
@@ -103,19 +134,22 @@ export default function BmiCalculator() {
             type="text"
             className="mt-1 block w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Enter your height in cm"
+            onChange={(e) => setHeight(e.target.value) }
           />
         </div>
 
-        <div className="flex justify-center gap-5 mt-5">
+        {/* is male female necessary? */}
+        {/* <div className="flex justify-center gap-5 mt-5">
           <button className="bg-gray-500 text-white text-sm px-4 py-2 w-1/2 sm:w-40 md:w-48 rounded-lg hover:bg-gray-600 transition duration-200">
             Male
           </button>
           <button className="bg-blue-500 text-white text-sm px-4 py-2 w-1/2 sm:w-40 md:w-48 rounded-lg hover:bg-blue-600 transition duration-200">
             Female
           </button>
-        </div>
+        </div> */}
 
-        <button className="mt-6 w-full py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-[#3588a2] transition duration-200 ease-in-out">
+        <button className="mt-6 w-full py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-[#3588a2] transition duration-200 ease-in-out"
+        onClick={() => calculateBmi(height, weight)}>
           CALCULATE
         </button>
 
@@ -125,8 +159,8 @@ export default function BmiCalculator() {
               YOUR BMI IS: {bmi}
             </h1>
             <h5 className="mt-3 text-lg">
-              Classification:{" "}
-              <span className="text-red-500"> {classification} </span>{" "}
+              Classification:
+              <span className={`text-${color}-500`}> {classification} </span>
             </h5>
           </div>
         )}
@@ -136,7 +170,7 @@ export default function BmiCalculator() {
         <h5>Past Records:</h5>
         {bmiData.map((entry, index) => (
           <div key={index} className="flex justify-between items-center mt-5">
-            {/* Colored dot + BMI */}
+            
             <div className="flex items-center space-x-2 w-1/3">
               <span
                 className={`h-3 w-3 rounded-full ${
@@ -152,12 +186,12 @@ export default function BmiCalculator() {
               <span className="text-lg font-semibold">{entry.bmi}</span>
             </div>
 
-            {/* Height, weight, gender */}
+            
             <div className="text-sm text-gray-600 w-1/3 text-center">
               {entry.height}cm • {entry.weight}kg • {entry.gender}
             </div>
 
-            {/* Date and Time */}
+            
             <div className="text-sm text-gray-500 w-1/3 text-right">
               {entry.date}, {entry.time}
             </div>

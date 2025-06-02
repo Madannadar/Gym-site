@@ -76,7 +76,7 @@ export default function Personal() {
           Weekly Stats:
         </p>
         <div class="h_line flex w-[70%] h-px ml-[11%] bg-gray-200 mb-2"></div>
-        <ul className="mb-[2%] p-6 sm:p-6">
+        <ul className="mb-[2%] p-15 sm:p-6 ">
           {weeklyStats.map((stat, index) => (
             <li key={index} className="stat-item flex items-center mb-[4%]">
               <span

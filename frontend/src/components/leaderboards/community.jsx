@@ -2,6 +2,7 @@ import React from "react";
 
 
 export default function Community() {
+  
   const communtiyLeaderboard = [
     { rank: 1, name: "Donald Trump", hours: 70, avatar: "👤", medal: "🥇" },
     { rank: 2, name: "Kamala Harris", hours: 69, avatar: "👩‍🦳", medal: "🥈" },
@@ -26,8 +27,8 @@ const topRanker = (rank) => {
 }
 
   return (
-    <div className="community flex w-full justify-center">
-      <section className="community-leaderboard flex flex-col w-[85%] bg-[#DAECF9] items-center pb-[4%] rounded-3xl lg:w-[70%]">
+    <div className="community flex justify-center md:w-4/5 lg:w-[65%] mx-auto">
+      <section className="community-leaderboard flex flex-col bg-[#DAECF9] items-center pb-4 rounded-3xl w-[85%] ">
         {
             communtiyLeaderboard.map((person,index) => ( 
                 <div className="communityCapsule flex w-[94%] bg-[white] items-center justify-between mt-[3%] mb-[0.5%] mx-[3%] rounded-[13px] " key={index}>
