@@ -1,3 +1,4 @@
+
 import { verifyAccessToken } from '../utils/jwt.util.js';
 
 function authenticate(req, res, next) {
@@ -40,6 +41,7 @@ function authenticate(req, res, next) {
     success: false,
     error: 'Authorization token or session required',
   });
+
 }
 
 export default authenticate;

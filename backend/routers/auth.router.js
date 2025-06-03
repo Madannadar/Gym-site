@@ -1,3 +1,4 @@
+
 import express from 'express';
 import passport from 'passport';
 import * as authController from '../controllers/auth.controller.js';
@@ -16,5 +17,7 @@ router.post('/reset-password', validateResetPassword, authController.resetUserPa
 // Google SSO routes
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 router.get('/google/callback', passport.authenticate('google', { session: true }), authController.googleLogin);
+
+
 
 export default router;

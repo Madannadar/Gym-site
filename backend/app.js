@@ -15,6 +15,9 @@ import eventRouter from './routers/event.router.js';
 import rateLimit from 'express-rate-limit';
 import authRouter from './routers/auth.router.js';
 import authenticate from './middlewares/authenticate.middleware.js';
+import leaderboardRouter from "./routers/leaderboard.router.js";
+
+
 
 dotenv.config();
 const app = express();
@@ -23,6 +26,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(loggerMiddleware);
+
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
@@ -31,28 +35,36 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
+
 });
 app.use(limiter);
 
 // Base route
-app.get('/', (req, res) => {
-  res.send('Gym Site API is running 🚀');
+app.get("/", (req, res) => {
+  res.send("Gym Site API is running 🚀");
+
 });
 
+
+
+
 // API routes
-app.use('/api/dishes', dishRouter);
-app.use('/api/diet-templets', dietTempletRouter);
-app.use('/api/diet-logs', dietLogRouter);
-app.use('/api/workouts', workoutRouter);
-app.use('/api/users', userRouter);
-app.use('/api/attendence', authenticate, attendenceRouter);
-app.use('/api/health-metrics', healthMatricRouter);
-app.use('/api/events', eventRouter);
-app.use('/api/auth', authRouter);
+app.use("/api/dishes", dishRouter);
+app.use("/api/diet-templets", dietTempletRouter);
+app.use("/api/diet-logs", authenticate, dietLogRouter);
+app.use("/api/workouts", workoutRouter);
+app.use("/api/users", authenticate, userRouter);
+app.use("/api/attendence", authenticate, attendenceRouter);
+app.use("/api/health-metrics", authenticate, healthMatricRouter);
+app.use("/api/events", eventRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/leaderboard", leaderboardRouter);
+
 
 // 404 handler
 app.use((req, res) => {

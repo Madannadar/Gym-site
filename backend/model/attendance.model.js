@@ -16,9 +16,11 @@ export const insertAttendance = async (user_id, qr_id) => {
 // Get all attendance logs
 export const getAllLogs = async () => {
   const result = await db.query(`
+
     SELECT al.*, u.first_name, u.last_name, q.valid_date
     FROM attendance_logs al
     JOIN users u ON u.id = al.user_id
+
     JOIN daily_qr_codes q ON q.qr_id = al.qr_id
     ORDER BY al.scanned_at DESC;
   `);
@@ -64,14 +66,17 @@ export const deleteTodaysLogByUserId = async (user_id) => {
   `,
     [user_id],
   );
+
   return result.rows;
 };
 
 export const getTodaysLogs = async () => {
   const result = await db.query(`
+
     SELECT al.*, u.first_name, u.last_name, q.valid_date
     FROM attendance_logs al
     JOIN users u ON u.id = al.user_id
+
     JOIN daily_qr_codes q ON q.qr_id = al.qr_id
     WHERE q.valid_date = CURRENT_DATE
     ORDER BY al.scanned_at DESC;
@@ -81,9 +86,11 @@ export const getTodaysLogs = async () => {
 
 export const getCurrentMonthLogs = async () => {
   const result = await db.query(`
+
     SELECT al.*, u.first_name, u.last_name, q.valid_date
     FROM attendance_logs al
     JOIN users u ON u.id = al.user_id
+
     JOIN daily_qr_codes q ON q.qr_id = al.qr_id
     WHERE DATE_TRUNC('month', q.valid_date) = DATE_TRUNC('month', CURRENT_DATE)
     ORDER BY al.scanned_at DESC;
@@ -94,9 +101,11 @@ export const getCurrentMonthLogs = async () => {
 export const getCurrentMonthLogsByUser = async (user_id) => {
   const result = await db.query(
     `
+
     SELECT al.*, u.first_name, u.last_name, q.valid_date
     FROM attendance_logs al
     JOIN users u ON u.id = al.user_id
+
     JOIN daily_qr_codes q ON q.qr_id = al.qr_id
     WHERE al.user_id = $1
       AND DATE_TRUNC('month', q.valid_date) = DATE_TRUNC('month', CURRENT_DATE)
@@ -104,10 +113,16 @@ export const getCurrentMonthLogsByUser = async (user_id) => {
   `,
     [user_id],
   );
+
   return result.rows;
 };
 
 // QR code handlers
+
+//
+//attendence qr code handlers
+//
+
 export const getTodayQR = async () => {
   const today = new Date().toISOString().split("T")[0];
   const { rows } = await db.query(

@@ -1,9 +1,11 @@
+
 import * as userModel from '../model/user.model.js';
 import * as tokenModel from '../model/token.model.js';
 import * as authModel from '../model/auth.model.js';
 import * as tokenService from '../services/token.service.js';
 import * as emailService from '../services/email.service.js';
 import * as passwordUtils from '../utils/password.util.js';
+
 
 const registerUser = async (req, res) => {
   try {
@@ -13,7 +15,9 @@ const registerUser = async (req, res) => {
     if (existingUser) {
       return res
         .status(409)
+
         .json({ success: false, error: 'Email already in use' });
+
     }
 
     const user = await authModel.createUser({
@@ -29,11 +33,13 @@ const registerUser = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully. Please verify your email.',
+
+      message: "User registered successfully. Please verify your email.",
     });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ success: false, error: 'Registration failed' });
+    res.status(500).json({ success: false, error: "Registration failed" });
+
   }
 };
 
@@ -45,7 +51,9 @@ const loginUser = async (req, res) => {
     if (!user) {
       return res
         .status(401)
+
         .json({ success: false, error: 'Invalid credentials' });
+
     }
 
     const isValid = await passwordUtils.isPasswordValid(
@@ -56,13 +64,17 @@ const loginUser = async (req, res) => {
     if (!isValid) {
       return res
         .status(401)
+
         .json({ success: false, error: 'Invalid credentials' });
+
     }
 
     if (!user.is_verified) {
       return res
         .status(403)
+
         .json({ success: false, error: 'Email not verified' });
+
     }
 
     const { accessToken, refreshToken } =
@@ -82,7 +94,9 @@ const loginUser = async (req, res) => {
     });
   } catch (error) {
     console.log(error);
+
     res.status(500).json({ success: false, error: 'Login failed' });
+
   }
 };
 
@@ -92,7 +106,9 @@ const refreshAccessToken = async (req, res) => {
     if (!refreshToken) {
       return res
         .status(400)
+
         .json({ success: false, error: 'Refresh token is required' });
+
     }
 
     const accessToken =
@@ -102,7 +118,9 @@ const refreshAccessToken = async (req, res) => {
     console.log(error);
     res
       .status(403)
+
       .json({ success: false, error: 'Invalid or expired refresh token' });
+
   }
 };
 
@@ -112,13 +130,15 @@ const logoutUser = async (req, res) => {
     if (!refreshToken) {
       return res
         .status(400)
-        .json({ success: false, error: 'Refresh token is required' });
+
+        .json({ success: false, error: "Refresh token is required" });
     }
 
     await tokenService.revokeSingleRefreshToken(refreshToken);
-    res.json({ success: true, message: 'Logged out successfully' });
+    res.json({ success: true, message: "Logged out successfully" });
   } catch (error) {
-    res.status(500).json({ success: false, error: 'Logout failed' });
+    res.status(500).json({ success: false, error: "Logout failed" });
+
   }
 };
 
@@ -130,18 +150,22 @@ const verifyUserEmail = async (req, res) => {
     if (!verificationToken) {
       return res.status(400).json({
         success: false,
+
         error: 'Invalid or expired verification token',
+
       });
     }
 
     await authModel.markUserEmailVerified(verificationToken.user_id);
     await tokenModel.deleteEmailVerificationTokenById(verificationToken.id);
 
-    res.json({ success: true, message: 'Email verified successfully' });
+
+    res.json({ success: true, message: "Email verified successfully" });
   } catch (error) {
     res
       .status(500)
-      .json({ success: false, error: 'Email verification failed' });
+      .json({ success: false, error: "Email verification failed" });
+
   }
 };
 
@@ -151,7 +175,9 @@ const requestPasswordResetLink = async (req, res) => {
 
     const user = await authModel.getUserByEmail(email);
     if (!user) {
+
       return res.status(404).json({ success: false, error: 'User not found' });
+
     }
 
     const resetToken = await tokenModel.generatePasswordResetToken(user.id);
@@ -159,12 +185,16 @@ const requestPasswordResetLink = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Password reset link sent to your email',
+
+      message: "Password reset link sent to your email",
+
     });
   } catch (error) {
     res
       .status(500)
-      .json({ success: false, error: 'Failed to request password reset' });
+
+      .json({ success: false, error: "Failed to request password reset" });
+
   }
 };
 
@@ -176,7 +206,9 @@ const resetUserPassword = async (req, res) => {
     if (!resetToken) {
       return res
         .status(400)
+
         .json({ success: false, error: 'Invalid or expired reset token' });
+
     }
 
     await authModel.updateUserPassword(resetToken.user_id, newPassword);
@@ -211,6 +243,7 @@ const googleLogin = async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).json({ success: false, error: 'Google login failed' });
+
   }
 };
 
@@ -222,5 +255,7 @@ export {
   verifyUserEmail,
   requestPasswordResetLink,
   resetUserPassword,
+
   googleLogin,
+
 };

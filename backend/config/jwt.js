@@ -3,7 +3,7 @@ dotenv.config();
 
 const jwtConfig = {
   accessTokenSecret: process.env.ACCESS_TOKEN_SECRET,
-  refreshTokenSecret: process.env.REFRESH_TOKEN_SECRET,
+  refreshTokenSecret: process.env.REFRESS_TOKEN_SECRET,
   tokenExpiry: process.env.EXPIRES_IN,
   OTPexpiresIn: process.env.OTP_EXPIRES_IN,
 };
