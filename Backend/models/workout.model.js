@@ -7,23 +7,25 @@ const recordExercise = async ({
   muscle_group,
   units,
   created_by,
+  intensity, // added
 }) => {
   const query = `
-    INSERT INTO exercises (name, description, muscle_group, units, created_by)
-    VALUES ($1, $2, $3, $4, $5)
+    INSERT INTO exercises (name, description, muscle_group, units, created_by, intensity)
+    VALUES ($1, $2, $3, $4, $5, $6)
     RETURNING *;
   `;
-  // Make sure units is an array if provided, else send null
   const values = [
     name,
     description,
     muscle_group,
     units && Array.isArray(units) ? units : null,
     created_by,
+    intensity, // added
   ];
   const { rows } = await pool.query(query, values);
   return rows[0];
 };
+
 
 const fetchAllExercises = async () => {
   const query = `

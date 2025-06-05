@@ -25,14 +25,33 @@ import {
 const recordExerciseEntry = async (req, res) => {
   try {
     const { name, description, muscle_group, units, created_by } = req.body;
-    // Validate inputs as needed before passing
+
+    // Lookup table for intensity
+    const intensityLookup = {
+      "Push-up": 3,
+      "Squat": 4,
+      "Deadlift": 5,
+      "Bench Press": 4,
+      "Plank": 2,
+      "Pull-up": 5,
+      "Jumping Jacks": 2,
+      "Bicep Curl": 3,
+      "Lunges": 3,
+      "Burpees": 5,
+    };
+
+    // Default intensity if not found
+    const intensity = intensityLookup[name] || 1;
+
     const exercise = await recordExercise({
       name,
       description,
       muscle_group,
       units,
       created_by,
+      intensity,
     });
+
     res.status(201).json({
       item: exercise,
       message: "Exercise recorded successfully",
@@ -42,6 +61,7 @@ const recordExerciseEntry = async (req, res) => {
     res.status(500).json({ error: { message: "Failed to record exercise" } });
   }
 };
+
 
 const fetchAllExercisesList = async (req, res) => {
   try {
