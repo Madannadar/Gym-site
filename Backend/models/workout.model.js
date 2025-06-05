@@ -26,7 +26,6 @@ const recordExercise = async ({
   return rows[0];
 };
 
-
 const fetchAllExercises = async () => {
   const query = `
     SELECT e.*, u.name AS created_by_name
@@ -37,7 +36,6 @@ const fetchAllExercises = async () => {
   const { rows } = await pool.query(query);
   return rows;
 };
-
 
 const fetchExerciseById = async (id) => {
   const query = `
@@ -50,21 +48,21 @@ const fetchExerciseById = async (id) => {
   return rows[0];
 };
 
-
 const updateExerciseById = async (
   id,
-  { name, description, muscle_group, units },
+  { name, description, muscle_group, units, intensity } // added intensity
 ) => {
   const query = `
     UPDATE exercises
     SET name = COALESCE($1, name),
         description = COALESCE($2, description),
         muscle_group = COALESCE($3, muscle_group),
-        units = COALESCE($4, units)
-    WHERE exercise_id = $5
+        units = COALESCE($4, units),
+        intensity = COALESCE($5, intensity) -- added intensity
+    WHERE exercise_id = $6
     RETURNING *;
   `;
-  const values = [name, description, muscle_group, units, id];
+  const values = [name, description, muscle_group, units, intensity, id];
   const { rows } = await pool.query(query, values);
   return rows[0];
 };
@@ -79,6 +77,7 @@ const deleteExerciseById = async (id) => {
   return rows[0];
 };
 
+
 // Workout Functions
 const recordWorkout = async ({
   name,
@@ -87,20 +86,16 @@ const recordWorkout = async ({
   structure,
   score,
 }) => {
-  // Extract all exercise_ids from structure array
   const exerciseIds = structure.map(item => item.exercise_id);
 
-  // Query to check if all exerciseIds exist in exercises table
   const checkQuery = `
-    SELECT exercise_id
+    SELECT exercise_id, intensity
     FROM exercises
     WHERE exercise_id = ANY($1)
   `;
   const { rows: existingExercises } = await pool.query(checkQuery, [exerciseIds]);
 
   const existingIds = existingExercises.map(e => e.exercise_id);
-
-  // Find missing ids
   const missingIds = exerciseIds.filter(id => !existingIds.includes(id));
 
   if (missingIds.length > 0) {
@@ -109,10 +104,26 @@ const recordWorkout = async ({
     );
   }
 
-  // If all exercise_ids valid, insert workout
+  // Step: Calculate numeric intensity (1–5 scale)
+  const intensityScale = {
+    low: 2,
+    medium: 3,
+    high: 5,
+  };
+
+  const numericIntensities = existingExercises
+    .map(e => intensityScale[e.intensity])
+    .filter(n => typeof n === 'number');
+
+  const avgIntensity =
+    numericIntensities.reduce((acc, val) => acc + val, 0) / numericIntensities.length || 1;
+
+  // Optional: round or keep as float
+  const finalIntensity = Math.min(5, Math.max(1, parseFloat(avgIntensity.toFixed(2))));
+
   const insertQuery = `
-    INSERT INTO workouts (name, created_by, description, structure, score)
-    VALUES ($1, $2, $3, $4, $5)
+    INSERT INTO workouts (name, created_by, description, structure, score, intensity)
+    VALUES ($1, $2, $3, $4, $5, $6)
     RETURNING *;
   `;
   const values = [
@@ -121,6 +132,7 @@ const recordWorkout = async ({
     description,
     JSON.stringify(structure),
     score,
+    finalIntensity,
   ];
   const { rows } = await pool.query(insertQuery, values);
   return rows[0];
@@ -128,7 +140,7 @@ const recordWorkout = async ({
 
 const fetchAllWorkouts = async () => {
   const query = `
-    SELECT w.*, u.name as created_by_name
+    SELECT w.*, u.name AS created_by_name
     FROM workouts w
     LEFT JOIN users u ON w.created_by = u.user_id
     ORDER BY w.created_at DESC;
@@ -137,10 +149,9 @@ const fetchAllWorkouts = async () => {
   return rows;
 };
 
-
 const fetchWorkoutById = async (id) => {
   const workoutQuery = `
-    SELECT w.*, u.name as created_by_name
+    SELECT w.*, u.name AS created_by_name
     FROM workouts w
     LEFT JOIN users u ON w.created_by = u.user_id
     WHERE w.workout_id = $1;
@@ -149,13 +160,15 @@ const fetchWorkoutById = async (id) => {
   if (workoutResult.rows.length === 0) return null;
 
   const workout = workoutResult.rows[0];
-  const exerciseIds = workout.structure
-    .map((item) => item.exercise_id)
-    .filter((id) => id);
+  const structure = workout.structure;
+
+  const exerciseIds = Array.isArray(structure)
+    ? structure.map(item => item.exercise_id).filter(Boolean)
+    : [];
 
   if (exerciseIds.length > 0) {
     const exercisesQuery = `
-      SELECT exercise_id, name, description, muscle_group, units
+      SELECT exercise_id, name, description, muscle_group, units, intensity
       FROM exercises
       WHERE exercise_id = ANY($1);
     `;
@@ -165,7 +178,7 @@ const fetchWorkoutById = async (id) => {
       return acc;
     }, {});
 
-    workout.structure = workout.structure.map((item) => ({
+    workout.structure = structure.map(item => ({
       ...item,
       exercise_details: exercisesMap[item.exercise_id] || null,
     }));
@@ -174,26 +187,53 @@ const fetchWorkoutById = async (id) => {
   return workout;
 };
 
+
 const updateWorkoutById = async (
   id,
-  { name, description, structure, score },
+  { name, description, structure, score }
 ) => {
+  let updatedIntensity = null;
+
+  if (structure) {
+    const exerciseIds = structure.map(item => item.exercise_id);
+    const { rows: existingExercises } = await pool.query(
+      `SELECT intensity FROM exercises WHERE exercise_id = ANY($1)`,
+      [exerciseIds]
+    );
+
+    const intensityScale = { low: 2, medium: 3, high: 5 };
+    const numericIntensities = existingExercises
+      .map(e => intensityScale[e.intensity])
+      .filter(n => typeof n === 'number');
+
+    if (numericIntensities.length > 0) {
+      const avg =
+        numericIntensities.reduce((acc, val) => acc + val, 0) /
+        numericIntensities.length;
+      updatedIntensity = parseFloat(Math.min(5, Math.max(1, avg)).toFixed(2));
+    }
+  }
+
   const query = `
     UPDATE workouts
     SET name = COALESCE($1, name),
         description = COALESCE($2, description),
         structure = COALESCE($3, structure),
-        score = COALESCE($4, score)
-    WHERE workout_id = $5
+        score = COALESCE($4, score),
+        intensity = COALESCE($5, intensity)
+    WHERE workout_id = $6
     RETURNING *;
   `;
+
   const values = [
     name,
     description,
     structure ? JSON.stringify(structure) : null,
     score,
+    updatedIntensity,
     id,
   ];
+
   const { rows } = await pool.query(query, values);
   return rows[0];
 };
@@ -207,6 +247,8 @@ const deleteWorkoutById = async (id) => {
   const { rows } = await pool.query(query, [id]);
   return rows[0];
 };
+
+
 
 const checkExists = async (table, idName, id) => {
   const query = `SELECT 1 FROM ${table} WHERE ${idName} = $1 LIMIT 1`;
@@ -269,8 +311,6 @@ const recordWorkoutLog = async ({
   const { rows } = await pool.query(query, values);
   return rows[0];
 };
-
-
 
 const fetchUserWorkoutLogs = async (user_id, limit = 50, offset = 0) => {
   const query = `
@@ -342,53 +382,54 @@ const recordRegiment = async ({
   description,
   workout_structure,
 }) => {
-  // Extract all workout_ids from workout_structure array
-  const workoutIds = workout_structure.map(day => day.workout_id);
-
-  // Query to check if all workoutIds exist in workouts table
-  const checkQuery = `
-    SELECT workout_id
-    FROM workouts
-    WHERE workout_id = ANY($1)
-  `;
-  const { rows: existingWorkouts } = await pool.query(checkQuery, [workoutIds]);
-
-  const existingIds = existingWorkouts.map(w => w.workout_id);
-
-  // Find missing ids
-  const missingIds = workoutIds.filter(id => !existingIds.includes(id));
-
-  if (missingIds.length > 0) {
-    throw new Error(
-      `Invalid workout_id(s) in workout_structure: ${missingIds.join(', ')}`
-    );
+  // Step 1: Validate creator exists
+  if (!(await checkExists("users", "user_id", created_by))) {
+    throw new Error(`User with id ${created_by} does not exist.`);
   }
 
-  // If all workout_ids valid, insert regiment
+  // Step 2: Extract all workout_ids from workout_structure
+  const workoutIds = workout_structure.map((day) => day.workout_id);
+
+  // Step 3: Fetch intensity of all workouts
+  const query = `
+    SELECT workout_id, intensity
+    FROM workouts
+    WHERE workout_id = ANY($1);
+  `;
+  const { rows: workouts } = await pool.query(query, [workoutIds]);
+
+  const existingWorkoutIds = workouts.map((w) => w.workout_id);
+  const missingWorkoutIds = workoutIds.filter(
+    (id) => !existingWorkoutIds.includes(id)
+  );
+
+  if (missingWorkoutIds.length > 0) {
+    throw new Error(`Workout ID(s) not found: ${missingWorkoutIds.join(", ")}`);
+  }
+
+  // Step 4: Compute average intensity (1–5)
+  const intensities = workouts.map((w) => Number(w.intensity) || 0);
+  const averageIntensity =
+    intensities.reduce((acc, val) => acc + val, 0) / intensities.length;
+
+  // Step 5: Insert regiment
   const insertQuery = `
     INSERT INTO regiments (
-      created_by,
-      name,
-      description,
-      workout_structure
-    )
-    VALUES ($1, $2, $3, $4)
+      created_by, name, description, workout_structure, intensity
+    ) VALUES ($1, $2, $3, $4, $5)
     RETURNING *;
   `;
-
   const values = [
     created_by,
     name,
     description,
-    JSON.stringify(workout_structure)
+    JSON.stringify(workout_structure),
+    averageIntensity,
   ];
 
   const { rows } = await pool.query(insertQuery, values);
   return rows[0];
 };
-
-
-
 
 const fetchAllRegiments = async () => {
   const query = `
@@ -399,6 +440,7 @@ const fetchAllRegiments = async () => {
       r.name,
       r.description,
       r.workout_structure,
+      r.intensity,
       r.created_at
     FROM regiments r
     LEFT JOIN users u ON r.created_by = u.user_id
@@ -408,10 +450,9 @@ const fetchAllRegiments = async () => {
   return rows;
 };
 
-
 const fetchRegimentById = async (id) => {
   const regimentQuery = `
-    SELECT r.*, u.name  as created_by_name
+    SELECT r.*, u.name AS created_by_name
     FROM regiments r
     LEFT JOIN users u ON r.created_by = u.user_id
     WHERE r.regiment_id = $1;
@@ -426,7 +467,7 @@ const fetchRegimentById = async (id) => {
 
   if (workoutIds.length > 0) {
     const workoutsQuery = `
-      SELECT workout_id, name, description, structure, score
+      SELECT workout_id, name, description, structure, score, intensity
       FROM workouts
       WHERE workout_id = ANY($1);
     `;
@@ -445,24 +486,48 @@ const fetchRegimentById = async (id) => {
   return regiment;
 };
 
-const updateRegimentById = async (
-  id,
-  { name, description, workout_structure },
-) => {
+// Helper to calculate average intensity
+const calculateAverageIntensity = async (workoutStructure) => {
+  const workoutIds = workoutStructure.map((w) => w.workout_id);
+  const query = `
+    SELECT intensity
+    FROM workouts
+    WHERE workout_id = ANY($1);
+  `;
+  const { rows } = await pool.query(query, [workoutIds]);
+  const intensities = rows.map((row) => Number(row.intensity) || 0);
+
+  return intensities.length > 0
+    ? parseFloat(
+        (intensities.reduce((acc, val) => acc + val, 0) / intensities.length).toFixed(2)
+      )
+    : 0;
+};
+
+const updateRegimentById = async (id, { name, description, workout_structure }) => {
+  // Calculate new intensity if workout_structure is provided
+  const intensity = workout_structure
+    ? await calculateAverageIntensity(workout_structure)
+    : null;
+
   const query = `
     UPDATE regiments
     SET name = COALESCE($1, name),
         description = COALESCE($2, description),
-        workout_structure = COALESCE($3, workout_structure)
-    WHERE regiment_id = $4
+        workout_structure = COALESCE($3, workout_structure),
+        intensity = COALESCE($4, intensity)
+    WHERE regiment_id = $5
     RETURNING *;
   `;
+
   const values = [
     name,
     description,
     workout_structure ? JSON.stringify(workout_structure) : null,
+    intensity,
     id,
   ];
+
   const { rows } = await pool.query(query, values);
   return rows[0];
 };
@@ -476,7 +541,6 @@ const deleteRegimentById = async (id) => {
   const { rows } = await pool.query(query, [id]);
   return rows[0];
 };
-
 export {
   recordExercise,
   fetchAllExercises,

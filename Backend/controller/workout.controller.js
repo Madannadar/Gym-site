@@ -178,11 +178,11 @@ const recordWorkoutEntry = async (req, res) => {
       score,
     });
 
-    // Extract all exercise_ids from structure
     const exerciseIds = structure.map((item) => item.exercise_id);
 
     res.status(201).json({
       item: workout,
+      intensity: workout.intensity, // ✅ Include intensity in response
       exercise_ids: exerciseIds,
       message: 'Workout recorded successfully',
     });
@@ -200,7 +200,6 @@ const recordWorkoutEntry = async (req, res) => {
     });
   }
 };
-
 
 const fetchAllWorkoutsList = async (req, res) => {
   try {
