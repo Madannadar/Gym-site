@@ -124,9 +124,11 @@ CREATE TABLE exercises (
   units TEXT[] CHECK (
     units IS NULL OR units <@ ARRAY['reps', 'weight', 'time']
   ),
+  intensity INT CHECK (intensity BETWEEN 1 AND 5),
   created_by INT REFERENCES users(user_id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
 
 
 
@@ -139,8 +141,10 @@ CREATE TABLE IF NOT EXISTS workouts (
   description TEXT,
   structure JSONB NOT NULL CHECK (jsonb_typeof(structure) = 'array'),
   score NUMERIC,
+  intensity NUMERIC CHECK (intensity >= 1 AND intensity <= 5),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
 
 
 /*example: 
@@ -234,6 +238,7 @@ CREATE TABLE IF NOT EXISTS regiments (
   name TEXT NOT NULL,
   description TEXT,
   workout_structure JSONB NOT NULL, -- e.g., [{ name: "Day 1", workout_id: 1 }]
+  intensity NUMERIC CHECK (intensity >= 1 AND intensity <= 5), -- average workout intensity (1–5)
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
