@@ -193,26 +193,28 @@ export async function checkAndPromoteUsers() {
   `;
   const users = await db.query(usersQuery);
   
-  const twoWeeksAgo = new Date();
-  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+  const currentDate = new Date();
+  const oneWeekAgo = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const twoWeeksAgo = new Date(currentDate.getTime() - 14 * 24 * 60 * 60 * 1000);
   
   for (const user of users.rows) {
     const userId = user.user_id;
     const currentDays = user.days_per_week;
     
     const attendanceQuery = `
-      SELECT COUNT(DISTINCT DATE(scanned_at)) as days
+      SELECT
+        COUNT(DISTINCT CASE WHEN scanned_at >= $2 THEN DATE(scanned_at) END) as recent_week_days,
+        COUNT(DISTINCT CASE WHEN scanned_at >= $3 AND scanned_at < $2 THEN DATE(scanned_at) END) as prior_week_days
       FROM attendance_logs
-      WHERE user_id = $1 AND scanned_at >= $2 AND is_valid = TRUE
-      GROUP BY DATE_TRUNC('week', scanned_at);
+      WHERE user_id = $1 AND scanned_at >= $3 AND is_valid = TRUE;
     `;
-    const attendanceResult = await db.query(attendanceQuery, [userId, twoWeeksAgo]);
+    const attendanceResult = await db.query(attendanceQuery, [userId, oneWeekAgo, twoWeeksAgo]);
     
-    const weeks = attendanceResult.rows;
-    console.log(`User ${userId}: Current days_per_week=${currentDays}, Attendance weeks=${JSON.stringify(weeks)}`);
+    const { recent_week_days, prior_week_days } = attendanceResult.rows[0];
+    console.log(`User ${userId}: Current days_per_week=${currentDays}, Recent week=${recent_week_days} days, Prior week=${prior_week_days} days`);
     
-    if (weeks.length >= 2 && weeks.every(week => week.days > currentDays)) {
-      const newDays = Math.min(7, Math.max(...weeks.map(w => w.days)));
+    if (recent_week_days > currentDays && prior_week_days > currentDays) {
+      const newDays = Math.min(7, Math.max(recent_week_days, prior_week_days));
       console.log(`Promoting user ${userId} to days_per_week=${newDays}`);
       const points = await calculateWorkoutPoints(userId, twoWeeksAgo, new Date());
       await updateLeaderboard({
@@ -223,8 +225,9 @@ export async function checkAndPromoteUsers() {
         regiment_id: null,
         event_id: null
       });
+      console.log(`User ${userId}: Promoted to days_per_week=${newDays}, new_score=${points}`);
     } else {
-      console.log(`User ${userId}: No promotion (weeks=${weeks.length}, days=${weeks.map(w => w.days).join(',')})`);
+      console.log(`User ${userId}: No promotion (recent=${recent_week_days}, prior=${prior_week_days})`);
     }
   }
 }
