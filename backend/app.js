@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import session from 'express-session';
+import './cron.js';
 import passport from './config/passport.js';
 import { loggerMiddleware } from './middlewares/logger.js';
 import dishRouter from './routers/dish.router.js';

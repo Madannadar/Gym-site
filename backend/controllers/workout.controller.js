@@ -24,18 +24,40 @@ import {
 const recordExerciseEntry = async (req, res) => {
   try {
     const { name, description, muscle_group, units, created_by } = req.body;
+
+    const intensityLookup = {
+      "Push-up": 3,
+      "Squat": 4,
+      "Deadlift": 5,
+      "Bench Press": 4,
+      "Plank": 2,
+      "Pull-up": 5,
+      "Jumping Jacks": 2,
+      "Bicep Curl": 3,
+      "Lunges": 3,
+      "Burpees": 5,
+    };
+
+    const intensity = intensityLookup[name] || 1;
+
     const exercise = await recordExercise({
       name,
       description,
       muscle_group,
       units,
       created_by,
+      intensity,
     });
-    res
-      .status(201)
-      .json({ item: exercise, message: "Exercise recorded successfully" });
+
+    res.status(201).json({
+      item: exercise,
+      message: "Exercise recorded successfully",
+    });
   } catch (err) {
     console.error("❌ Record Exercise Error:", err.stack);
+    if (err.message.includes("already present")) {
+      return res.status(400).json({ error: { message: err.message } });
+    }
     res.status(500).json({ error: { message: "Failed to record exercise" } });
   }
 };
@@ -77,6 +99,9 @@ const updateExerciseByIdEntry = async (req, res) => {
     res.json({ item: exercise, message: "Exercise updated successfully" });
   } catch (err) {
     console.error("❌ Update Exercise Error:", err.stack);
+    if (err.message.includes("already present")) {
+      return res.status(400).json({ error: { message: err.message } });
+    }
     res.status(500).json({ error: { message: "Failed to update exercise" } });
   }
 };
@@ -93,9 +118,53 @@ const deleteExerciseByIdEntry = async (req, res) => {
   }
 };
 
+const validateWorkoutStructure = (structure) => {
+  if (!Array.isArray(structure)) return false;
+
+  for (const item of structure) {
+    if (
+      typeof item !== 'object' ||
+      !item.exercise_id ||
+      typeof item.sets !== 'object' ||
+      Array.isArray(item.sets)
+    ) {
+      return false;
+    }
+
+    for (const key in item.sets) {
+      const set = item.sets[key];
+      if (
+        typeof set !== 'object' ||
+        (!('reps' in set) && !('weight' in set) && !('time' in set))
+      ) {
+        return false;
+      }
+    }
+
+    if (item.weight_unit && !['kg', 'lbs'].includes(item.weight_unit)) {
+      return false;
+    }
+
+    if (item.time_unit && !['seconds', 'minutes'].includes(item.time_unit)) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
 const recordWorkoutEntry = async (req, res) => {
   try {
     const { name, created_by, description, structure, score } = req.body;
+
+    if (!validateWorkoutStructure(structure)) {
+      return res.status(400).json({
+        error: {
+          message: 'Invalid structure format. Please ensure it follows the schema rules.',
+        },
+      });
+    }
+
     const workout = await recordWorkout({
       name,
       created_by,
@@ -103,12 +172,24 @@ const recordWorkoutEntry = async (req, res) => {
       structure,
       score,
     });
-    res
-      .status(201)
-      .json({ item: workout, message: "Workout recorded successfully" });
+
+    const exerciseIds = structure.map((item) => item.exercise_id);
+
+    res.status(201).json({
+      item: workout,
+      intensity: workout.intensity,
+      exercise_ids: exerciseIds,
+      message: 'Workout recorded successfully',
+    });
   } catch (err) {
-    console.error("❌ Record Workout Error:", err.stack);
-    res.status(500).json({ error: { message: "Failed to record workout" } });
+    console.error('❌ Record Workout Error:', err.stack);
+    if (err.message.includes("already present")) {
+      return res.status(400).json({ error: { message: err.message } });
+    }
+    if (err.message.startsWith('Invalid exercise_id')) {
+      return res.status(400).json({ error: { message: err.message } });
+    }
+    res.status(500).json({ error: { message: 'Failed to record workout' } });
   }
 };
 
@@ -149,6 +230,9 @@ const updateWorkoutByIdEntry = async (req, res) => {
     res.json({ item: workout, message: "Workout updated successfully" });
   } catch (err) {
     console.error("❌ Update Workout Error:", err.stack);
+    if (err.message.includes("already present")) {
+      return res.status(400).json({ error: { message: err.message } });
+    }
     res.status(500).json({ error: { message: "Failed to update workout" } });
   }
 };
@@ -165,6 +249,42 @@ const deleteWorkoutByIdEntry = async (req, res) => {
   }
 };
 
+function validateActualWorkout(actualWorkout) {
+  if (!Array.isArray(actualWorkout)) return false;
+
+  return actualWorkout.every(exercise => {
+    if (
+      typeof exercise !== 'object' ||
+      exercise === null ||
+      !('exercise_id' in exercise) ||
+      typeof exercise.sets !== 'object' ||
+      exercise.sets === null ||
+      Array.isArray(exercise.sets)
+    ) {
+      return false;
+    }
+
+    const validSets = Object.values(exercise.sets).every(set => {
+      if (typeof set !== 'object' || set === null) return false;
+      return (
+        'reps' in set ||
+        'weight' in set ||
+        'time' in set
+      );
+    });
+
+    const validWeightUnit =
+      !('weight_unit' in exercise) ||
+      ['kg', 'lbs'].includes(exercise.weight_unit);
+
+    const validTimeUnit =
+      !('time_unit' in exercise) ||
+      ['seconds', 'minutes'].includes(exercise.time_unit);
+
+    return validSets && validWeightUnit && validTimeUnit;
+  });
+}
+
 const recordWorkoutLogEntry = async (req, res) => {
   try {
     const {
@@ -176,6 +296,11 @@ const recordWorkoutLogEntry = async (req, res) => {
       actual_workout,
       score,
     } = req.body;
+
+    if (!validateActualWorkout(actual_workout)) {
+      return res.status(400).json({ error: { message: "Invalid actual_workout structure" } });
+    }
+
     const log = await recordWorkoutLog({
       user_id,
       regiment_id,
@@ -185,14 +310,11 @@ const recordWorkoutLogEntry = async (req, res) => {
       actual_workout,
       score,
     });
-    res
-      .status(201)
-      .json({ item: log, message: "Workout log recorded successfully" });
+
+    res.status(201).json({ item: log, message: "Workout log recorded successfully" });
   } catch (err) {
     console.error("❌ Record Workout Log Error:", err.stack);
-    res
-      .status(500)
-      .json({ error: { message: "Failed to record workout log" } });
+    res.status(500).json({ error: { message: "Failed to record workout log" } });
   }
 };
 
@@ -204,9 +326,7 @@ const fetchUserWorkoutLogsList = async (req, res) => {
     res.json({ items: logs, count: logs.length });
   } catch (err) {
     console.error("❌ Fetch Workout Logs Error:", err.stack);
-    res
-      .status(500)
-      .json({ error: { message: "Failed to fetch workout logs" } });
+    res.status(500).json({ error: { message: "Failed to fetch workout logs" } });
   }
 };
 
@@ -214,9 +334,7 @@ const fetchWorkoutLogByIdEntry = async (req, res) => {
   try {
     const log = await fetchWorkoutLogById(req.params.id);
     if (!log)
-      return res
-        .status(404)
-        .json({ error: { message: "Workout log not found" } });
+      return res.status(404).json({ error: { message: "Workout log not found" } });
     res.json({ item: log });
   } catch (err) {
     console.error("❌ Fetch Workout Log Error:", err.stack);
@@ -230,15 +348,11 @@ const updateWorkoutLogByIdEntry = async (req, res) => {
     const { actual_workout, score } = req.body;
     const log = await updateWorkoutLogById(id, { actual_workout, score });
     if (!log)
-      return res
-        .status(404)
-        .json({ error: { message: "Workout log not found" } });
+      return res.status(404).json({ error: { message: "Workout log not found" } });
     res.json({ item: log, message: "Workout log updated successfully" });
   } catch (err) {
     console.error("❌ Update Workout Log Error:", err.stack);
-    res
-      .status(500)
-      .json({ error: { message: "Failed to update workout log" } });
+    res.status(500).json({ error: { message: "Failed to update workout log" } });
   }
 };
 
@@ -246,32 +360,34 @@ const deleteWorkoutLogByIdEntry = async (req, res) => {
   try {
     const log = await deleteWorkoutLogById(req.params.id);
     if (!log)
-      return res
-        .status(404)
-        .json({ error: { message: "Workout log not found" } });
+      return res.status(404).json({ error: { message: "Workout log not found" } });
     res.json({ message: "Workout log deleted successfully", item: log });
   } catch (err) {
     console.error("❌ Delete Workout Log Error:", err.stack);
-    res
-      .status(500)
-      .json({ error: { message: "Failed to delete workout log" } });
+    res.status(500).json({ error: { message: "Failed to delete workout log" } });
   }
 };
 
 const recordRegimentEntry = async (req, res) => {
   try {
     const { created_by, name, description, workout_structure } = req.body;
+
     const regiment = await recordRegiment({
       created_by,
       name,
       description,
       workout_structure,
     });
-    res
-      .status(201)
-      .json({ item: regiment, message: "Regiment recorded successfully" });
+
+    res.status(201).json({
+      item: regiment,
+      message: "Regiment recorded successfully",
+    });
   } catch (err) {
     console.error("❌ Record Regiment Error:", err.stack);
+    if (err.message.includes("already present")) {
+      return res.status(400).json({ error: { message: err.message } });
+    }
     res.status(500).json({ error: { message: "Failed to record regiment" } });
   }
 };
@@ -279,7 +395,7 @@ const recordRegimentEntry = async (req, res) => {
 const fetchAllRegimentsList = async (req, res) => {
   try {
     const regiments = await fetchAllRegiments();
-    res.json({ items: regiments, count: regiments.length });
+    res.status(200).json({ items: regiments, count: regiments.length });
   } catch (err) {
     console.error("❌ Fetch Regiments Error:", err.stack);
     res.status(500).json({ error: { message: "Failed to fetch regiments" } });
@@ -312,6 +428,9 @@ const updateRegimentByIdEntry = async (req, res) => {
     res.json({ item: regiment, message: "Regiment updated successfully" });
   } catch (err) {
     console.error("❌ Update Regiment Error:", err.stack);
+    if (err.message.includes("already present")) {
+      return res.status(400).json({ error: { message: err.message } });
+    }
     res.status(500).json({ error: { message: "Failed to update regiment" } });
   }
 };
