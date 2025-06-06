@@ -3,7 +3,7 @@ import { useState } from "react";
 // import BmiLogo from "../assets/images/bmiLogo";
 import BmiLogo from "../assets/logos/bmiLogo";
 
-export default function BmiCalculator() {
+export default function BMICalculator() {
   const [bmi, setBmi] = useState(null);
   const [height, setHeight] = useState(null);
   const [weight, setWeight] = useState(null);
@@ -91,6 +91,7 @@ export default function BmiCalculator() {
       setColor("red");
     }
     setClassification(classification);
+    console.log(color);
   }
 
   return (
