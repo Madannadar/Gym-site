@@ -26,7 +26,7 @@ const router = express.Router();
 
 // Exercise Routes
 // POST /api/workouts/exercises - create a new exercise
-router.post("/exercises", recordExerciseEntry); // working
+router.post("/exercises", recordExerciseEntry); // working  // frontend too 
 // GET /api/workouts/exercises - fetch all exercises
 router.get("/exercises", fetchAllExercisesList); // working
 // GET /api/workouts/exercises/:id - fetch an exercise by ID

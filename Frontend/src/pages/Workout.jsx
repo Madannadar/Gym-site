@@ -1,9 +1,9 @@
-const Workout = () => {
-  return (
-    <div>
-      workout page
-    </div>
-  )
-}
+// const Workout = () => {
+//   return (
+//     <div>
+//       workout page
+//     </div>
+//   )
+// }
 
-export default Workout
+// export default Workout

@@ -1,15 +1,8 @@
-import './App.css'
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
-import Workout from './pages/workout'
-import Home from './pages/Home'
+import React from 'react';
+import AddExercise from './pages/AddExercise';
 
-function App() {
-  return (
-    <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/workouts" element={<Workout />} />
-    </Routes>
-  )
-}
+const App = () => {
+  return <AddExercise />;
+};
 
-export default App
+export default App;
