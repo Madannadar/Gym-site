@@ -1,14 +1,15 @@
 import cron from 'node-cron';
-import { updateAllScores, promoteUsersController, getActiveDaysPerWeekController } from './controllers/leaderboard.controller.js';
+import { updateAllScores, promoteUsersController, getActiveDaysPerWeekController, resetAllScores } from './controllers/leaderboard.controller.js';
+import db from './config/db.js';
 
 cron.schedule('0 22 * * *', async () => {
-  console.log('Updating leaderboard scores at 10 PM...');
+  console.log('Updating leaderboard scores at 10 PM IST...');
   try {
     // Update personal leaderboard
     await updateAllScores({ body: { type: 'personal' } }, { json: () => {} });
     
     // Update community leaderboards for active days
-    const days = await getActiveDaysPerWeekController();
+    const { days } = await getActiveDaysPerWeekController({}, { json: (data) => data });
     for (const daysPerWeek of days) {
       await updateAllScores({ body: { type: 'community', daysPerWeek } }, { json: () => {} });
     }
@@ -20,9 +21,21 @@ cron.schedule('0 22 * * *', async () => {
     }
     
     // Check promotions
-    await promoteUsersController();
+    await promoteUsersController({}, { json: () => {} });
     console.log('Leaderboard scores and promotions updated');
   } catch (err) {
     console.error('Cron job error:', err.message);
+  }
+});
+
+cron.schedule('0 0 1 1,4,7,10 *', async () => {
+  console.log('Resetting leaderboards at midnight on Jan 1, Apr 1, Jul 1, Oct 1...');
+  try {
+    await resetAllScores({ body: { type: 'personal' } }, { json: () => {} });
+    await resetAllScores({ body: { type: 'community' } }, { json: () => {} });
+    await resetAllScores({ body: { type: 'event' } }, { json: () => {} });
+    console.log('Leaderboards reset');
+  } catch (err) {
+    console.error('Cron job reset error:', err.message);
   }
 });

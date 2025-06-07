@@ -28,13 +28,23 @@ export async function calculateWorkoutPoints(userId, startDate, endDate) {
     }
   }
   
-  const activeDaysQuery = `
-    SELECT COUNT(DISTINCT DATE(scanned_at)) as active_days
-    FROM attendance_logs
-    WHERE user_id = $1 AND scanned_at BETWEEN $2 AND $3 AND is_valid = TRUE;
+  const leaderboardQuery = `
+    SELECT days_per_week
+    FROM leaderboard
+    WHERE user_id = $1 AND leaderboard_type = 'community';
   `;
-  const activeDaysResult = await db.query(activeDaysQuery, [userId, startDate, endDate]);
-  const activeDays = activeDaysResult.rows[0]?.active_days || 0;
+  const leaderboardResult = await db.query(leaderboardQuery, [userId]);
+  const daysPerWeek = leaderboardResult.rows[0]?.days_per_week || 1; // Default to 1 if not found
+  
+  const activeDaysQuery = `
+    SELECT COUNT(DISTINCT DATE(scanned_at)) as days
+    FROM attendance_logs
+    WHERE user_id = $1 AND scanned_at BETWEEN $2 AND $3 AND is_valid = TRUE
+    GROUP BY DATE_TRUNC('week', scanned_at)
+    HAVING COUNT(DISTINCT DATE(scanned_at)) >= $4;
+  `;
+  const activeDaysResult = await db.query(activeDaysQuery, [userId, startDate, endDate, daysPerWeek]);
+  const activeDays = activeDaysResult.rows.reduce((sum, row) => sum + parseInt(row.days), 0);
   
   const consistencyBonus = 10;
   totalPoints += activeDays * consistencyBonus;
@@ -150,7 +160,10 @@ export async function assignCommunityLeaderboard(userId, regimentId) {
   
   const existing = await fetchLeaderboardByUserId(userId, 'community');
   const startDate = new Date();
-  startDate.setMonth(startDate.getMonth() - 1);
+  const currentMonth = startDate.getMonth();
+  startDate.setMonth(currentMonth - (currentMonth % 3));
+  startDate.setDate(1);
+  startDate.setHours(0, 0, 0, 0);
   const points = await calculateWorkoutPoints(userId, startDate, new Date());
   
   if (existing) {
@@ -238,7 +251,10 @@ export async function createEventLeaderboardEntry(userId, eventId, regimentId) {
   if (!eventResult.rows[0]) throw new Error("Event not found");
   
   const startDate = new Date();
-  startDate.setMonth(startDate.getMonth() - 1);
+  const currentMonth = startDate.getMonth();
+  startDate.setMonth(currentMonth - (currentMonth % 3));
+  startDate.setDate(1);
+  startDate.setHours(0, 0, 0, 0);
   const points = await calculateWorkoutPoints(userId, startDate, new Date());
   
   await insertLeaderboard({
