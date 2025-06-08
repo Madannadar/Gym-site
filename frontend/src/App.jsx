@@ -11,8 +11,9 @@ import Attendance from './pages/Attendance.jsx'
 import TrainerAttendance from './pages/TrainerAttendance.jsx'
 import BmiCalculator from './pages/BMICalculator.jsx'
 import Workout from './pages/Workout.jsx'
-import Event from './pages/AllEvents.jsx'
-import Leaderboard from './pages/Leaderboards.jsx'
+import Events from './pages/Events.jsx'
+import Leaderboards from './pages/Leaderboards.jsx'
+import EventLeaderboard from './components/events/eventLeaderboard.jsx'
 
 function App() {
   return (
@@ -29,8 +30,9 @@ function App() {
         <Route path="/trainer-attendance" element={<TrainerAttendance />} />
         <Route path="/bmi-calculator" element={<BmiCalculator />} />
         <Route path="/workouts" element={<Workout />} />
-        <Route path="/events" element={<Event />} />
-        <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/events" element={<Events />} />
+        <Route path="/leaderboard" element={<Leaderboards />} />
+        <Route path="/eventLeaderboard" element={<EventLeaderboard />} />
       </Routes>
     </Router>
   )

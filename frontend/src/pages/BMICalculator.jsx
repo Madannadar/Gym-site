@@ -3,7 +3,7 @@ import { useState } from "react";
 // import BmiLogo from "../assets/images/bmiLogo";
 import BmiLogo from "../assets/logos/bmiLogo";
 
-export default function BmiCalculator() {
+export default function BMICalculator() {
   const [bmi, setBmi] = useState("34");
   const [classification, setClassification] = useState("Obese");
   const bmiData = [
