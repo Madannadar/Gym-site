@@ -3,9 +3,9 @@ import { useState } from "react";
 
 import Discover from "../components/events/Discover.jsx";
 
-import EventsLogo from "../assets/logos/eventlogo";
+import EventsLogo from "../assets/logos/eventlogo.jsx";
 import MyEvents from "../components/events/MyEvents.jsx";
-import Host from "../components/events/hostEvent";
+import Host from "../components/events/hostEvent.jsx";
 
 export default function Events() {
   const [events, setEvents] = useState("discover");

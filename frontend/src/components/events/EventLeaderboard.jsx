@@ -4,7 +4,7 @@ import { GoTriangleUp, GoTriangleDown } from "react-icons/go";
 import { FaEquals } from "react-icons/fa";
 
 
-export default function eventLeaderboard() {
+export default function EventLeaderboard() {
   const eventLeaderboard = [
     { rank: 1, name: "Donald Trump", points: 70, avatar: "👤", prevRank: 5 },
     { rank: 2, name: "Kamala Harris", points: 69, avatar: "👩‍🦳", prevRank: 6 },

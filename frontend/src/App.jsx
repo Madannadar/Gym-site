@@ -9,11 +9,19 @@ import CustomDiet from './pages/CustomDiet.jsx'
 import NewMeal from './pages/NewMeal.jsx'
 import Attendance from './pages/Attendance.jsx'
 import TrainerAttendance from './pages/TrainerAttendance.jsx'
+<<<<<<< HEAD
 import BmiCalculator from './pages/BMICalculator.jsx'
 import Workout from './pages/Workout.jsx'
 import Events from './pages/Events.jsx'
 import Leaderboards from './pages/Leaderboards.jsx'
 import EventLeaderboard from './components/events/eventLeaderboard.jsx'
+=======
+import BmiCalculator from './pages/BmiCalculator.jsx'
+import Workout from './pages/Workout.jsx'
+import Events from './pages/Events.jsx'
+import Leaderboards from './pages/Leaderboards.jsx'
+import EventLeaderboard from './components/events/EventLeaderboard.jsx'
+>>>>>>> 09fe863ea9f3eb0f06cd49ad416b76b03c384fb3
 
 function App() {
   return (

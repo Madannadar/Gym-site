@@ -128,6 +128,7 @@ CREATE TABLE IF NOT EXISTS exercises (
       units <@ ARRAY['reps', 'weight', 'time']
     )
   ),
+  intensity NUMERIC NOT NULL DEFAULT 1 CHECK (intensity BETWEEN 1 AND 5),
   created_by INT REFERENCES users(user_id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -136,40 +137,40 @@ CREATE TABLE IF NOT EXISTS exercises (
 
 
 CREATE TABLE IF NOT EXISTS workouts (
-  workout_id SERIAL PRIMARY KEY,
-  name TEXT NOT NULL,
-  created_by INT REFERENCES users(user_id) ON DELETE CASCADE,
-  description TEXT,
-  structure JSONB NOT NULL,
-  score NUMERIC,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-  CHECK (
-    jsonb_typeof(structure) = 'array' AND
-    (
-      SELECT bool_and(
-        item ? 'exercise_id' AND
-        item ? 'sets' AND
-        jsonb_typeof(item->'sets') = 'object' AND
+    workout_id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    created_by INT REFERENCES users(user_id) ON DELETE CASCADE,
+    description TEXT,
+    structure JSONB NOT NULL,
+    score NUMERIC,
+    intensity NUMERIC NOT NULL DEFAULT 1 CHECK (intensity BETWEEN 1 AND 5),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CHECK (
+        jsonb_typeof(structure) = 'array' AND
         (
-          SELECT bool_and(
-            jsonb_typeof(value) = 'object' AND
-            (
-              value ? 'reps' OR value ? 'weight' OR value ? 'time'
+            SELECT bool_and(
+                item ? 'exercise_id' AND
+                item ? 'sets' AND
+                jsonb_typeof(item->'sets') = 'object' AND
+                (
+                    SELECT bool_and(
+                        jsonb_typeof(value) = 'object' AND
+                        (
+                            value ? 'reps' OR value ? 'weight' OR value ? 'time'
+                        )
+                    )
+                    FROM jsonb_each(item->'sets')
+                ) AND
+                (
+                    NOT (item ? 'weight_unit') OR item->>'weight_unit' IN ('kg', 'lbs')
+                ) AND
+                (
+                    NOT (item ? 'time_unit') OR item->>'time_unit' IN ('seconds', 'minutes')
+                )
             )
-          )
-          FROM jsonb_each(item->'sets')
-        ) AND
-        (
-          NOT (item ? 'weight_unit') OR item->>'weight_unit' IN ('kg', 'lbs')
-        ) AND
-        (
-          NOT (item ? 'time_unit') OR item->>'time_unit' IN ('seconds', 'minutes')
+            FROM jsonb_array_elements(structure) AS item
         )
-      )
-      FROM jsonb_array_elements(structure) AS item
     )
-  )
 );
 
 /*example: 
@@ -346,6 +347,9 @@ CREATE TABLE IF NOT EXISTS leaderboard (
   user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
   regiment_id INT REFERENCES regiments(regiment_id) ON DELETE SET NULL,
   total_score NUMERIC DEFAULT 0,
+  leaderboard_type TEXT NOT NULL CHECK (leaderboard_type IN ('personal', 'community', 'event')),
+  days_per_week INT CHECK (days_per_week BETWEEN 1 AND 7), -- NULL for non-community leaderboards
+  event_id INT REFERENCES event_templates(event_id) ON DELETE CASCADE, -- NULL for non-event leaderboards
   last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
