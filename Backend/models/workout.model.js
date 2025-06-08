@@ -1,4 +1,4 @@
-import { pool } from "../db/db.js";
+import {pool} from "../db/db.js";
 
 // Exercise Functions
 const recordExercise = async ({
@@ -7,8 +7,17 @@ const recordExercise = async ({
   muscle_group,
   units,
   created_by,
-  intensity, // added
+  intensity,
 }) => {
+  // Check for duplicate exercise by name and created_by
+  const duplicateCheckQuery = `
+    SELECT 1 FROM exercises WHERE name = $1 AND created_by = $2 LIMIT 1;
+  `;
+  const duplicateCheck = await pool.query(duplicateCheckQuery, [name, created_by]);
+  if (duplicateCheck.rowCount > 0) {
+    throw new Error("Exercise already present");
+  }
+
   const query = `
     INSERT INTO exercises (name, description, muscle_group, units, created_by, intensity)
     VALUES ($1, $2, $3, $4, $5, $6)
@@ -20,11 +29,12 @@ const recordExercise = async ({
     muscle_group,
     units && Array.isArray(units) ? units : null,
     created_by,
-    intensity, // added
+    intensity,
   ];
   const { rows } = await pool.query(query, values);
   return rows[0];
 };
+
 
 const fetchAllExercises = async () => {
   const query = `
@@ -50,15 +60,26 @@ const fetchExerciseById = async (id) => {
 
 const updateExerciseById = async (
   id,
-  { name, description, muscle_group, units, intensity } // added intensity
+  { name, description, muscle_group, units, intensity }
 ) => {
+  // Check for duplicate name if updated
+  if (name) {
+    const duplicateCheckQuery = `
+      SELECT 1 FROM exercises WHERE name = $1 AND exercise_id != $2 LIMIT 1;
+    `;
+    const duplicateCheck = await pool.query(duplicateCheckQuery, [name, id]);
+    if (duplicateCheck.rowCount > 0) {
+      throw new Error("Exercise name already present");
+    }
+  }
+
   const query = `
     UPDATE exercises
     SET name = COALESCE($1, name),
         description = COALESCE($2, description),
         muscle_group = COALESCE($3, muscle_group),
         units = COALESCE($4, units),
-        intensity = COALESCE($5, intensity) -- added intensity
+        intensity = COALESCE($5, intensity)
     WHERE exercise_id = $6
     RETURNING *;
   `;
@@ -77,7 +98,6 @@ const deleteExerciseById = async (id) => {
   return rows[0];
 };
 
-
 // Workout Functions
 const recordWorkout = async ({
   name,
@@ -86,6 +106,15 @@ const recordWorkout = async ({
   structure,
   score,
 }) => {
+  // Check for duplicate workout by name and created_by
+  const duplicateCheckQuery = `
+    SELECT 1 FROM workouts WHERE name = $1 AND created_by = $2 LIMIT 1;
+  `;
+  const duplicateCheck = await pool.query(duplicateCheckQuery, [name, created_by]);
+  if (duplicateCheck.rowCount > 0) {
+    throw new Error("Workout already present");
+  }
+
   const exerciseIds = structure.map(item => item.exercise_id);
 
   const checkQuery = `
@@ -104,7 +133,6 @@ const recordWorkout = async ({
     );
   }
 
-  // Step: Calculate numeric intensity (1–5 scale)
   const intensityScale = {
     low: 2,
     medium: 3,
@@ -112,13 +140,12 @@ const recordWorkout = async ({
   };
 
   const numericIntensities = existingExercises
-    .map(e => intensityScale[e.intensity])
+    .map(e => intensityScale[e.intensity] || e.intensity)
     .filter(n => typeof n === 'number');
 
   const avgIntensity =
     numericIntensities.reduce((acc, val) => acc + val, 0) / numericIntensities.length || 1;
 
-  // Optional: round or keep as float
   const finalIntensity = Math.min(5, Math.max(1, parseFloat(avgIntensity.toFixed(2))));
 
   const insertQuery = `
@@ -187,11 +214,21 @@ const fetchWorkoutById = async (id) => {
   return workout;
 };
 
-
 const updateWorkoutById = async (
   id,
   { name, description, structure, score }
 ) => {
+  // Check for duplicate name if updated
+  if (name) {
+    const duplicateCheckQuery = `
+      SELECT 1 FROM workouts WHERE name = $1 AND workout_id != $2 LIMIT 1;
+    `;
+    const duplicateCheck = await pool.query(duplicateCheckQuery, [name, id]);
+    if (duplicateCheck.rowCount > 0) {
+      throw new Error("Workout name already present");
+    }
+  }
+
   let updatedIntensity = null;
 
   if (structure) {
@@ -203,7 +240,7 @@ const updateWorkoutById = async (
 
     const intensityScale = { low: 2, medium: 3, high: 5 };
     const numericIntensities = existingExercises
-      .map(e => intensityScale[e.intensity])
+      .map(e => intensityScale[e.intensity] || e.intensity)
       .filter(n => typeof n === 'number');
 
     if (numericIntensities.length > 0) {
@@ -248,8 +285,6 @@ const deleteWorkoutById = async (id) => {
   return rows[0];
 };
 
-
-
 const checkExists = async (table, idName, id) => {
   const query = `SELECT 1 FROM ${table} WHERE ${idName} = $1 LIMIT 1`;
   const { rowCount } = await pool.query(query, [id]);
@@ -265,23 +300,18 @@ const recordWorkoutLog = async ({
   actual_workout,
   score,
 }) => {
-  // Check user exists
-  if (!(await checkExists('users', 'user_id', user_id))) {
+  if (!(await checkExists('users', 'id', user_id))) {
     throw new Error(`User with id ${user_id} does not exist.`);
   }
-  // Check regiment exists
   if (!(await checkExists('regiments', 'regiment_id', regiment_id))) {
     throw new Error(`Regiment with id ${regiment_id} does not exist.`);
   }
-  // Check planned workout exists
   if (!(await checkExists('workouts', 'workout_id', planned_workout_id))) {
-    throw new Error(`Workout with id ${planned_workout_id} does not exist.`);
+    throw new Error(`Workout not found.`);
   }
-
-  // Optional: check all exercise_ids in actual_workout exist in exercises table
   for (const exercise of actual_workout) {
     if (!(await checkExists('exercises', 'exercise_id', exercise.exercise_id))) {
-      throw new Error(`Exercise with id ${exercise.exercise_id} does not exist.`);
+      throw new Error(`Exercise with ID ${exercise.exercise_id} not found.`);
     }
   }
 
@@ -297,7 +327,6 @@ const recordWorkoutLog = async ({
     ) VALUES ($1, $2, $3, $4, $5, $6, $7)
     RETURNING *;
   `;
-
   const values = [
     user_id,
     regiment_id,
@@ -375,22 +404,27 @@ const deleteWorkoutLogById = async (id) => {
 };
 
 // Regiment Functions 
-// checkds if all workout_ids in workout_structure exist in workouts table before inserting regiment
 const recordRegiment = async ({
   created_by,
   name,
   description,
   workout_structure,
 }) => {
-  // Step 1: Validate creator exists
-  if (!(await checkExists("users", "user_id", created_by))) {
-    throw new Error(`User with id ${created_by} does not exist.`);
+  // Check for duplicate regiment by name and created_by
+  const duplicateCheckQuery = `
+    SELECT 1 FROM regiments WHERE name = $1 AND created_by = $2 LIMIT 1;
+  `;
+  const duplicateCheck = await pool.query(duplicateCheckQuery, [name, created_by]);
+  if (duplicateCheck.rowCount > 0) {
+    throw new Error("Regiment already present");
   }
 
-  // Step 2: Extract all workout_ids from workout_structure
+  if (!(await checkExists("users", "id", created_by))) {
+    throw new Error(`User with id ${created_by} not found.`);
+  }
+
   const workoutIds = workout_structure.map((day) => day.workout_id);
 
-  // Step 3: Fetch intensity of all workouts
   const query = `
     SELECT workout_id, intensity
     FROM workouts
@@ -407,12 +441,10 @@ const recordRegiment = async ({
     throw new Error(`Workout ID(s) not found: ${missingWorkoutIds.join(", ")}`);
   }
 
-  // Step 4: Compute average intensity (1–5)
   const intensities = workouts.map((w) => Number(w.intensity) || 0);
   const averageIntensity =
     intensities.reduce((acc, val) => acc + val, 0) / intensities.length;
 
-  // Step 5: Insert regiment
   const insertQuery = `
     INSERT INTO regiments (
       created_by, name, description, workout_structure, intensity
@@ -486,7 +518,6 @@ const fetchRegimentById = async (id) => {
   return regiment;
 };
 
-// Helper to calculate average intensity
 const calculateAverageIntensity = async (workoutStructure) => {
   const workoutIds = workoutStructure.map((w) => w.workout_id);
   const query = `
@@ -505,7 +536,17 @@ const calculateAverageIntensity = async (workoutStructure) => {
 };
 
 const updateRegimentById = async (id, { name, description, workout_structure }) => {
-  // Calculate new intensity if workout_structure is provided
+  // Check for duplicate name if updated
+  if (name) {
+    const duplicateCheckQuery = `
+      SELECT 1 FROM regiments WHERE name = $1 AND regiment_id != $2 LIMIT 1;
+    `;
+    const duplicateCheck = await pool.query(duplicateCheckQuery, [name, id]);
+    if (duplicateCheck.rowCount > 0) {
+      throw new Error("Regiment name already present");
+    }
+  }
+
   const intensity = workout_structure
     ? await calculateAverageIntensity(workout_structure)
     : null;
@@ -541,6 +582,7 @@ const deleteRegimentById = async (id) => {
   const { rows } = await pool.query(query, [id]);
   return rows[0];
 };
+
 export {
   recordExercise,
   fetchAllExercises,

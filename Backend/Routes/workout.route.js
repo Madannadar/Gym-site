@@ -20,7 +20,7 @@ import {
   fetchRegimentByIdEntry,
   updateRegimentByIdEntry,
   deleteRegimentByIdEntry,
-} from "../Controller/workout.controller.js";
+} from "../controller/workout.controller.js"
 
 const router = express.Router();
 
