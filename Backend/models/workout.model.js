@@ -1,4 +1,4 @@
-import {pool} from "../db/db.js";
+import { pool } from "../db/db.js";
 
 // Exercise Functions
 const recordExercise = async ({
@@ -419,7 +419,7 @@ const recordRegiment = async ({
     throw new Error("Regiment already present");
   }
 
-  if (!(await checkExists("users", "id", created_by))) {
+  if (!(await checkExists("users", "user_id", created_by))) {
     throw new Error(`User with id ${created_by} not found.`);
   }
 
@@ -530,8 +530,8 @@ const calculateAverageIntensity = async (workoutStructure) => {
 
   return intensities.length > 0
     ? parseFloat(
-        (intensities.reduce((acc, val) => acc + val, 0) / intensities.length).toFixed(2)
-      )
+      (intensities.reduce((acc, val) => acc + val, 0) / intensities.length).toFixed(2)
+    )
     : 0;
 };
 
