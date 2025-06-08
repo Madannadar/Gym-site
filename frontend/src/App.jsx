@@ -9,7 +9,7 @@ import CustomDiet from './pages/CustomDiet.jsx'
 import NewMeal from './pages/NewMeal.jsx'
 import Attendance from './pages/Attendance.jsx'
 import TrainerAttendance from './pages/TrainerAttendance.jsx'
-import BMICalculator from './pages/bmiCalculator.jsx'
+import BmiCalculator from './pages/bmiCalculator.jsx'
 import Workout from './pages/Workout.jsx'
 import Event from './pages/AllEvents.jsx'
 import Leaderboard from './pages/Leaderboards.jsx'
@@ -27,7 +27,7 @@ function App() {
         <Route path="/new-meal" element={<NewMeal />} />
         <Route path="/user-attendance" element={<Attendance />} />
         <Route path="/trainer-attendance" element={<TrainerAttendance />} />
-        <Route path="/bmi-calculator" element={<BMICalculator />} />
+        <Route path="/bmi-calculator" element={<BmiCalculator />} />
         <Route path="/workouts" element={<Workout />} />
         <Route path="/events" element={<Event />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
