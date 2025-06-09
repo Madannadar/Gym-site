@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export default function hostEvent() {
+export default function HostEvent() {
   const [images, setImage] = useState(null);
   const handleImageChange = (e) => {
     const file = e.target.files[0];

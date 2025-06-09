@@ -1,8 +1,8 @@
 import React from "react";
 import { useState } from "react";
 // import LeaderboardHead from "../components/leaderboards/leaderboardHead";
-import Community from "../components/leaderboards/community";
-import Personal from "../components/leaderboards/personal";
+import Community from "../components/leaderboards/Community";
+import Personal from "../components/leaderboards/Personal";
 
 import LeaderboardLogo from "../assets/logos/leaderboardLogo";
 

@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function eventsHead() {
+export default function EventsHead() {
   return (
     <div className="leaderboardHeader">
       <div className="leaderboardBack">
