@@ -300,7 +300,7 @@ const recordWorkoutLog = async ({
   actual_workout,
   score,
 }) => {
-  if (!(await checkExists('users', 'id', user_id))) {
+  if (!(await checkExists('users', 'user_id', user_id))) {
     throw new Error(`User with id ${user_id} does not exist.`);
   }
   if (!(await checkExists('regiments', 'regiment_id', regiment_id))) {
