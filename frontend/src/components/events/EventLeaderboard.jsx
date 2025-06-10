@@ -18,7 +18,7 @@ export default function EventLeaderboard() {
 
   return (
     <div className="p-4 pb-0 sm:p-6 max-w-lg mx-auto">
-      <AllHeader title="Event Leaderboard" />
+     
       <div className="eventBody">
         <div className="topThree h-[40vh] flex justify-evenly items-end">
           <div className="topSec w-[15%] h-full flex flex-col items-center justify-end">
@@ -77,7 +77,7 @@ export default function EventLeaderboard() {
                   <p className="name text-left text-lg font-medium mb-0 mt-3">
                     {person.name}
                   </p>
-                  <p className="pts text-left text-xs text-gray-500">
+                  <p className="pts text-left text-xs text-gray-500 mb-2">
                     {person.points} points
                   </p>
                 </span>

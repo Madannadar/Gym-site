@@ -4,7 +4,7 @@ import { useState } from "react";
 import Community from "../components/leaderboards/Community";
 import Personal from "../components/leaderboards/Personal";
 
-import LeaderboardLogo from "../assets/logos/leaderboardLogo";
+
 
 export default function Leaderboards() {
   const [activeBut, setactiveBut] = useState("personal");
@@ -34,7 +34,6 @@ export default function Leaderboards() {
           </button>
         </div>
 
-   
       </header>
 
       <section className="leaderboardBody">

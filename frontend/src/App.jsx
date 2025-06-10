@@ -13,7 +13,7 @@ import BmiCalculator from './pages/BmiCalculator.jsx'
 import Workout from './pages/Workout.jsx'
 import Events from './pages/Events.jsx'
 import Leaderboards from './pages/Leaderboards.jsx'
-import EventLeaderboard from './components/events/EventLeaderboard.jsx'
+import EventLeaderboard from './components/events/eventLeaderboard.jsx'
 
 function App() {
   return (
