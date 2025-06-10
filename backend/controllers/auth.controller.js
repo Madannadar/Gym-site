@@ -28,9 +28,20 @@ const registerUser = async (req, res) => {
     );
     await emailService.sendVerificationEmail(email, verificationToken);
 
-    res.status(201).json({
-      success: true,
+    const { accessToken, refreshToken } =
+      await tokenService.issueTokenPairForUser(user);
 
+    res.json({
+      success: true,
+      accessToken,
+      refreshToken,
+      expiresIn: 180,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.first_name,
+        lastName: user.last_name,
+      },
       message: "User registered successfully. Please verify your email.",
     });
   } catch (error) {
