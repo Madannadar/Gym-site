@@ -33,8 +33,9 @@ function retrieveAndAssembleToken(keyPrefix) {
 
 // Accessor for UID (already base64-encoded in localStorage)
 const getUid = () => {
-  const encodedUid = localStorage.getItem("uid");
-  return encodedUid ? atob(encodedUid) : null;
+  // const encodedUid = localStorage.getItem("gyid");
+  // return encodedUid ? encodedUid : null;
+  return localStorage.getItem("gyid");
 };
 
 // Accessor for tokens

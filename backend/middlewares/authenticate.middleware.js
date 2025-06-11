@@ -1,10 +1,10 @@
-
-import { verifyAccessToken } from '../utils/jwt.util.js';
+import { verifyAccessToken } from "../utils/jwt.util.js";
 
 function authenticate(req, res, next) {
   // Check JWT first
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  console.log(token);
 
   if (token) {
     try {
@@ -12,16 +12,16 @@ function authenticate(req, res, next) {
       req.user = decoded;
       return next();
     } catch (error) {
-      if (error.name === 'TokenExpiredError') {
+      if (error.name === "TokenExpiredError") {
         return res.status(401).json({
           success: false,
-          error: 'Token expired',
+          error: "Token expired",
           isExpired: true,
         });
       }
       return res.status(403).json({
         success: false,
-        error: 'Invalid token',
+        error: "Invalid token",
       });
     }
   }
@@ -39,9 +39,8 @@ function authenticate(req, res, next) {
 
   return res.status(401).json({
     success: false,
-    error: 'Authorization token or session required',
+    error: "Authorization token or session required",
   });
-
 }
 
 export default authenticate;
