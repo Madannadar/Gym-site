@@ -18,7 +18,7 @@ export default function Discover() {
     const fetchEvents = async () => {
       try {
         const response = await fetch(
-          `${process.env.REACT_APP_BACKEND_URL}/event`
+          `${process.env.REACT_BACKEND_URL}/event`
         );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
