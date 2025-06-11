@@ -28,10 +28,12 @@ const LoginPage = () => {
 
       const { accessToken, refreshToken, uid } = res.data;
 
-      disguiseAndStoreToken("access_token", accessToken);
-      disguiseAndStoreToken("refresh_token", refreshToken);
-      localStorage.setItem("uid", btoa(uid)); // base64 encode UID
+      disguiseAndStoreToken("access", accessToken);
+      disguiseAndStoreToken("refresh", refreshToken);
+      // const dis_uid = btoa(uid);
+      localStorage.setItem("gyid", uid); // base64 encode UID
       setUid(uid);
+      // console.log(uid, "done");
       setAccessToken(accessToken);
       setRefreshToken(refreshToken);
       setAuthenticated(true);
