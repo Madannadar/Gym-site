@@ -5,247 +5,251 @@ const RecordWorkoutForm = () => {
   const [formData, setFormData] = useState({
     user_id: 1,
     regiment_id: "",
-    regiment_day_index: 0,
+    regiment_day_index: "",
     log_date: "",
-    planned_workout_id: "",
-    actual_workout: [
-      {
-        exercise_id: "",
-        sets: {
-          set1: { reps: "", weight: "", weight_unit: "kg" },
-          set2: { reps: "", weight: "", weight_unit: "kg" },
-        },
-      },
-    ],
+    workout_id: "",
+    actual_workout: [],
     score: "",
   });
 
   const [regiments, setRegiments] = useState([]);
   const [exercises, setExercises] = useState([]);
+  const [workouts, setWorkouts] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const regimentRes = await axios.get("http://localhost:3000/api/workouts/regiments");
-        const exerciseRes = await axios.get("http://localhost:3000/api/workouts/exercises");
-
+        const [regimentRes, exerciseRes, workoutRes] = await Promise.all([
+          axios.get("http://localhost:3000/api/workouts/regiments"),
+          axios.get("http://localhost:3000/api/workouts/exercises"),
+          axios.get("http://localhost:3000/api/workouts"),
+        ]);
         setRegiments(regimentRes.data.items || []);
         setExercises(exerciseRes.data.items || []);
-      } catch (error) {
-        console.error("Error fetching data:", error);
+        setWorkouts(workoutRes.data.items || []);
+      } catch (err) {
+        console.error("Error loading data:", err);
       }
     };
     fetchData();
   }, []);
 
-  // Clean and convert form data before sending to backend
-  const cleanFormData = () => {
-    return {
-      ...formData,
-      regiment_id: formData.regiment_id ? Number(formData.regiment_id) : null,
-      planned_workout_id: formData.planned_workout_id ? Number(formData.planned_workout_id) : null,
-      regiment_day_index: formData.regiment_day_index ? Number(formData.regiment_day_index) : 0,
-      score: formData.score ? Number(formData.score) : 0,
-      log_date: formData.log_date || null,
-      actual_workout: formData.actual_workout.map((ex) => ({
-        exercise_id: ex.exercise_id ? Number(ex.exercise_id) : null,
-        sets: Object.fromEntries(
-          Object.entries(ex.sets).map(([key, set]) => [
-            key,
-            {
-              reps: set.reps ? Number(set.reps) : null,
-              weight: set.weight ? Number(set.weight) : null,
-              weight_unit: set.weight_unit || "kg",
-            },
-          ])
-        ),
-      })),
+  useEffect(() => {
+    const fetchWorkoutDetails = async () => {
+      if (!formData.workout_id) return;
+      try {
+        const res = await axios.get(`http://localhost:3000/api/workouts/${formData.workout_id}`);
+        const structure = res.data?.item?.structure;
+
+        if (!structure) return;
+
+        const mapped = structure.map((ex) => {
+          const units = ex.exercise_details?.units || [];
+          const setsObj = {};
+
+          Object.entries(ex.sets).forEach(([setIndex, set]) => {
+            const newSet = {};
+            if (units.includes("reps")) newSet.reps = set.reps || "";
+            if (units.includes("weight")) newSet.weight = set.weight || "";
+            if (units.includes("time")) newSet.time = set.time || "";
+
+            setsObj[`set${setIndex}`] = newSet;
+          });
+
+          return {
+            exercise_id: ex.exercise_id,
+            weight_unit: ex.weight_unit || "kg",
+            time_unit: ex.time_unit || "seconds",
+            sets: setsObj,
+          };
+        });
+
+        setFormData((prev) => ({
+          ...prev,
+          actual_workout: mapped,
+        }));
+      } catch (err) {
+        console.error("Workout fetch error:", err);
+      }
     };
-  };
+
+    fetchWorkoutDetails();
+  }, [formData.workout_id]);
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleActualWorkoutChange = (index, field, value) => {
+  const handleSetChange = (exerciseIdx, setKey, field, value) => {
     const updated = [...formData.actual_workout];
-    updated[index][field] = value;
+    updated[exerciseIdx].sets[setKey][field] = value;
     setFormData((prev) => ({ ...prev, actual_workout: updated }));
   };
 
-  const handleSetChange = (index, setKey, field, value) => {
-    const updated = [...formData.actual_workout];
-    updated[index].sets[setKey][field] = value;
-    setFormData((prev) => ({ ...prev, actual_workout: updated }));
-  };
-
-  const addExercise = () => {
-    setFormData((prev) => ({
-      ...prev,
-      actual_workout: [
-        ...prev.actual_workout,
-        {
-          exercise_id: "",
-          sets: {
-            set1: { reps: "", weight: "", weight_unit: "kg" },
-            set2: { reps: "", weight: "", weight_unit: "kg" },
-          },
-        },
-      ],
-    }));
-  };
+  const cleanFormData = () => ({
+    ...formData,
+    regiment_id: Number(formData.regiment_id) || null,
+    workout_id: Number(formData.workout_id) || null,
+    regiment_day_index: Number(formData.regiment_day_index) || 0,
+    score: Number(formData.score) || 0,
+    log_date: formData.log_date || null,
+    actual_workout: formData.actual_workout.map((ex) => ({
+      exercise_id: Number(ex.exercise_id),
+      weight_unit: ex.weight_unit,
+      time_unit: ex.time_unit,
+      sets: Object.fromEntries(
+        Object.entries(ex.sets).map(([key, set]) => {
+          const cleanedSet = {};
+          if ("reps" in set) cleanedSet.reps = Number(set.reps) || 0;
+          if ("weight" in set) cleanedSet.weight = Number(set.weight) || 0;
+          if ("time" in set) cleanedSet.time = Number(set.time) || 0;
+          return [key, cleanedSet];
+        })
+      ),
+    })),
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Basic validation (optional)
-    if (!formData.regiment_id) {
-      alert("Please select a regiment.");
-      return;
-    }
-    if (!formData.log_date) {
-      alert("Please select a date.");
-      return;
-    }
-    if (!formData.planned_workout_id) {
-      alert("Please enter planned workout ID.");
-      return;
-    }
-
     try {
       const payload = cleanFormData();
-      // console.log("Payload to send:", payload);
       await axios.post("http://localhost:3000/api/workouts/logs", payload);
-      alert("Workout log recorded successfully");
-      // Optionally reset form here
+      alert("Workout log recorded successfully!");
     } catch (err) {
-      console.error("❌ Submission failed:", err);
-      alert("Failed to record workout log");
+      console.error("Log submission failed:", err);
+      alert("Failed to record workout log.");
     }
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="max-w-3xl mx-auto p-4 bg-white rounded shadow space-y-4"
-    >
+    <form onSubmit={handleSubmit} className="max-w-3xl mx-auto p-4 bg-white rounded shadow space-y-4">
       <h2 className="text-xl font-bold mb-2">Record Workout Log</h2>
 
-      <div className="grid gap-2">
-        <select
-          value={formData.regiment_id}
-          onChange={(e) => handleChange("regiment_id", e.target.value)}
-          className="border p-2 rounded"
-          required
-        >
-          <option value="">Select Regiment</option>
-          {regiments.map((reg) => (
-            <option key={reg.regiment_id} value={reg.regiment_id}>
-              {reg.name || `Regiment ${reg.regiment_id}`}
-            </option>
-          ))}
-        </select>
+      <select
+        value={formData.regiment_id}
+        onChange={(e) => handleChange("regiment_id", e.target.value)}
+        className="border p-2 rounded w-full"
+        required
+      >
+        <option value="">Select Regiment</option>
+        {regiments.map((reg) => (
+          <option key={reg.regiment_id} value={reg.regiment_id}>
+            {reg.name || `Regiment ${reg.regiment_id}`}
+          </option>
+        ))}
+      </select>
 
-        <input
-          type="date"
-          value={formData.log_date}
-          onChange={(e) => handleChange("log_date", e.target.value)}
-          className="border p-2 rounded"
-          required
-        />
+      <input
+        type="date"
+        value={formData.log_date}
+        onChange={(e) => handleChange("log_date", e.target.value)}
+        className="border p-2 rounded w-full"
+        required
+      />
 
-        <input
-          type="number"
-          placeholder="Planned Workout ID"
-          value={formData.planned_workout_id}
-          onChange={(e) => handleChange("planned_workout_id", e.target.value)}
-          className="border p-2 rounded"
-          required
-        />
+      <select
+        value={formData.workout_id}
+        onChange={(e) => handleChange("workout_id", e.target.value)}
+        className="border p-2 rounded w-full"
+        required
+      >
+        <option value="">Select Workout</option>
+        {workouts.map((w) => (
+          <option key={w.workout_id} value={w.workout_id}>
+            {w.name || `Workout ${w.workout_id}`}
+          </option>
+        ))}
+      </select>
 
-        <input
-          type="number"
-          placeholder="Day Index"
-          value={formData.regiment_day_index}
-          onChange={(e) => handleChange("regiment_day_index", e.target.value)}
-          className="border p-2 rounded"
-        />
+      <input
+        type="number"
+        placeholder="Day Index"
+        value={formData.regiment_day_index}
+        onChange={(e) => handleChange("regiment_day_index", e.target.value)}
+        className="border p-2 rounded w-full"
+      />
 
-        <input
-          type="number"
-          placeholder="Score"
-          value={formData.score}
-          onChange={(e) => handleChange("score", e.target.value)}
-          className="border p-2 rounded"
-        />
-      </div>
+      <input
+        type="number"
+        placeholder="Score"
+        value={formData.score}
+        onChange={(e) => handleChange("score", e.target.value)}
+        className="border p-2 rounded w-full"
+      />
 
-      <div className="space-y-6">
-        {formData.actual_workout.map((exercise, idx) => (
-          <div key={idx} className="border p-3 rounded">
-            <select
-              value={exercise.exercise_id}
-              onChange={(e) => handleActualWorkoutChange(idx, "exercise_id", e.target.value)}
-              className="border p-2 rounded w-full"
-            >
-              <option value="">Select Exercise</option>
-              {exercises.map((ex) => (
-                <option key={ex.exercise_id} value={ex.exercise_id}>
-                  {ex.name || `Exercise ${ex.exercise_id}`}
-                </option>
-              ))}
-            </select>
-            {Object.keys(exercise.sets).map((setKey) => (
-              <div key={setKey} className="mt-2">
-                <h4 className="text-sm font-semibold">{setKey.toUpperCase()}</h4>
-                <div className="grid grid-cols-3 gap-2">
+      <div className="space-y-4">
+        {formData.actual_workout.map((exercise, i) => (
+          <div key={`exercise-${i}`} className="border rounded p-3">
+            <h4 className="font-semibold mb-2">
+              {exercises.find((ex) => ex.exercise_id === Number(exercise.exercise_id))?.name ||
+                `Exercise ID: ${exercise.exercise_id}`}
+            </h4>
+
+            {Object.entries(exercise.sets).map(([setKey, set]) => (
+              <div key={setKey} className="grid grid-cols-4 gap-2 mb-2">
+                {"reps" in set && (
                   <input
                     type="number"
                     placeholder="Reps"
-                    value={exercise.sets[setKey].reps || ""}
-                    onChange={(e) =>
-                      handleSetChange(idx, setKey, "reps", e.target.value)
-                    }
+                    value={set.reps}
+                    onChange={(e) => handleSetChange(i, setKey, "reps", e.target.value)}
                     className="border p-1 rounded"
                   />
-                  <input
-                    type="number"
-                    placeholder="Weight"
-                    value={exercise.sets[setKey].weight || ""}
-                    onChange={(e) =>
-                      handleSetChange(idx, setKey, "weight", e.target.value)
-                    }
-                    className="border p-1 rounded"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Unit"
-                    value={exercise.sets[setKey].weight_unit || ""}
-                    onChange={(e) =>
-                      handleSetChange(idx, setKey, "weight_unit", e.target.value)
-                    }
-                    className="border p-1 rounded"
-                  />
-                </div>
+                )}
+                {"weight" in set && (
+                  <>
+                    <input
+                      type="number"
+                      placeholder="Weight"
+                      value={set.weight}
+                      onChange={(e) => handleSetChange(i, setKey, "weight", e.target.value)}
+                      className="border p-1 rounded"
+                    />
+                    <input
+                      type="text"
+                      value={exercise.weight_unit}
+                      onChange={(e) =>
+                        setFormData((prev) => {
+                          const updated = [...prev.actual_workout];
+                          updated[i].weight_unit = e.target.value;
+                          return { ...prev, actual_workout: updated };
+                        })
+                      }
+                      className="border p-1 rounded"
+                    />
+                  </>
+                )}
+                {"time" in set && (
+                  <>
+                    <input
+                      type="number"
+                      placeholder="Time"
+                      value={set.time}
+                      onChange={(e) => handleSetChange(i, setKey, "time", e.target.value)}
+                      className="border p-1 rounded"
+                    />
+                    <input
+                      type="text"
+                      value={exercise.time_unit}
+                      onChange={(e) =>
+                        setFormData((prev) => {
+                          const updated = [...prev.actual_workout];
+                          updated[i].time_unit = e.target.value;
+                          return { ...prev, actual_workout: updated };
+                        })
+                      }
+                      className="border p-1 rounded"
+                    />
+                  </>
+                )}
               </div>
             ))}
           </div>
         ))}
-
-        <button
-          type="button"
-          onClick={addExercise}
-          className="bg-blue-500 text-white px-3 py-1 rounded"
-        >
-          + Add Exercise
-        </button>
       </div>
 
-      <button
-        type="submit"
-        className="bg-green-600 text-white px-4 py-2 rounded mt-4 w-full"
-      >
-        Submit Log
+      <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded w-full">
+        Submit Workout Log
       </button>
     </form>
   );
