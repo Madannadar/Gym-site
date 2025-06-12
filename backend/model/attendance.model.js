@@ -1,6 +1,69 @@
 import db from "../config/db.js";
 import crypto from "crypto";
 
+export async function countDistinctAttendanceDays(user_id) {
+  const query = `
+    SELECT COUNT(DISTINCT DATE(scanned_at)) AS total_days
+    FROM attendance_log
+    WHERE user_id = $1 AND is_valid = true;
+  `;
+  const { rows } = await db.query(query, [user_id]);
+  return parseInt(rows[0]?.total_days || 0, 10);
+}
+
+export async function calculateUserStreak(user_id) {
+  const query = `
+    SELECT DATE(scanned_at) AS day
+    FROM attendance_log
+    WHERE user_id = $1 AND is_valid = true
+    GROUP BY day
+    ORDER BY day DESC;
+  `;
+  const { rows } = await db.query(query, [user_id]);
+
+  let streak = 0;
+  let currentDate = new Date();
+  currentDate.setHours(0, 0, 0, 0); // normalize time
+
+  for (const { day } of rows) {
+    const attendanceDate = new Date(day);
+    attendanceDate.setHours(0, 0, 0, 0);
+
+    if (attendanceDate.getTime() === currentDate.getTime()) {
+      streak++;
+      currentDate.setDate(currentDate.getDate() - 1); // move to previous day
+    } else {
+      break;
+    }
+  }
+
+  return streak;
+}
+
+//duration logic is pending and have to e sorted out
+
+export async function getWeeklyDuration(user_id) {
+  const query = `
+    SELECT SUM(EXTRACT(EPOCH FROM (scanned_out - scanned_at))) AS duration
+    FROM attendance
+    WHERE user_id = $1 AND is_valid = true
+      AND scanned_at >= NOW() - INTERVAL '7 days';
+  `;
+  const { rows } = await db.query(query, [user_id]);
+  return Math.round(parseFloat(rows[0]?.duration || 0)); // in seconds
+}
+
+export async function getMonthlyDuration(user_id) {
+  const query = `
+    SELECT SUM(EXTRACT(EPOCH FROM (scanned_out - scanned_at))) AS duration
+    FROM attendance
+    WHERE user_id = $1 AND is_valid = true
+      AND DATE_TRUNC('month', scanned_at) = DATE_TRUNC('month', CURRENT_DATE);
+  `;
+  const { rows } = await db.query(query, [user_id]);
+  return Math.round(parseFloat(rows[0]?.duration || 0)); // in seconds
+}
+
 // Insert attendance log
 export const insertAttendance = async (user_id, qr_id) => {
   const query = `
@@ -12,6 +75,31 @@ export const insertAttendance = async (user_id, qr_id) => {
   const result = await db.query(query, [user_id, qr_id]);
   return result.rows;
 };
+
+export async function updateUserMetrics(user_id) {
+  const totalDays = await countDistinctAttendanceDays(user_id);
+  const currentStreak = await calculateUserStreak(user_id);
+  const weeklyDuration = await getWeeklyDuration(user_id);
+  const monthlyDuration = await getMonthlyDuration(user_id);
+
+  const query = `
+    INSERT INTO attendance_metrics (user_id, total_days, current_streak, weekly_duration, monthly_duration, updated_at)
+    VALUES ($1, $2, $3, $4, $5, NOW())
+    ON CONFLICT (user_id) DO UPDATE SET
+      total_days = EXCLUDED.total_days,
+      current_streak = EXCLUDED.current_streak,
+      weekly_duration = EXCLUDED.weekly_duration,
+      monthly_duration = EXCLUDED.monthly_duration,
+      updated_at = NOW();
+  `;
+  await db.query(query, [
+    user_id,
+    totalDays,
+    currentStreak,
+    weeklyDuration,
+    monthlyDuration,
+  ]);
+}
 
 // Get all attendance logs
 export const getAllLogs = async () => {

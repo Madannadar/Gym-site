@@ -1,7 +1,32 @@
 import React, { useState } from "react";
+import { apiClient} from "../../AxiosSetup";
 
 export default function HostEvent() {
   const [images, setImage] = useState(null);
+  const uid = localStorage.getItem("gyid");
+
+  const [form, setForm] = useState({
+    created_by: uid,
+    name: "",
+    description: "",
+    regiment_id: null,
+    event_date: "",
+    event_time: "",
+    event_location: "",
+    number_of_participants: null,     
+  });
+
+  const handleChange = (e) => {
+    setForm((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
+  };
+
+  
+
+  
+  
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -10,9 +35,25 @@ export default function HostEvent() {
     }
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    console.log(form);
+
+    try{
+      const response = await apiClient.post(
+        `${import.meta.env.VITE_BACKEND_URL}/events`,form,
+      )
+      alert("Event created successfully!");
+    }catch(err){
+      console.error("Error creating event:", err);
+      alert("Failed to create event. Please try again.");
+    }
+  }
+
   return (
     <div className="pt-5 sm:pt-6 max-w-md mx-auto">
-      <form method="post" className="max-w-sm mx-auto">
+      <form onSubmit={handleSubmit} className="max-w-sm mx-auto">
         <div class="mb-2">
           <label
             for="base-input"
@@ -22,8 +63,11 @@ export default function HostEvent() {
           </label>
           <input
             type="text"
+            name="name"
+            value={form.name}
             id="base-input"
             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+            onChange={handleChange}
           />
         </div>
 
@@ -37,8 +81,12 @@ export default function HostEvent() {
           <textarea
             id="message"
             rows="4"
+            name="description"
+            value={form.description}
             class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
             placeholder="Leave a comment..."
+            onChange={handleChange}
+                   
           ></textarea>
         </div>
 
@@ -102,12 +150,32 @@ export default function HostEvent() {
             for="base-input"
             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
           >
-            Date and Time
+            Date 
           </label>
           <input
             type="text"
             id="base-input"
+            name="event_date"
+            value={form.event_date}
             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+           onChange={handleChange}
+          />
+        </div>
+
+        <div class="mb-2">
+          <label
+            for="base-input"
+            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+          >
+            Time
+          </label>
+          <input
+            type="text"
+            id="base-input"
+            value={form.event_time}
+            name="event_time"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+            onChange={handleChange}
           />
         </div>
 
@@ -121,11 +189,14 @@ export default function HostEvent() {
           <input
             type="text"
             id="base-input"
+            name="event_location"
+            value={form.event_location}
             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+           onChange={handleChange}
           />
         </div>
-
-        <div className="max-w-sm mx-auto">
+        {/*decide if we need workout */}
+        {/* <div className="max-w-sm mx-auto">
           <label
             for="countries"
             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
@@ -153,7 +224,7 @@ export default function HostEvent() {
               <option>Germany</option>
             </select>
           </div>
-        </div>
+        </div> */}
 
         <div className="grid grid-cols-2 gap-4 mb-4 mt-10">
           <button
@@ -165,7 +236,7 @@ export default function HostEvent() {
           </button>
           <button
             style={{ borderRadius: "0.5rem" }}
-            type="button"
+            type="sumbit"
             className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-small rounded-lg text-sm px-3 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
           >
             Create Event

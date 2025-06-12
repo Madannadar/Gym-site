@@ -9,6 +9,11 @@ import {
   getTodaysLogs,
   getCurrentMonthLogs,
   getCurrentMonthLogsByUser,
+  updateUserMetrics,
+  countDistinctAttendanceDays,
+  calculateUserStreak,
+  getWeeklyDuration,
+  getMonthlyDuration,
 } from "../model/attendance.model.js";
 
 export const createAttendance = async (req, res) => {
@@ -27,6 +32,8 @@ export const createAttendance = async (req, res) => {
     const rows = await insertAttendance(user_id, todayQR.id);
     if (rows.length === 0)
       return res.status(409).json({ message: "Attendance already marked." });
+
+    await updateUserMetrics(user_id);
 
     res.status(201).json({ attendance: rows[0] });
   } catch (err) {
@@ -48,7 +55,26 @@ export const getAllAttendance = async (req, res) => {
 export const getAttendanceByUser = async (req, res) => {
   try {
     const rows = await getLogsByUser(req.params.user_id);
-    res.status(200).json({ logs: rows });
+    const totalDays = await countDistinctAttendanceDays(req.params.user_id);
+    const streak = await calculateUserStreak(req.params.user_id);
+    const weeklyDuration = await getWeeklyDuration(req.params.user_id);
+    const monthlyDuration = await getMonthlyDuration(req.params.user_id);
+
+    const enrichedLogs = rows.map((log) => ({
+      id: log.attendance_id,
+      date: new Date(log.scanned_at).toISOString().split("T")[0],
+      status: log.is_valid ? "Attended" : "Missed",
+    }));
+
+    res.status(200).json({
+      logs: enrichedLogs,
+      metrics: {
+        totalDays,
+        streak,
+        weeklyDuration,
+        monthlyDuration,
+      },
+    });
   } catch (err) {
     console.error("❌ Error fetching user's attendance:", err.stack);
     res.status(500).json({ error: "Failed to fetch attendance." });
@@ -60,6 +86,8 @@ export const deleteAttendance = async (req, res) => {
     const rows = await deleteLog(req.params.id);
     if (rows.length === 0)
       return res.status(404).json({ error: "Attendance not found." });
+
+    await updateUserMetrics(rows[0].user_id);
 
     res.status(200).json({ message: "Attendance deleted", deleted: rows[0] });
   } catch (err) {
@@ -77,6 +105,8 @@ export const deleteTodaysAttendanceByUserId = async (req, res) => {
       return res
         .status(404)
         .json({ message: "No attendance found for user today." });
+
+    await updateUserMetrics(user_id);
 
     res
       .status(200)
@@ -115,8 +145,27 @@ export const getCurrentMonthAttendanceByUser = async (req, res) => {
   const { user_id } = req.params;
 
   try {
+    console.log(user_id);
     const rows = await getCurrentMonthLogsByUser(user_id);
-    res.status(200).json({ monthly_attendance: rows });
+    console.log(rows);
+    const enrichedLogs = rows.map((log) => ({
+      id: log.attendance_id,
+      date: new Date(log.scanned_at).toISOString().split("T")[0],
+      status: log.is_valid ? "Attended" : "Missed",
+    }));
+    // const totalDays = await countDistinctAttendanceDays(req.params.user_id);
+    // const streak = await calculateUserStreak(req.params.user_id);
+    // const weeklyDuration = await getWeeklyDuration(req.params.user_id);
+    // const monthlyDuration = await getMonthlyDuration(req.params.user_id);
+    res.status(200).json({
+      monthly_attendance: enrichedLogs,
+      metrics: {
+        // totalDays,
+        // streak,
+        // weeklyDuration,
+        // monthlyDuration,
+      },
+    });
   } catch (err) {
     console.error(
       "❌ Error fetching current month attendance for user:",
@@ -128,9 +177,6 @@ export const getCurrentMonthAttendanceByUser = async (req, res) => {
   }
 };
 
-//
-// today attendance QR string
-//
 export const getTodayQRString = async (req, res) => {
   try {
     const qr = await ensureTodayQR();

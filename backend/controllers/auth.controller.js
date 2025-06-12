@@ -36,8 +36,8 @@ const registerUser = async (req, res) => {
       accessToken,
       refreshToken,
       expiresIn: 180,
+      uid: user.id,
       user: {
-        id: user.id,
         email: user.email,
         firstName: user.first_name,
         lastName: user.last_name,
@@ -89,8 +89,8 @@ const loginUser = async (req, res) => {
       accessToken,
       refreshToken,
       expiresIn: 900,
+      uid: user.id,
       user: {
-        id: user.id,
         email: user.email,
         firstName: user.first_name,
         lastName: user.last_name,
@@ -228,8 +228,8 @@ const googleLogin = async (req, res) => {
       accessToken,
       refreshToken,
       expiresIn: 900,
+      uid: req.user.id,
       user: {
-        id: req.user.id,
         email: req.user.email,
         firstName: req.user.first_name,
         lastName: req.user.last_name,

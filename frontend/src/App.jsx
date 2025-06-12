@@ -29,15 +29,15 @@ import VerifyEmail from "./pages/VerifyEmail.jsx";
 import Loader from "./pages/Loader.jsx";
 import Logout from "./pages/Logout.jsx";
 import { AuthProvider, useAuth } from "./AuthProvider";
+import AttendanceScanPage from "./pages/scanAttendenceQR.jsx";
+import AttendanceHistoryPage from "./pages/UserAttendenceHistory.jsx";
 
 const ProtectedRoute = ({ children }) => {
-  const { authenticated } = useAuth();
+  const { authenticated, loading } = useAuth();
 
-  if (authenticated === null) {
-    return <Loader />;
-  }
-
-  return authenticated ? children : <Navigate to="/login" replace />;
+  if (loading) return <Loader />;
+  if (!authenticated) return <Navigate to="/login" replace />;
+  return children;
 };
 
 const App = () => {
@@ -55,6 +55,23 @@ const App = () => {
           <Route path="/logout" element={<Logout />} />
 
           {/* Protected Routes */}
+          <Route
+            path="/attendence-scan"
+            element={
+              <ProtectedRoute>
+                <AttendanceScanPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/attendance-history"
+            element={
+              <ProtectedRoute>
+                <AttendanceHistoryPage />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/"
             element={

@@ -35,9 +35,9 @@ const SignUpPage = () => {
       const { accessToken, refreshToken, uid } = response.data;
 
       // Securely store tokens and UID
-      disguiseAndStoreToken("access_token", accessToken);
-      disguiseAndStoreToken("refresh_token", refreshToken);
-      localStorage.setItem("uid", btoa(uid));
+      disguiseAndStoreToken("access", accessToken);
+      disguiseAndStoreToken("refresh", refreshToken);
+      localStorage.setItem("gyid", uid);
       setUid(uid);
       setAccessToken(accessToken);
       setRefreshToken(refreshToken);
