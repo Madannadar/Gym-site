@@ -3,17 +3,28 @@ import {
   getAllDietTemplatesModel,
   getDietTemplateByIdModel,
   updateDietTemplateModel,
-  deleteDietTemplateModel,
+  deleteDietTemplateByIdModel,
   getDietTemplatesByUserIdModel,
   deleteAllDietTemplatesByUserIdModel,
 } from "../model/diet_template.model.js";
+import db from "../config/db.js";
 
 const createDietTemplateController = async (req, res) => {
   try {
+    const { created_by } = req.body;
+    if (created_by) {
+      const userCheck = await db.query("SELECT id FROM users WHERE id = $1", [
+        created_by,
+      ]);
+      if (userCheck.rows.length === 0) {
+        return res
+          .status(400)
+          .json({ error: "Invalid user ID: User does not exist" });
+      }
+    }
     const template = await insertDietTemplateModel(req.body);
     res.status(201).json({ template });
   } catch (err) {
-    console.log(err);
     console.error("❌ Failed to insert template:", err.stack);
     res.status(500).json({ error: "Failed to insert template." });
   }
@@ -59,7 +70,7 @@ const updateDietTemplateController = async (req, res) => {
 const deleteDietTemplateController = async (req, res) => {
   const { id } = req.params;
   try {
-    const template = await deleteDietTemplateModel(id);
+    const template = await deleteDietTemplateByIdModel(id);
     if (!template)
       return res
         .status(404)
@@ -76,7 +87,16 @@ const deleteDietTemplateController = async (req, res) => {
 const getDietTemplatesByUserIdController = async (req, res) => {
   const { userId } = req.params;
   try {
+    console.log(`🔍 Fetching templates for userId: ${userId}`);
+    const userCheck = await db.query("SELECT id FROM users WHERE id = $1", [
+      userId,
+    ]);
+    if (userCheck.rows.length === 0) {
+      console.error(`❌ Invalid user ID: ${userId}`);
+      return res.status(400).json({ error: "Invalid user ID" });
+    }
     const templates = await getDietTemplatesByUserIdModel(userId);
+    console.log(`✅ Templates found: ${templates.length}`);
     res.status(200).json({ templates });
   } catch (err) {
     console.error("❌ Failed to fetch templates by user:", err.stack);
@@ -87,6 +107,12 @@ const getDietTemplatesByUserIdController = async (req, res) => {
 const deleteAllDietTemplatesByUserIdController = async (req, res) => {
   const { userId } = req.params;
   try {
+    const userCheck = await db.query("SELECT id FROM users WHERE id = $1", [
+      userId,
+    ]);
+    if (userCheck.rows.length === 0) {
+      return res.status(400).json({ error: "Invalid user ID" });
+    }
     const templates = await deleteAllDietTemplatesByUserIdModel(userId);
     res
       .status(200)

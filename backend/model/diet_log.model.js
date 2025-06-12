@@ -1,6 +1,6 @@
-import pool from "../config/db.js";
+import db from "../config/db.js";
 
-export const insertDietLog = async (logData) => {
+export const insertDietLog = async (logData, client = db) => {
   const {
     user_id,
     template_id,
@@ -16,7 +16,13 @@ export const insertDietLog = async (logData) => {
     adherence,
   } = logData;
 
-  const safeJson = (val) => (val ? JSON.stringify(val) : null);
+  const safeJson = (val) => {
+    try {
+      return val ? JSON.stringify(val) : null;
+    } catch (err) {
+      throw new Error(`Invalid JSON for ${val}: ${err.message}`);
+    }
+  };
 
   const query = `
     INSERT INTO diet_logs (
@@ -28,61 +34,57 @@ export const insertDietLog = async (logData) => {
   `;
 
   const values = [
-    user_id,
-    template_id,
+    parseInt(user_id),
+    template_id ? parseInt(template_id) : null,
     log_date,
     safeJson(breakfast),
     safeJson(lunch),
     safeJson(dinner),
     safeJson(snacks),
-    total_calories,
-    proteins,
-    fats,
-    carbs,
-    adherence,
+    total_calories || 0,
+    proteins || 0,
+    fats || 0,
+    carbs || 0,
+    safeJson(adherence),
   ];
 
   console.log("🧪 Executing Query:", query);
   console.log("📦 With Values:", values);
 
-  const result = await pool.query(query, values);
+  const result = await client.query(query, values);
   return result.rows[0];
 };
 
-// Get all diet logs
 export const getAllDietLogs = async () => {
-  const result = await pool.query(
-    "SELECT * FROM diet_logs ORDER BY created_at DESC",
+  const result = await db.query(
+    "SELECT * FROM diet_logs ORDER BY created_at DESC"
   );
   return result.rows;
 };
 
-// Get a single diet log by ID
 export const getDietLogById = async (log_id) => {
-  const result = await pool.query("SELECT * FROM diet_logs WHERE log_id = $1", [
+  const result = await db.query("SELECT * FROM diet_logs WHERE log_id = $1", [
     log_id,
   ]);
   return result.rows[0];
 };
 
-// Get all diet logs for a user (optionally filtered by date)
 export const getDietLogsByUser = async (user_id, log_date = null) => {
   let result;
   if (log_date) {
-    result = await pool.query(
+    result = await db.query(
       "SELECT * FROM diet_logs WHERE user_id = $1 AND log_date = $2 ORDER BY created_at DESC",
-      [user_id, log_date],
+      [parseInt(user_id), log_date]
     );
   } else {
-    result = await pool.query(
+    result = await db.query(
       "SELECT * FROM diet_logs WHERE user_id = $1 ORDER BY created_at DESC",
-      [user_id],
+      [parseInt(user_id)]
     );
   }
   return result.rows;
 };
 
-// Update a diet log by ID
 export const updateDietLog = async (log_id, logData) => {
   const {
     template_id,
@@ -98,7 +100,13 @@ export const updateDietLog = async (log_id, logData) => {
     adherence,
   } = logData;
 
-  const safeJson = (val) => (val ? JSON.stringify(val) : null);
+  const safeJson = (val) => {
+    try {
+      return val ? JSON.stringify(val) : null;
+    } catch (err) {
+      throw new Error(`Invalid JSON for ${val}: ${err.message}`);
+    }
+  };
 
   const query = `
     UPDATE diet_logs SET
@@ -118,16 +126,16 @@ export const updateDietLog = async (log_id, logData) => {
   `;
 
   const values = [
-    template_id,
+    template_id ? parseInt(template_id) : null,
     log_date,
     safeJson(breakfast),
     safeJson(lunch),
     safeJson(dinner),
     safeJson(snacks),
-    total_calories,
-    proteins,
-    fats,
-    carbs,
+    total_calories || 0,
+    proteins || 0,
+    fats || 0,
+    carbs || 0,
     safeJson(adherence),
     log_id,
   ];
@@ -135,15 +143,14 @@ export const updateDietLog = async (log_id, logData) => {
   console.log("🧪 Executing Query:", query);
   console.log("📦 With Values:", values);
 
-  const result = await pool.query(query, values);
+  const result = await db.query(query, values);
   return result.rows[0];
 };
 
-// Delete a diet log by ID
 export const deleteDietLog = async (log_id) => {
-  const result = await pool.query(
+  const result = await db.query(
     "DELETE FROM diet_logs WHERE log_id = $1 RETURNING *",
-    [log_id],
+    [log_id]
   );
   return result.rows[0];
 };

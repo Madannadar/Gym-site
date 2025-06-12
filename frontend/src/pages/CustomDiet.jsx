@@ -1,96 +1,157 @@
-import { FaBowlFood, FaCheck } from "react-icons/fa6";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiClient } from "../AxiosSetup";
+import { useAuth } from "../AuthProvider";
+import { FaBowlFood, FaXmark } from "react-icons/fa6";
 
 const CustomDiet = () => {
   const navigate = useNavigate();
+  const { uid } = useAuth();
 
-  const [dietName, setDietName] = useState("");
-  const [calories, setCalories] = useState("");
-  const [meals, setMeals] = useState(3);
-  const [description, setDescription] = useState("");
-  const [difficulty, setDifficulty] = useState("Medium");
-  const [protein, setProtein] = useState("");
-  const [carbs, setCarbs] = useState("");
-  const [fats, setFats] = useState("");
+  const [formData, setFormData] = useState({
+    dietName: "",
+    calories: "",
+    meals: 3,
+    description: "",
+    difficulty: "Medium",
+    protein: "",
+    carbs: "",
+    fats: "",
+  });
+  const [error, setError] = useState("");
 
-  const handleSave = () => {
-    const customPlan = {
-      name: dietName || "Custom Plan",
-      description: description || "A custom diet plan tailored to your needs.",
-      calories: `${calories} kcal` || "0 kcal",
-      meals: meals.toString(),
-      difficulty,
-      protein: protein || "0",
-      carbs: carbs || "0",
-      fats: fats || "0",
-    };
-
-    alert("Custom Diet Plan Created!");
-    navigate("/diet", { state: { followedPlan: customPlan } });
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  return (
-    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
-      <div className="flex items-center gap-2 sm:gap-4 mb-6">
-        <FaBowlFood className="text-3xl sm:text-4xl text-[#4B9CD3]" />
-        <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">Create Custom Diet Plan</h1>
-      </div>
-      <p className="text-gray-600 text-sm sm:text-lg mb-6">
-        Customize your diet plan by providing the necessary details.
-      </p>
+  const handleSubmit = async () => {
+    const { dietName, calories, protein, carbs, fats, meals } = formData;
 
-      <div className="space-y-6">
-        <div>
-          <label className="block text-gray-700 font-medium mb-2">Diet Plan Name</label>
+    if (!dietName.trim()) {
+      setError("Please enter a valid diet plan name.");
+      return;
+    }
+
+    if (!calories || isNaN(calories) || Number(calories) <= 0) {
+      setError("Please enter a valid calorie amount.");
+      return;
+    }
+
+    for (const [field, value] of [
+      ["protein", protein],
+      ["carbs", carbs],
+      ["fats", fats],
+    ]) {
+      if (value && (isNaN(value) || Number(value) <= 0)) {
+        setError(`Please enter a valid number for ${field}.`);
+        return;
+      }
+    }
+
+    try {
+      const templateData = {
+        created_by: uid,
+        name: dietName,
+        description:
+          formData.description || "A custom diet plan tailored to your needs.",
+        breakfast: null,
+        lunch: null,
+        dinner: null,
+        snacks: [],
+        number_of_meals: Number(meals),
+        difficulty: formData.difficulty.toLowerCase(),
+        calories: Number(calories),
+        protein: Number(protein) || 0,
+        carbs: Number(carbs) || 0,
+        fats: Number(fats) || 0,
+      };
+
+      const response = await apiClient.post("/diet-templets", templateData);
+
+      navigate("/diet", { state: { followedPlan: response.data.template } });
+    } catch (err) {
+      console.error("Error saving diet plan:", err);
+      setError(err.response?.data?.error || "Failed to save diet plan.");
+    }
+  };
+
+  const handleCancel = () => {
+    navigate("/diet");
+  };
+
+  const macroFields = [
+    { key: "protein", label: "Protein" },
+    { key: "carbs", label: "Carbs" },
+    { key: "fats", label: "Fats" },
+  ];
+
+  return (
+    <div className="p-4 sm:p-6 max-w-3xl mx-auto w-full">
+      <div className="p-6 bg-white shadow-lg rounded-lg border border-gray-200">
+        <div className="flex items-center gap-2">
+          <FaBowlFood className="text-3xl text-[#4B9CD3]" />
+          <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">
+            Create Custom Diet Plan
+          </h1>
+        </div>
+        <p className="text-gray-600 text-sm sm:text-base mt-2 mb-6">
+          Customize your diet plan to meet your nutritional goals.
+        </p>
+
+        {error && <p className="mt-2 text-red-500 text-sm">{error}</p>}
+
+        <div className="mt-4">
+          <label className="block text-sm font-semibold text-gray-800">
+            Diet Plan Name
+          </label>
           <input
             type="text"
+            value={formData.dietName}
+            onChange={(e) => handleChange("dietName", e.target.value)}
+            className="mt-1 p-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
             placeholder="Enter diet plan name"
-            className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
-            value={dietName}
-            onChange={(e) => setDietName(e.target.value)}
           />
         </div>
 
-        <div>
-          <label className="block text-gray-700 font-medium mb-2">Description</label>
-          <textarea
-            placeholder="Enter diet description"
-            className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
-            rows="4"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className="block text-gray-700 font-medium mb-2">Calories (kcal)</label>
+        <div className="mt-4">
+          <label className="block text-sm font-semibold text-gray-800">
+            Total Calories (kcal)
+          </label>
           <input
             type="number"
+            min="0"
+            value={formData.calories}
+            onChange={(e) => handleChange("calories", e.target.value)}
+            className="mt-1 p-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
             placeholder="Enter total calories"
-            className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
-            value={calories}
-            onChange={(e) => setCalories(e.target.value)}
           />
         </div>
 
-        <div>
-          <label className="block text-gray-700 font-medium mb-2">Number of Meals</label>
-          <input
-            type="number"
-            min="1"
-            className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
-            value={meals}
-            onChange={(e) => setMeals(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className="block text-gray-700 font-medium mb-2">Difficulty</label>
+        <div className="mt-4">
+          <label className="block text-sm font-semibold text-gray-800">
+            Number of Meals
+          </label>
           <select
-            className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
-            value={difficulty}
-            onChange={(e) => setDifficulty(e.target.value)}
+            value={formData.meals}
+            onChange={(e) => handleChange("meals", e.target.value)}
+            className="mt-1 p-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
+          >
+            {[1, 2, 3, 4, 5, 6].map((num) => (
+              <option key={num} value={num}>
+                {num}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="mt-4">
+          <label className="block text-sm font-semibold text-gray-800">
+            Difficulty Level
+          </label>
+          <select
+            value={formData.difficulty}
+            onChange={(e) => handleChange("difficulty", e.target.value)}
+            className="mt-1 p-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
           >
             <option value="Easy">Easy</option>
             <option value="Medium">Medium</option>
@@ -98,48 +159,49 @@ const CustomDiet = () => {
           </select>
         </div>
 
-        <div>
-          <label className="block text-gray-700 font-medium mb-2">Daily Macronutrient Requirements</label>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-gray-600 text-sm mb-1">Protein (g)</label>
-              <input
-                type="number"
-                placeholder="Protein"
-                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
-                value={protein}
-                onChange={(e) => setProtein(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-gray-600 text-sm mb-1">Carbs (g)</label>
-              <input
-                type="number"
-                placeholder="Carbs"
-                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
-                value={carbs}
-                onChange={(e) => setCarbs(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-gray-600 text-sm mb-1">Fats (g)</label>
-              <input
-                type="number"
-                placeholder="Fats"
-                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
-                value={fats}
-                onChange={(e) => setFats(e.target.value)}
-              />
-            </div>
-          </div>
+        <div className="mt-4">
+          <label className="block text-sm font-semibold text-gray-800">
+            Description (Optional)
+          </label>
+          <textarea
+            value={formData.description}
+            onChange={(e) => handleChange("description", e.target.value)}
+            className="mt-1 p-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
+            placeholder="Describe your diet plan"
+            rows={3}
+          />
         </div>
 
-        <div className="flex justify-center">
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {macroFields.map(({ key, label }) => (
+            <div key={key}>
+              <label className="block text-sm font-semibold text-gray-800">
+                {label} (grams)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={formData[key]}
+                onChange={(e) => handleChange(key, e.target.value)}
+                className="mt-1 p-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
+                placeholder={`Enter ${label.toLowerCase()}`}
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6 flex justify-center gap-4">
           <button
-            onClick={handleSave}
-            className="flex items-center justify-center gap-2 px-5 py-2 bg-[#4B9CD3] text-white rounded-lg text-sm hover:bg-blue-600 transition-all duration-200"
+            onClick={handleSubmit}
+            className="w-full py-2 bg-[#4B9CD3] text-white rounded-lg font-semibold hover:bg-[#3588a2] transition duration-200 ease-in-out"
           >
-            <FaCheck /> Save Custom Plan
+            Create Plan
+          </button>
+          <button
+            onClick={handleCancel}
+            className="w-full py-2 bg-white text-gray-800 border border-gray-300 rounded-lg font-semibold hover:bg-gray-100 transition duration-200 ease-in-out"
+          >
+            <FaXmark className="inline-block mr-2" /> Cancel
           </button>
         </div>
       </div>

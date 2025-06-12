@@ -1,23 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { FaPlus, FaPencilAlt } from "react-icons/fa";
 import { useMeals } from "../context/MealContext";
+import { apiClient } from "../AxiosSetup";
 
-const dailyRecommended = {
-  calories: 2400,
-  protein: 165,
-  carbs: 275,
-  fat: 100,
-};
-
-const MealCard = ({ title, meals, summary: initialSummary, setSelectedMeals }) => {
+const MealCard = ({ title, meals, summary: initialSummary, dietTargets }) => {
   const { meals: availableMeals, getMealNutrition, mealNutritionData } = useMeals();
-  const isInitialMount = useRef(true);
-
-  const [localSelectedMeals, setLocalSelectedMeals] = useState(
-    title === "Today" ? meals : meals
-  );
+  const [localSelectedMeals, setLocalSelectedMeals] = useState(meals || []);
   const [showMealTypeDropdown, setShowMealTypeDropdown] = useState(false);
   const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snacks"];
+  const prevMealsRef = useRef(meals || []);
 
   const [summary, setSummary] = useState(
     title === "Today"
@@ -32,81 +23,177 @@ const MealCard = ({ title, meals, summary: initialSummary, setSelectedMeals }) =
 
   useEffect(() => {
     if (title === "Today") {
-      setLocalSelectedMeals(meals);
+      console.log("📥 Received meals prop:", meals);
+      console.log("📋 Available meals:", availableMeals);
+      const normalizedMeals = (meals || []).map((meal) => {
+        if (!meal.type) return meal;
+        const nutrition = getMealNutrition(meal.type, meal.dish_name || meal.meal);
+        return {
+          ...meal,
+          meal: meal.dish_name || meal.meal || null,
+          dish_name: meal.dish_name || meal.meal || null,
+          dish_id: meal.dish_id || null,
+          actual_calories: Number(meal.actual_calories) || Number(nutrition.calories) || 0,
+          proteins: Number(meal.proteins) || Number(nutrition.protein) || 0,
+          carbs: Number(meal.carbs) || Number(nutrition.carbs) || 0,
+          fats: Number(meal.fats) || Number(nutrition.fat) || 0,
+          quantity: Number(meal.quantity) || 1,
+        };
+      });
+      setLocalSelectedMeals((prev) => {
+        const merged = [...normalizedMeals];
+        prev.forEach((prevMeal) => {
+          if (
+            prevMeal.type &&
+            prevMeal.meal &&
+            !merged.some((m) => m.type === prevMeal.type && m.meal === prevMeal.meal)
+          ) {
+            merged.push(prevMeal);
+          }
+        });
+        // Sort by meal order
+        return merged.sort((a, b) => mealTypes.indexOf(a.type) - mealTypes.indexOf(b.type));
+      });
+      prevMealsRef.current = meals || [];
     }
-  }, [meals, title]);
-
-  useEffect(() => {
-    if (title === "Today" && setSelectedMeals) {
-      setSelectedMeals(localSelectedMeals);
-    }
-  }, [localSelectedMeals, title, setSelectedMeals]);
+  }, [meals, title, availableMeals, getMealNutrition]);
 
   useEffect(() => {
     if (title === "Today") {
-      let totalCalories = 0;
-      let totalProtein = 0;
-      let totalCarbs = 0;
-      let totalFat = 0;
+      const totals = localSelectedMeals.reduce(
+        (acc, meal) => ({
+          calories: acc.calories + (Number(meal.actual_calories) || 0),
+          protein: acc.protein + (Number(meal.proteins) || 0),
+          carbs: acc.carbs + (Number(meal.carbs) || 0),
+          fat: acc.fat + (Number(meal.fats) || 0),
+        }),
+        { calories: 0, protein: 0, carbs: 0, fat: 0 }
+      );
 
-      localSelectedMeals.forEach((entry) => {
-        if (entry.meal && mealNutritionData[entry.type]?.[entry.meal]) {
-          const nutrition = mealNutritionData[entry.type][entry.meal];
-          totalCalories += nutrition.calories;
-          totalProtein += nutrition.protein;
-          totalCarbs += nutrition.carbs;
-          totalFat += nutrition.fat;
-        }
-      });
+      console.log("📊 Calculated totals:", totals);
 
       const caloriesPercent = Math.min(
-        Math.round((totalCalories / dailyRecommended.calories) * 100),
+        Math.round((totals.calories / (dietTargets?.calories || 2400)) * 100),
         100
       );
       const proteinPercent = Math.min(
-        Math.round((totalProtein / dailyRecommended.protein) * 100),
+        Math.round((totals.protein / (dietTargets?.protein || 165)) * 100),
         100
       );
       const carbsPercent = Math.min(
-        Math.round((totalCarbs / dailyRecommended.carbs) * 100),
+        Math.round((totals.carbs / (dietTargets?.carbs || 275)) * 100),
         100
       );
       const fatPercent = Math.min(
-        Math.round((totalFat / dailyRecommended.fat) * 100),
+        Math.round((totals.fat / (dietTargets?.fat || 100)) * 100),
         100
       );
 
       setSummary([
-        { label: "Calories", value: `${totalCalories} kcal`, percent: caloriesPercent },
-        { label: "Protein", value: `${totalProtein}g`, percent: proteinPercent },
-        { label: "Carbs", value: `${totalCarbs}g`, percent: carbsPercent },
-        { label: "Fat", value: `${totalFat}g`, percent: fatPercent },
+        { label: "Calories", value: `${totals.calories} kcal`, percent: caloriesPercent },
+        { label: "Protein", value: `${totals.protein}g`, percent: proteinPercent },
+        { label: "Carbs", value: `${totals.carbs}g`, percent: carbsPercent },
+        { label: "Fat", value: `${totals.fat}g`, percent: fatPercent },
       ]);
     }
-  }, [localSelectedMeals, title, mealNutritionData]);
+  }, [localSelectedMeals, title, dietTargets]);
 
-  const handleMealTypeSelect = (type) => {
-    setLocalSelectedMeals((prev) => [...prev, { type, meal: null }]);
-    setShowMealTypeDropdown(false);
+  const handleMealTypeSelect = (e) => {
+    const type = e.target.value;
+    if (type) {
+      setLocalSelectedMeals((prev) => {
+        const updated = [
+          ...prev,
+          { type, meal: null, dish_name: null, dish_id: null, actual_calories: 0, proteins: 0, carbs: 0, fats: 0, quantity: 1 },
+        ];
+        return updated.sort((a, b) => mealTypes.indexOf(a.type) - mealTypes.indexOf(b.type));
+      });
+      setShowMealTypeDropdown(false);
+    }
   };
 
-  const handleMealSelect = (index, meal) => {
+  const handleMealSelect = async (index, meal) => {
+    console.log(`🖱️ Selecting meal at index ${index}:`, meal);
+    let updatedMealData = null;
     setLocalSelectedMeals((prev) => {
       const updatedMeals = [...prev];
-      updatedMeals[index].meal = meal;
-      return updatedMeals;
+      if (!meal) {
+        updatedMeals[index] = {
+          ...updatedMeals[index],
+          meal: null,
+          dish_name: null,
+          dish_id: null,
+          actual_calories: 0,
+          proteins: 0,
+          carbs: 0,
+          fats: 0,
+          quantity: 1,
+        };
+      } else {
+        const nutrition = getMealNutrition(updatedMeals[index].type, meal);
+        console.log("🍽️ Nutrition for", meal, ":", nutrition);
+        const dishId = Object.values(mealNutritionData[updatedMeals[index].type] || {}).find(
+          (dish) => dish.name === meal
+        )?.id || null;
+        updatedMeals[index] = {
+          type: updatedMeals[index].type,
+          meal,
+          dish_name: meal,
+          dish_id: dishId,
+          actual_calories: Number(nutrition.calories) || 0,
+          proteins: Number(nutrition.protein) || 0,
+          carbs: Number(nutrition.carbs) || 0,
+          fats: Number(nutrition.fat) || 0,
+          quantity: Number(nutrition.unit_value) || 1,
+        };
+      }
+      updatedMealData = updatedMeals[index];
+      return updatedMeals.sort((a, b) => mealTypes.indexOf(a.type) - mealTypes.indexOf(b.type));
     });
+
+    if (updatedMealData && meal && updatedMealData.dish_id) {
+      try {
+        const today = new Date().toISOString().split("T")[0];
+        const totals = localSelectedMeals.reduce(
+          (acc, m) => ({
+            calories: acc.calories + (m.meal === meal ? updatedMealData.actual_calories : Number(m.actual_calories) || 0),
+            proteins: acc.proteins + (m.meal === meal ? Number(updatedMealData.proteins) || 0 : Number(m.proteins) || 0),
+            carbs: acc.carbs + (m.meal === meal ? Number(updatedMealData.carbs) || 0 : Number(m.carbs) || 0),
+            fats: acc.fats + (m.meal === meal ? Number(updatedMealData.fats) || 0 : Number(m.fats) || 0),
+          }),
+          { calories: 0, proteins: 0, carbs: 0, fats: 0 }
+        );
+
+        const logData = {
+          user_id: localStorage.getItem("uid"),
+          log_date: today,
+          total_calories: totals.calories,
+          proteins: totals.proteins,
+          carbs: totals.carbs,
+          fats: totals.fats,
+          [updatedMealData.type.toLowerCase()]: [
+            {
+              dish_id: updatedMealData.dish_id,
+              dish_name: meal,
+              actual_calories: Number(updatedMealData.actual_calories),
+              proteins: Number(updatedMealData.proteins),
+              carbs: Number(updatedMealData.carbs),
+              fats: Number(updatedMealData.fats),
+              quantity: updatedMealData.quantity,
+            },
+          ],
+        };
+        console.log("📤 Sending diet log:", logData);
+        await apiClient.post("/diet-logs", logData);
+        console.log("✅ Diet log saved:");
+      } catch (err) {
+        console.error("Error saving diet log:", err.response?.data || err.message);
+      }
+    }
   };
 
-  const [dropdownKey, setDropdownKey] = useState(0);
-
-  useEffect(() => {
-    if (!isInitialMount.current) {
-      setDropdownKey((prevKey) => prevKey + 1);
-    } else {
-      isInitialMount.current = false;
-    }
-  }, [availableMeals]);
+  const hasAllMealTypes = localSelectedMeals.length >= mealTypes.length &&
+    mealTypes.every((type) => localSelectedMeals.some((meal) => meal.type === type && meal.meal));
 
   return (
     <div className="bg-white shadow-lg rounded-lg p-5 mb-5 border border-gray-200 hover:shadow-xl transition-all duration-300 ease-in-out">
@@ -120,10 +207,9 @@ const MealCard = ({ title, meals, summary: initialSummary, setSelectedMeals }) =
               {title === "Today" ? (
                 entry.meal === null ? (
                   <select
-                    key={`${entry.type}-${dropdownKey}`}
                     className="border border-gray-300 p-2 rounded-md text-gray-700"
+                    value={entry.meal || ""}
                     onChange={(e) => handleMealSelect(index, e.target.value)}
-                    value=""
                   >
                     <option value="">Select {entry.type} Meal</option>
                     {Array.isArray(availableMeals[entry.type]) &&
@@ -134,20 +220,7 @@ const MealCard = ({ title, meals, summary: initialSummary, setSelectedMeals }) =
                       ))}
                   </select>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-600">{entry.meal}</span>
-                    {mealNutritionData[entry.type]?.[entry.meal]?.isVeg !== undefined && (
-                      <span
-                        className={`inline-block px-2 py-1 text-xs font-semibold rounded-full bg-white ${
-                          mealNutritionData[entry.type][entry.meal].isVeg
-                            ? "border border-green-500 text-green-500"
-                            : "border border-red-500 text-red-500"
-                        }`}
-                      >
-                        {mealNutritionData[entry.type][entry.meal].isVeg ? "veg" : "nonveg"}
-                      </span>
-                    )}
-                  </div>
+                  <span className="text-gray-600">{entry.dish_name || "Unknown"}</span>
                 )
               ) : (
                 <span className="text-gray-600">{entry.description}</span>
@@ -165,30 +238,22 @@ const MealCard = ({ title, meals, summary: initialSummary, setSelectedMeals }) =
           </div>
         ))}
 
-        {title === "Today" &&
-          localSelectedMeals.length < mealTypes.length &&
-          localSelectedMeals.every((entry) => entry.meal !== null) &&
-          !showMealTypeDropdown && (
-            <button
-              className="flex items-center gap-2 text-gray-600 font-semibold cursor-pointer"
-              onClick={() => setShowMealTypeDropdown(true)}
-            >
-              <FaPlus className="text-gray-600" />
-              <span>Add Meal</span>
-            </button>
-          )}
+        {title === "Today" && !hasAllMealTypes && !showMealTypeDropdown && (
+          <button
+            className="flex items-center gap-2 text-gray-600 font-semibold cursor-pointer"
+            onClick={() => setShowMealTypeDropdown(true)}
+          >
+            <FaPlus className="text-gray-600" />
+            <span>Add Meal</span>
+          </button>
+        )}
 
         {showMealTypeDropdown && title === "Today" && (
           <div className="flex items-center gap-3">
             <select
-              key={`mealtype-${dropdownKey}`}
               className="border border-gray-300 p-2 rounded-md text-gray-700"
-              onChange={(e) => {
-                if (e.target.value) {
-                  handleMealTypeSelect(e.target.value);
-                }
-              }}
               value=""
+              onChange={handleMealTypeSelect}
             >
               <option value="">Select Meal Type</option>
               {mealTypes
