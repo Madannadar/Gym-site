@@ -1,12 +1,5 @@
 import { useEffect, useState } from "react";
 import { apiClient } from "../../AxiosSetup";
-import {
-  Dialog,
-  DialogHeader,
-  DialogBody,
-  DialogFooter,
-  Button,
-} from "@material-tailwind/react";
 
 import {
   FaCalendarAlt,
@@ -40,14 +33,12 @@ export default function Discover() {
     }
   };
 
-  // Fetch events when the component mounts
-
+  // Fetch events 
   useEffect(() => {
     fetchEvents();
   }, []);
 
-  console.log(JSON.stringify(events, null, 2));
-
+ 
   if (loading) {
     return <p>Loading events...</p>;
   }
@@ -99,6 +90,27 @@ export default function Discover() {
     //  || event.category.toLowerCase().includes(filterevents.toLowerCase())
   );
 
+  const joinEvent = async (eventID) => {
+    try {
+      const response = await apiClient.post(
+        `${import.meta.env.VITE_BACKEND_URL}/events/logs`,
+        {
+          event_id: eventID,
+          user_id: localStorage.getItem("gyid"), 
+          regiment_id: null, 
+          workout_template_values: null, 
+          user_score: null,
+        }
+
+      )
+      alert("Successfully joined the event!");
+      console.log("Event joined successfully:", response.data);
+    }catch (e){
+    console.error("Error joining event:", e);
+    alert("Failed to join the event. Please try again later.");
+  }
+  }
+
   return (
     <>
       <div className="searchandFilter">
@@ -112,9 +124,9 @@ export default function Discover() {
               onChange={(e) => setFilterevents(e.target.value)}
             />
           </div>
-          <button class="filter-btn flex items-center bg-white border border-gray-300 rounded-md px-3 py-2 cursor-pointer">
+          {/* <button class="filter-btn flex items-center bg-white border border-gray-300 rounded-md px-3 py-2 cursor-pointer">
             <FaFilter class="icon mr-2 text-gray-500" /> Filters
-          </button>
+          </button> */}
         </div>
       </div>
 
@@ -149,7 +161,7 @@ export default function Discover() {
                     </h4>
                     <div className="grid grid-cols-2 grid-rows-2 gap-2 mb-3">
                       <div>
-                        <p className="text-sm text-gray-700 flex items-center gap-1">
+                        <p className="text-sm font-medium text-gray-700 flex items-center gap-1">
                           <FaCalendarAlt className="text-gray-500" />
                           {events.event_date
                             ? new Date(events.event_date).toDateString()
@@ -158,7 +170,7 @@ export default function Discover() {
                         <p className="text-xs text-gray-500 ml-5">
                           {events.event_time
                             ? events.event_time.slice(0, 5)
-                            : "NOT DEFINED"}
+                            : "NOT SPECIFIED"}
                         </p>
                       </div>
                       <p className="text-sm text-gray-700 flex items-baseline gap-1">
@@ -181,7 +193,8 @@ export default function Discover() {
                         Details
                       </button>
                      
-                      <button className="bg-blue-500 text-white text-sm px-4 py-2 w-1/2 sm:w-40 md:w-48 rounded-lg hover:bg-blue-600 transition duration-200">
+                      <button className="bg-blue-500 text-white text-sm px-4 py-2 w-1/2 sm:w-40 md:w-48 rounded-lg hover:bg-blue-600 transition duration-200"
+                      onClick={() => joinEvent(events.event_id)}>
                         Join Event
                       </button>
                     </div>
@@ -190,7 +203,7 @@ export default function Discover() {
               ))
             ) : (
               <p className="text-gray-600 text-center col-span-full">
-                No diet plans found matching "{filterevents}"
+                No events found matching "{filterevents}"
               </p>
             )}
           </div>

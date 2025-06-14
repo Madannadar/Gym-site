@@ -117,6 +117,7 @@ export default function BmiCalculator() {
     }
     setClassification(classification);
     setColor(color);
+    fetchLogs();
     
   };
 
