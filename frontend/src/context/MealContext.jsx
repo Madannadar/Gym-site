@@ -64,6 +64,8 @@ export const MealProvider = ({ children }) => {
         if (newMeals[mealType]) {
           newMeals[mealType].push(dish.dish_name);
           newNutrition[mealType][dish.dish_name] = {
+            id: dish.dish_id,
+            name: dish.dish_name,
             calories: dish.calories || 0,
             protein: dish.protein || 0,
             carbs: dish.carbs || 0,
@@ -89,18 +91,16 @@ export const MealProvider = ({ children }) => {
     fetchMeals();
   }, []);
 
-  const addMeal = async (mealType, mealName, nutrition) => {
-    try {
-      hasFetched.current = false; // Allow re-fetch after adding a meal
-      await fetchMeals();
-    } catch (err) {
-      console.error("Error adding meal:", err);
-    }
+  const addMeal = async () => {
+    hasFetched.current = false; // Allow re-fetch after adding a meal
+    await fetchMeals();
   };
 
   const getMealNutrition = (mealType, mealName) => {
     return (
       mealNutritionData[mealType]?.[mealName] || {
+        id: null,
+        name: null,
         calories: 0,
         protein: 0,
         carbs: 0,
@@ -112,13 +112,7 @@ export const MealProvider = ({ children }) => {
     );
   };
 
-  const value = {
-    meals: availableMeals,
-    addMeal,
-    getMealNutrition,
-    mealNutritionData,
-    isLoading,
-  };
-
-  return <MealContext.Provider value={value}>{children}</MealContext.Provider>;
+  return <MealContext.Provider value={{ meals: availableMeals, addMeal, getMealNutrition, mealNutritionData, isLoading }}>
+    {children}
+  </MealContext.Provider>;
 };

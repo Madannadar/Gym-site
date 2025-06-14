@@ -2,13 +2,17 @@ import { useState, useEffect, useRef } from "react";
 import { FaPlus, FaPencilAlt } from "react-icons/fa";
 import { useMeals } from "../context/MealContext";
 import { apiClient } from "../AxiosSetup";
+import { useAuth } from "../AuthProvider";
 
 const MealCard = ({ title, meals, summary: initialSummary, dietTargets }) => {
   const { meals: availableMeals, getMealNutrition, mealNutritionData } = useMeals();
+  const { uid } = useAuth();
   const [localSelectedMeals, setLocalSelectedMeals] = useState(meals || []);
   const [showMealTypeDropdown, setShowMealTypeDropdown] = useState(false);
   const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snacks"];
   const prevMealsRef = useRef(meals || []);
+  const lastSavedMealsRef = useRef(localSelectedMeals);
+  const [error, setError] = useState(null);
 
   const [summary, setSummary] = useState(
     title === "Today"
@@ -25,6 +29,7 @@ const MealCard = ({ title, meals, summary: initialSummary, dietTargets }) => {
     if (title === "Today") {
       console.log("📥 Received meals prop:", meals);
       console.log("📋 Available meals:", availableMeals);
+      console.log("🍽️ mealNutritionData:", JSON.stringify(mealNutritionData, null, 2));
       const normalizedMeals = (meals || []).map((meal) => {
         if (!meal.type) return meal;
         const nutrition = getMealNutrition(meal.type, meal.dish_name || meal.meal);
@@ -40,23 +45,10 @@ const MealCard = ({ title, meals, summary: initialSummary, dietTargets }) => {
           quantity: Number(meal.quantity) || 1,
         };
       });
-      setLocalSelectedMeals((prev) => {
-        const merged = [...normalizedMeals];
-        prev.forEach((prevMeal) => {
-          if (
-            prevMeal.type &&
-            prevMeal.meal &&
-            !merged.some((m) => m.type === prevMeal.type && m.meal === prevMeal.meal)
-          ) {
-            merged.push(prevMeal);
-          }
-        });
-        // Sort by meal order
-        return merged.sort((a, b) => mealTypes.indexOf(a.type) - mealTypes.indexOf(b.type));
-      });
+      setLocalSelectedMeals(normalizedMeals.sort((a, b) => mealTypes.indexOf(a.type) - mealTypes.indexOf(b.type)));
       prevMealsRef.current = meals || [];
     }
-  }, [meals, title, availableMeals, getMealNutrition]);
+  }, [meals, title, availableMeals, getMealNutrition, mealNutritionData]);
 
   useEffect(() => {
     if (title === "Today") {
@@ -102,6 +94,7 @@ const MealCard = ({ title, meals, summary: initialSummary, dietTargets }) => {
     const type = e.target.value;
     if (type) {
       setLocalSelectedMeals((prev) => {
+        if (prev.some((meal) => meal.type === type)) return prev;
         const updated = [
           ...prev,
           { type, meal: null, dish_name: null, dish_id: null, actual_calories: 0, proteins: 0, carbs: 0, fats: 0, quantity: 1 },
@@ -112,88 +105,194 @@ const MealCard = ({ title, meals, summary: initialSummary, dietTargets }) => {
     }
   };
 
-  const handleMealSelect = async (index, meal) => {
+  const handleMealSelect = (index, meal) => {
     console.log(`🖱️ Selecting meal at index ${index}:`, meal);
-    let updatedMealData = null;
-    setLocalSelectedMeals((prev) => {
-      const updatedMeals = [...prev];
-      if (!meal) {
-        updatedMeals[index] = {
-          ...updatedMeals[index],
-          meal: null,
-          dish_name: null,
-          dish_id: null,
-          actual_calories: 0,
-          proteins: 0,
-          carbs: 0,
-          fats: 0,
-          quantity: 1,
-        };
-      } else {
-        const nutrition = getMealNutrition(updatedMeals[index].type, meal);
-        console.log("🍽️ Nutrition for", meal, ":", nutrition);
-        const dishId = Object.values(mealNutritionData[updatedMeals[index].type] || {}).find(
-          (dish) => dish.name === meal
-        )?.id || null;
-        updatedMeals[index] = {
-          type: updatedMeals[index].type,
-          meal,
-          dish_name: meal,
-          dish_id: dishId,
-          actual_calories: Number(nutrition.calories) || 0,
-          proteins: Number(nutrition.protein) || 0,
-          carbs: Number(nutrition.carbs) || 0,
-          fats: Number(nutrition.fat) || 0,
-          quantity: Number(nutrition.unit_value) || 1,
-        };
-      }
-      updatedMealData = updatedMeals[index];
-      return updatedMeals.sort((a, b) => mealTypes.indexOf(a.type) - mealTypes.indexOf(b.type));
-    });
+    try {
+      setLocalSelectedMeals((prev) => {
+        const updatedMeals = [...prev];
+        if (!meal) {
+          updatedMeals[index] = {
+            ...updatedMeals[index],
+            meal: null,
+            dish_name: null,
+            dish_id: null,
+            actual_calories: 0,
+            proteins: 0,
+            carbs: 0,
+            fats: 0,
+            quantity: 1,
+          };
+        } else {
+          const nutrition = getMealNutrition(updatedMeals[index].type, meal);
+          console.log("🍽️ Nutrition for", meal, ":", nutrition);
+          const dishId = mealNutritionData[updatedMeals[index].type]?.[meal]?.id || null;
+          console.log("🔍 Dish ID for", meal, ":", dishId);
+          updatedMeals[index] = {
+            type: updatedMeals[index].type,
+            meal,
+            dish_name: meal,
+            dish_id: dishId,
+            actual_calories: Number(nutrition.calories) || 0,
+            proteins: Number(nutrition.protein) || 0,
+            carbs: Number(nutrition.carbs) || 0,
+            fats: Number(nutrition.fat) || 0,
+            quantity: Number(nutrition.unit_value) || 1,
+          };
+        }
+        console.log("🔍 Updated meals:", JSON.stringify(updatedMeals, null, 2));
+        return updatedMeals.sort((a, b) => mealTypes.indexOf(a.type) - mealTypes.indexOf(b.type));
+      });
+    } catch (err) {
+      console.error("❌ Error in handleMealSelect:", err);
+      setError(`Failed to select meal: ${meal}. Please try again.`);
+    }
+  };
 
-    if (updatedMealData && meal && updatedMealData.dish_id) {
+  useEffect(() => {
+    const saveMealToBackend = async () => {
+      if (!uid || isNaN(parseInt(uid))) {
+        console.error("❌ Invalid user_id:", uid);
+        setError("Invalid user ID. Please log in again.");
+        return;
+      }
+
       try {
-        const today = new Date().toISOString().split("T")[0];
+        const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+        console.log("🔍 Today's date:", today);
         const totals = localSelectedMeals.reduce(
           (acc, m) => ({
-            calories: acc.calories + (m.meal === meal ? updatedMealData.actual_calories : Number(m.actual_calories) || 0),
-            proteins: acc.proteins + (m.meal === meal ? Number(updatedMealData.proteins) || 0 : Number(m.proteins) || 0),
-            carbs: acc.carbs + (m.meal === meal ? Number(updatedMealData.carbs) || 0 : Number(m.carbs) || 0),
-            fats: acc.fats + (m.meal === meal ? Number(updatedMealData.fats) || 0 : Number(m.fats) || 0),
+            calories: acc.calories + (Number(m.actual_calories) || 0),
+            proteins: acc.proteins + (Number(m.proteins) || 0),
+            carbs: acc.carbs + (Number(m.carbs) || 0),
+            fats: acc.fats + (Number(m.fats) || 0),
           }),
           { calories: 0, proteins: 0, carbs: 0, fats: 0 }
         );
+        console.log("🔍 Calculated totals for log:", totals);
 
         const logData = {
-          user_id: localStorage.getItem("uid"),
+          user_id: parseInt(uid),
           log_date: today,
           total_calories: totals.calories,
           proteins: totals.proteins,
           carbs: totals.carbs,
           fats: totals.fats,
-          [updatedMealData.type.toLowerCase()]: [
-            {
-              dish_id: updatedMealData.dish_id,
-              dish_name: meal,
-              actual_calories: Number(updatedMealData.actual_calories),
-              proteins: Number(updatedMealData.proteins),
-              carbs: Number(updatedMealData.carbs),
-              fats: Number(updatedMealData.fats),
-              quantity: updatedMealData.quantity,
-            },
-          ],
+          breakfast: [],
+          lunch: [],
+          dinner: [],
+          snacks: [],
         };
-        console.log("📤 Sending diet log:", logData);
-        await apiClient.post("/diet-logs", logData);
-        console.log("✅ Diet log saved:");
+
+        console.log("🔍 Local meals before grouping:", JSON.stringify(localSelectedMeals, null, 2));
+        localSelectedMeals.forEach((meal) => {
+          if (meal.meal && meal.dish_id) {
+            const mealData = {
+              dish_id: meal.dish_id,
+              dish_name: meal.dish_name,
+              actual_calories: Number(meal.actual_calories) || 0,
+              proteins: Number(meal.proteins) || 0,
+              carbs: Number(meal.carbs) || 0,
+              fats: Number(meal.fats) || 0,
+              quantity: Number(meal.quantity) || 1,
+            };
+            const typeKey = meal.type.toLowerCase();
+            logData[typeKey].push(mealData);
+          }
+        });
+
+        console.log("📤 Sending diet log:", JSON.stringify(logData, null, 2));
+        const response = await apiClient.post("/diet-logs", logData);
+        console.log("✅ Diet log saved:", JSON.stringify(response.data, null, 2));
+
+        const refreshResponse = await apiClient.get(`/diet-logs/user/${uid}?log_date=${today}`);
+        console.log("🔍 Refreshed meals:", JSON.stringify(refreshResponse.data, null, 2));
+        const logs = refreshResponse.data.logs || [];
+        const refreshedMeals = logs.flatMap((log) =>
+          ["breakfast", "lunch", "dinner", "snacks"].flatMap((type) => {
+            if (!log[type] || !Array.isArray(log[type])) return [];
+            return log[type].map((item) => ({
+              type: type.charAt(0).toUpperCase() + type.slice(1),
+              meal: item.dish_name,
+              dish_name: item.dish_name,
+              dish_id: item.dish_id,
+              actual_calories: Number(item.actual_calories) || 0,
+              proteins: Number(item.proteins) || 0,
+              carbs: Number(item.carbs) || 0,
+              fats: Number(item.fats) || 0,
+              quantity: Number(item.quantity) || 1,
+            }));
+          })
+        );
+
+        if (refreshedMeals.length === 0) {
+          console.warn("⚠️ No meals returned from backend, retaining localSelectedMeals");
+          lastSavedMealsRef.current = localSelectedMeals;
+        } else {
+          const isDifferent = refreshedMeals.some((rm, i) => {
+            const lm = localSelectedMeals[i] || {};
+            return (
+              rm.type !== lm.type ||
+              rm.meal !== lm.meal ||
+              rm.dish_id !== lm.dish_id ||
+              rm.actual_calories !== lm.actual_calories ||
+              rm.proteins !== lm.proteins ||
+              rm.carbs !== lm.carbs ||
+              rm.fats !== lm.fats ||
+              rm.quantity !== lm.quantity
+            );
+          }) || refreshedMeals.length !== localSelectedMeals.length;
+
+          if (isDifferent) {
+            console.log("🔄 Updating localSelectedMeals with refreshed meals");
+            setLocalSelectedMeals(refreshedMeals.sort((a, b) => mealTypes.indexOf(a.type) - mealTypes.indexOf(b.type)));
+            lastSavedMealsRef.current = refreshedMeals;
+          } else {
+            console.log("🔄 No changes in refreshed meals, skipping update");
+            lastSavedMealsRef.current = localSelectedMeals;
+          }
+        }
       } catch (err) {
-        console.error("Error saving diet log:", err.response?.data || err.message);
+        console.error("❌ Error saving diet log:", err.response?.data || err.message);
+        setError("Failed to save meal log. Please try again.");
       }
+    };
+
+    const hasNewMeal = localSelectedMeals.some((meal, i) => {
+      const lastMeal = lastSavedMealsRef.current[i] || {};
+      return (
+        meal.meal &&
+        meal.dish_id &&
+        (meal.meal !== lastMeal.meal ||
+         meal.dish_id !== lastMeal.dish_id ||
+         meal.actual_calories !== lastMeal.actual_calories ||
+         meal.quantity !== lastMeal.quantity)
+      );
+    });
+
+    if (hasNewMeal) {
+      console.log("🔄 Detected new meal, saving to backend");
+      saveMealToBackend();
+    } else {
+      console.log("🔄 No new meals to save");
     }
-  };
+  }, [localSelectedMeals, uid]);
 
   const hasAllMealTypes = localSelectedMeals.length >= mealTypes.length &&
-    mealTypes.every((type) => localSelectedMeals.some((meal) => meal.type === type && meal.meal));
+    mealTypes.every((type) => localSelectedMeals.some((meal) => meal.type === type));
+
+  if (error) {
+    return (
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+        <strong>Error:</strong> {error}
+        <button
+          className="ml-4 text-red-700 underline"
+          onClick={() => setError(null)}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white shadow-lg rounded-lg p-5 mb-5 border border-gray-200 hover:shadow-xl transition-all duration-300 ease-in-out">

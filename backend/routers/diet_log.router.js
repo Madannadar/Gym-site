@@ -8,13 +8,13 @@ import {
   removeDietLog,
   createDishAndLog,
 } from "../controllers/diet_log.controller.js";
-import authenticate from "../middlewares/authenticate.middleware.js"; // Added import
+import authenticate from "../middlewares/authenticate.middleware.js";
 
 const router = express.Router();
 
 // POST /api/diet-logs - create a new diet log
-router.post("/", authenticate, createDietLog); // Added authenticate
-router.post("/add", authenticate, createDishAndLog); // New route for transaction
+router.post("/", authenticate, createDietLog);
+router.post("/add", authenticate, createDishAndLog); // Correct endpoint
 router.get("/", getDietLogs);
 router.get("/:id", getDietLog);
 router.get("/user/:user_id", getUserDietLogs);

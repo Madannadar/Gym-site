@@ -47,8 +47,10 @@ const MealTracker = () => {
     const fetchTodayMeals = async () => {
       if (!uid) return;
       try {
-        const today = new Date().toISOString().split("T")[0];
-        const response = await apiClient.get(`/diet-logs?user_id=${uid}&log_date=${today}`);
+        const today = new Date().toLocaleDateString("en-CA"); // Use local date (IST)
+        console.log("🔍 Fetching meals for UID:", uid, "Date:", today);
+        const response = await apiClient.get(`/diet-logs/user/${uid}?log_date=${today}`);
+        console.log("🔍 API Response for today's meals:", response.data);
         const logs = response.data.logs || [];
         const meals = await Promise.all(
           logs.flatMap((log) =>

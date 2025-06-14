@@ -41,7 +41,7 @@ const NewMeal = () => {
       return;
     }
     for (const key in nutrition) {
-      if (!nutrition[key].trim() || isNaN(nutrition[key]) || Number(nutrition[key]) <= 0) {
+      if (!nutrition[key].trim() || isNaN(nutrition[key]) || Number(nutrition[key]) < 0) {
         setError(`Please enter a valid number for ${key}.`);
         return;
       }
@@ -52,7 +52,7 @@ const NewMeal = () => {
     }
 
     try {
-      const today = new Date().toISOString().split("T")[0];
+      const today = new Date().toLocaleDateString("en-CA"); // Use local date (IST)
       console.log("🔍 Saving meal with payload:", {
         dish: {
           created_by: parseInt(uid),
@@ -87,7 +87,7 @@ const NewMeal = () => {
         },
       });
 
-      const response = await apiClient.post("/dishes/add", {
+      const response = await apiClient.post("/diet-logs/add", {
         dish: {
           created_by: parseInt(uid),
           dish_name: mealName,
@@ -122,14 +122,7 @@ const NewMeal = () => {
       });
 
       console.log("✅ Meal saved:", response.data);
-      const { dish, dietLog } = response.data;
-
-      addMeal(mealType, mealName, {
-        ...nutrition,
-        is_vegetarian: isVeg,
-        units: [unit],
-        unit_value: Number(amount),
-      });
+      await addMeal();
 
       alert("Meal saved and logged successfully!");
       navigate("/meal-tracker");
