@@ -12,6 +12,8 @@ const MealTracker = () => {
   const { meals: availableMeals } = useMeals();
   const { uid } = useAuth();
   const [todaySelectedMeals, setTodaySelectedMeals] = useState([]);
+  const [yesterdaySelectedMeals, setYesterdaySelectedMeals] = useState([]);
+  const [yesterdaySummary, setYesterdaySummary] = useState([]);
   const [dietTargets, setDietTargets] = useState({
     calories: 2400,
     protein: 165,
@@ -47,7 +49,7 @@ const MealTracker = () => {
     const fetchTodayMeals = async () => {
       if (!uid) return;
       try {
-        const today = new Date().toLocaleDateString("en-CA"); // Use local date (IST)
+        const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
         console.log("🔍 Fetching meals for UID:", uid, "Date:", today);
         const response = await apiClient.get(`/diet-logs/user/${uid}?log_date=${today}`);
         console.log("🔍 API Response for today's meals:", response.data);
@@ -102,23 +104,106 @@ const MealTracker = () => {
       }
     };
 
+    const fetchYesterdayMeals = async () => {
+      if (!uid) return;
+      try {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayDate = yesterday.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+        console.log("🔍 Fetching meals for UID:", uid, "Date:", yesterdayDate);
+        const response = await apiClient.get(`/diet-logs/user/${uid}?log_date=${yesterdayDate}`);
+        console.log("🔍 API Response for yesterday's meals:", response.data);
+        const logs = response.data.logs || [];
+        const meals = await Promise.all(
+          logs.flatMap((log) =>
+            ["breakfast", "lunch", "dinner", "snacks"].flatMap(async (type) => {
+              if (!log[type]) return [];
+              const items = log[type];
+              return Promise.all(
+                items.map(async (item) => {
+                  let dishName = item.dish_name;
+                  let dishId = item.dish_id;
+                  if (dishId && !dishName) {
+                    try {
+                      const dishResponse = await apiClient.get(`/dishes/${dishId}`);
+                      dishName = dishResponse.data.dish?.dish_name || "Unknown";
+                    } catch (err) {
+                      console.error(`Error fetching dish ${dishId}:`, err);
+                    }
+                  }
+                  if (!dishId && dishName) {
+                    try {
+                      const dishResponse = await apiClient.get(
+                        `/dishes_id?name=${encodeURIComponent(dishName)}`
+                      );
+                      dishId = dishResponse.data.dish?.dish_id || null;
+                    } catch (err) {
+                      console.error(`Error fetching dish ID for ${dishName}:`, err);
+                    }
+                  }
+                  return {
+                    type: type.charAt(0).toUpperCase() + type.slice(1),
+                    meal: dishName,
+                    dish_name: dishName,
+                    dish_id: dishId,
+                    actual_calories: Number(item.actual_calories) || 0,
+                    proteins: Number(item.proteins) || 0,
+                    carbs: Number(item.carbs) || 0,
+                    fats: Number(item.fats) || 0,
+                    quantity: Number(item.quantity) || 1,
+                  };
+                })
+              );
+            })
+          )
+        );
+        const fetchedMeals = meals.flat().sort((a, b) => mealTypesOrder.indexOf(a.type) - mealTypesOrder.indexOf(b.type));
+
+        // Calculate summary
+        const totals = fetchedMeals.reduce(
+          (acc, meal) => ({
+            calories: acc.calories + (Number(meal.actual_calories) || 0),
+            protein: acc.protein + (Number(meal.proteins) || 0),
+            carbs: acc.carbs + (Number(meal.carbs) || 0),
+            fat: acc.fat + (Number(meal.fats) || 0),
+          }),
+          { calories: 0, protein: 0, carbs: 0, fat: 0 }
+        );
+
+        const caloriesPercent = Math.min(
+          Math.round((totals.calories / (dietTargets.calories || 2400)) * 100),
+          100
+        );
+        const proteinPercent = Math.min(
+          Math.round((totals.protein / (dietTargets.protein || 165)) * 100),
+          100
+        );
+        const carbsPercent = Math.min(
+          Math.round((totals.carbs / (dietTargets.carbs || 275)) * 100),
+          100
+        );
+        const fatPercent = Math.min(
+          Math.round((totals.fat / (dietTargets.fat || 100)) * 100),
+          100
+        );
+
+        setYesterdaySelectedMeals(fetchedMeals);
+        setYesterdaySummary([
+          { label: "Calories", value: `${totals.calories} kcal`, percent: caloriesPercent },
+          { label: "Protein", value: `${totals.protein}g`, percent: proteinPercent },
+          { label: "Carbs", value: `${totals.carbs}g`, percent: carbsPercent },
+          { label: "Fat", value: `${totals.fat}g`, percent: fatPercent },
+        ]);
+      } catch (err) {
+        console.error("Error fetching yesterday's meals:", err.response?.data || err);
+        setError("Failed to load yesterday's meals.");
+      }
+    };
+
     fetchSelectedDietPlan();
     fetchTodayMeals();
+    fetchYesterdayMeals();
   }, [uid]);
-
-  const yesterdayMeals = [
-    { type: "Breakfast", description: "Scrambled Eggs with Whole Grain Toast" },
-    { type: "Lunch", description: "Quinoa Veggie Bowl" },
-    { type: "Dinner", description: "Stir-fried Tofu with Brown Rice" },
-    { type: "Snacks", description: "Greek Yogurt with Berries" },
-  ];
-
-  const yesterdaySummary = [
-    { label: "Calories", value: "1750 kcal", percent: 73 },
-    { label: "Protein", value: "85g", percent: 52 },
-    { label: "Carbs", value: "210g", percent: 60 },
-    { label: "Fat", value: "65g", percent: 65 },
-  ];
 
   return (
     <div className="p-4 max-w-4xl mx-auto">
@@ -167,8 +252,9 @@ const MealTracker = () => {
         />
         <MealCard
           title="Yesterday"
-          meals={yesterdayMeals}
+          meals={yesterdaySelectedMeals}
           summary={yesterdaySummary}
+          dietTargets={dietTargets}
         />
       </div>
     </div>

@@ -288,22 +288,24 @@ const MealCard = ({ title, meals, summary: initialSummary, dietTargets }) => {
       }
     };
 
-    const hasNewMeal = localSelectedMeals.some((meal, i) => {
-      const lastMeal = lastSavedMealsRef.current[i] || {};
-      return (
-        meal.dish_name &&
-        meal.dish_id &&
-        (meal.dish_name !== lastMeal.dish_name ||
-         meal.dish_id !== lastMeal.dish_id ||
-         meal.actual_calories !== lastMeal.actual_calories ||
-         meal.quantity !== lastMeal.quantity)
-      );
-    });
+    if (title === "Today") {
+      const hasNewMeal = localSelectedMeals.some((meal, i) => {
+        const lastMeal = lastSavedMealsRef.current[i] || {};
+        return (
+          meal.dish_name &&
+          meal.dish_id &&
+          (meal.dish_name !== lastMeal.dish_name ||
+           meal.dish_id !== lastMeal.dish_id ||
+           meal.actual_calories !== lastMeal.actual_calories ||
+           meal.quantity !== lastMeal.quantity)
+        );
+      });
 
-    if (hasNewMeal) {
-      saveMealToBackend();
+      if (hasNewMeal) {
+        saveMealToBackend();
+      }
     }
-  }, [localSelectedMeals, uid]);
+  }, [localSelectedMeals, uid, title]);
 
   const hasAllMealTypes = mealTypes.every((type) => localSelectedMeals.some((meal) => meal.type === type));
 
@@ -337,7 +339,7 @@ const MealCard = ({ title, meals, summary: initialSummary, dietTargets }) => {
                       key={index}
                       className="relative bg-gray-100 text-gray-700 text-sm px-3 py-1 rounded-full flex items-center"
                     >
-                      <span>{title === "Today" ? meal.dish_name : meal.description}</span>
+                      <span>{title === "Today" ? meal.dish_name : meal.dish_name || meal.description}</span>
                       {title === "Today" && (
                         <button
                           onClick={() => handleRemoveDish(type, meal.dish_name)}
@@ -351,9 +353,7 @@ const MealCard = ({ title, meals, summary: initialSummary, dietTargets }) => {
                   ))}
                 </div>
               ) : (
-                title === "Today" && editingMealType !== type && (
-                  <span className="text-gray-600">No dishes logged</span>
-                )
+                <span className="text-gray-600">No dishes logged</span>
               )}
               {title === "Today" && editingMealType === type && (
                 <select
