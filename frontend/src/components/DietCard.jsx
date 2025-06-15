@@ -42,9 +42,9 @@ const DietCard = ({
         <div className="mt-3 text-gray-700 text-sm">
           <p className="font-bold">Macronutrient Breakdown</p>
           <ul className="list-disc pl-5">
-            <li>Protein: {protein}g</li>
-            <li>Carbs: {carbs}g</li>
-            <li>Fats: {fats}g</li>
+            <li>Protein: {Math.round(protein)}g</li>
+            <li>Carbs: {Math.round(carbs)}g</li>
+            <li>Fats: {Math.round(fats)}g</li>
           </ul>
         </div>
 

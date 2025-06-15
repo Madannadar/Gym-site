@@ -209,7 +209,7 @@ const MealTracker = () => {
     <div className="p-4 max-w-4xl mx-auto">
       <div className="flex items-center gap-3">
         <FaBowlFood className="text-3xl sm:text-4xl text-[#4B9CD3]" />
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#4B9CD3]">
+        <h1 className="text-2xl sm:text-3xl font-bold text-black">
           Nutrition Dashboard
         </h1>
       </div>

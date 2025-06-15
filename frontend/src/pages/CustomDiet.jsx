@@ -21,7 +21,22 @@ const CustomDiet = () => {
   const [error, setError] = useState("");
 
   const handleChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    // For numeric fields, ensure integer input
+    if (["calories", "protein", "carbs", "fats"].includes(field)) {
+      // Allow empty string or valid integer
+      if (value === "" || /^[0-9]+$/.test(value)) {
+        setFormData((prev) => ({ ...prev, [field]: value }));
+      }
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    // Prevent decimals, negatives, and non-numeric keys
+    if ([".", "-", "e", "+", "E"].includes(e.key)) {
+      e.preventDefault();
+    }
   };
 
   const handleSubmit = async () => {
@@ -32,8 +47,8 @@ const CustomDiet = () => {
       return;
     }
 
-    if (!calories || isNaN(calories) || Number(calories) <= 0) {
-      setError("Please enter a valid calorie amount.");
+    if (calories === "" || isNaN(parseInt(calories)) || parseInt(calories) < 0) {
+      setError("Please enter a non-negative integer for calories.");
       return;
     }
 
@@ -42,8 +57,8 @@ const CustomDiet = () => {
       ["carbs", carbs],
       ["fats", fats],
     ]) {
-      if (value && (isNaN(value) || Number(value) <= 0)) {
-        setError(`Please enter a valid number for ${field}.`);
+      if (value && (isNaN(parseInt(value)) || parseInt(value) < 0)) {
+        setError(`Please enter a non-negative integer for ${field}.`);
         return;
       }
     }
@@ -60,17 +75,18 @@ const CustomDiet = () => {
         snacks: [],
         number_of_meals: Number(meals),
         difficulty: formData.difficulty.toLowerCase(),
-        calories: Number(calories),
-        protein: Number(protein) || 0,
-        carbs: Number(carbs) || 0,
-        fats: Number(fats) || 0,
+        calories: parseInt(calories) || 0,
+        protein: parseInt(protein) || 0,
+        carbs: parseInt(carbs) || 0,
+        fats: parseInt(fats) || 0,
       };
 
+      console.log("🔍 Sending templateData:", templateData);
       const response = await apiClient.post("/diet-templets", templateData);
 
       navigate("/diet", { state: { followedPlan: response.data.template } });
     } catch (err) {
-      console.error("Error saving diet plan:", err);
+      console.error("❌ Error saving diet plan:", err.response?.data || err.message);
       setError(err.response?.data?.error || "Failed to save diet plan.");
     }
   };
@@ -120,8 +136,10 @@ const CustomDiet = () => {
           <input
             type="number"
             min="0"
+            step="1"
             value={formData.calories}
             onChange={(e) => handleChange("calories", e.target.value)}
+            onKeyDown={handleKeyDown}
             className="mt-1 p-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
             placeholder="Enter total calories"
           />
@@ -181,8 +199,10 @@ const CustomDiet = () => {
               <input
                 type="number"
                 min="0"
+                step="1"
                 value={formData[key]}
                 onChange={(e) => handleChange(key, e.target.value)}
+                onKeyDown={handleKeyDown}
                 className="mt-1 p-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
                 placeholder={`Enter ${label.toLowerCase()}`}
               />
