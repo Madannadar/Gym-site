@@ -135,7 +135,7 @@ const MealTracker = () => {
         {[
           { name: "Diet Plans", route: "/diet" },
           { name: "Meal Tracker", route: "/meal-tracker" },
-          { name: "Nutrition Insights", route: "/nutrition-stats" },
+          { name: "Nutrition Stats", route: "/nutrition" },
         ].map((item, idx) => (
           <div
             key={idx}
