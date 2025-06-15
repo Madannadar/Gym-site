@@ -29,34 +29,42 @@ const NewMeal = () => {
 
   const handleSaveMeal = async () => {
     if (!authenticated) {
-      setError("Please log in to save a meal.");
+      setError("Please log in to save a dish.");
       return;
     }
-    if (!mealType || !mealName) {
-      setError("Please select a meal type and enter a meal name.");
+    if (!mealType || !mealName.trim()) {
+      setError("Please select a meal type and enter a dish name.");
       return;
     }
     if (!amount.trim() || isNaN(amount) || Number(amount) <= 0) {
-      setError("Please enter a valid amount.");
+      setError("Please enter a valid amount greater than 0.");
       return;
     }
-    for (const key in nutrition) {
-      if (!nutrition[key].trim() || isNaN(nutrition[key]) || Number(nutrition[key]) < 0) {
-        setError(`Please enter a valid number for ${key}.`);
+
+    // Validate nutrition fields
+    for (const key of ["calories", "carbs"]) {
+      if (!nutrition[key].trim() || isNaN(nutrition[key]) || Number(nutrition[key]) <= 0) {
+        setError(`${key.charAt(0).toUpperCase() + key.slice(1)} must be a positive number greater than 0.`);
         return;
       }
     }
+    for (const key of ["protein", "fats"]) {
+      if (!nutrition[key].trim() || isNaN(nutrition[key]) || Number(nutrition[key]) < 0) {
+        setError(`${key.charAt(0).toUpperCase() + key.slice(1)} must be 0 or a positive number.`);
+        return;
+      }
+    }
+
     if (!uid || isNaN(parseInt(uid))) {
       setError("User not authenticated.");
       return;
     }
 
     try {
-      const today = new Date().toLocaleDateString("en-CA"); // Use local date (IST)
-      console.log("🔍 Saving meal with payload:", {
+      const payload = {
         dish: {
           created_by: parseInt(uid),
-          dish_name: mealName,
+          dish_name: mealName.trim(),
           calories: Number(nutrition.calories),
           protein: Number(nutrition.protein),
           fat: Number(nutrition.fats),
@@ -66,68 +74,20 @@ const NewMeal = () => {
           meal_type: mealType.toLowerCase(),
           is_vegetarian: isVeg,
         },
-        log: {
-          user_id: parseInt(uid),
-          log_date: today,
-          [mealType.toLowerCase()]: [
-            {
-              dish_id: null,
-              quantity: Number(amount),
-              actual_calories: Number(nutrition.calories),
-              proteins: Number(nutrition.protein),
-              carbs: Number(nutrition.carbs),
-              fats: Number(nutrition.fats),
-              dish_name: mealName,
-            },
-          ],
-          total_calories: Number(nutrition.calories),
-          proteins: Number(nutrition.protein),
-          fats: Number(nutrition.fats),
-          carbs: Number(nutrition.carbs),
-        },
-      });
+      };
+      console.log("🔍 Sending payload to /diet-logs/add:", payload);
 
-      const response = await apiClient.post("/diet-logs/add", {
-        dish: {
-          created_by: parseInt(uid),
-          dish_name: mealName,
-          calories: Number(nutrition.calories),
-          protein: Number(nutrition.protein),
-          fat: Number(nutrition.fats),
-          carbs: Number(nutrition.carbs),
-          units: [unit],
-          unit_value: Number(amount),
-          meal_type: mealType.toLowerCase(),
-          is_vegetarian: isVeg,
-        },
-        log: {
-          user_id: parseInt(uid),
-          log_date: today,
-          [mealType.toLowerCase()]: [
-            {
-              dish_id: null,
-              quantity: Number(amount),
-              actual_calories: Number(nutrition.calories),
-              proteins: Number(nutrition.protein),
-              carbs: Number(nutrition.carbs),
-              fats: Number(nutrition.fats),
-              dish_name: mealName,
-            },
-          ],
-          total_calories: Number(nutrition.calories),
-          proteins: Number(nutrition.protein),
-          fats: Number(nutrition.fats),
-          carbs: Number(nutrition.carbs),
-        },
-      });
+      const response = await apiClient.post("/diet-logs/add", payload);
+      console.log("✅ Dish saved:", response.data);
 
-      console.log("✅ Meal saved:", response.data);
+      // Trigger refetch of dishes
       await addMeal();
+      console.log("🔍 Triggered addMeal to refresh dishes");
 
-      alert("Meal saved and logged successfully!");
+      alert("Dish saved successfully!");
       navigate("/meal-tracker");
     } catch (err) {
-      console.error("❌ Error saving meal:", {
+      console.error("❌ Error saving dish:", {
         status: err.response?.status,
         data: err.response?.data,
         message: err.message,
@@ -136,7 +96,7 @@ const NewMeal = () => {
         err.response?.data?.error ||
           (err.message.includes("CORS") || err.message.includes("Network")
             ? "Unable to reach server. Please check if the backend is running."
-            : "Failed to save meal.")
+            : "Failed to save dish. Please try again.")
       );
     }
   };
@@ -153,7 +113,7 @@ const NewMeal = () => {
       >
         <div className="flex items-center gap-2">
           <FaUtensils className="text-3xl text-[#4B9CD3]" />
-          <h1 className="text-2xl font-bold text-black">New Meal</h1>
+          <h1 className="text-2xl font-bold text-black">New Dish</h1>
         </div>
         {error && <p className="mt-2 text-red-500">{error}</p>}
 
@@ -176,20 +136,20 @@ const NewMeal = () => {
 
         <div className="mt-4">
           <label className="block text-lg font-semibold text-gray-800">
-            Meal
+            Dish
           </label>
           <input
             type="text"
             value={mealName}
             onChange={(e) => setMealName(e.target.value)}
             className="mt-2 p-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
-            placeholder="Enter meal name"
+            placeholder="Enter dish name"
           />
         </div>
 
         <div className="mt-4">
           <label className="block text-lg font-semibold text-gray-800">
-            Meal Category
+            Dish Category
           </label>
           <select
             value={isVeg ? "Vegetarian" : "Non-Vegetarian"}
@@ -224,6 +184,8 @@ const NewMeal = () => {
             type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
+            min="0.1"
+            step="0.1"
             className="mt-2 p-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
             placeholder="Enter amount (e.g., 100)"
           />
@@ -239,8 +201,14 @@ const NewMeal = () => {
                 type="number"
                 value={nutrition[field]}
                 onChange={(e) => handleInputChange(field, e.target.value)}
+                min={field === "calories" || field === "carbs" ? "0.1" : "0"}
+                step="0.1"
                 className="mt-1 p-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#4B9CD3]"
-                placeholder={field}
+                placeholder={
+                  field === "calories" || field === "carbs"
+                    ? `Enter > 0`
+                    : `Enter 0 or more`
+                }
               />
             </div>
           ))}
@@ -251,7 +219,7 @@ const NewMeal = () => {
             onClick={handleSaveMeal}
             className="w-full py-2 bg-[#4B9CD3] text-white rounded-lg font-semibold hover:bg-[#3588a2] transition duration-200 ease-in-out"
           >
-            Save Meal
+            Save Dish
           </button>
           <button
             onClick={handleCancel}

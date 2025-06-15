@@ -63,7 +63,7 @@ export const createDietLog = async (req, res) => {
     }
 
     // Normalize log_date to YYYY-MM-DD
-    const normalizedLogDate = log_date.split("T")[0]; // e.g., "2025-06-14"
+    const normalizedLogDate = log_date.split("T")[0];
     console.log("🔍 Normalized log_date:", normalizedLogDate);
 
     const mealFields = { breakfast, lunch, dinner, snacks };
@@ -174,7 +174,7 @@ export const createDishAndLog = async (req, res) => {
   try {
     await db.query("BEGIN");
 
-    const { dish, log } = req.body;
+    const { dish } = req.body;
 
     if (!dish.created_by || !dish.dish_name || !dish.meal_type) {
       throw new Error("Missing required dish fields: created_by, dish_name, meal_type");
@@ -198,113 +198,8 @@ export const createDishAndLog = async (req, res) => {
     });
     console.log("✅ Dish inserted:", dishResult);
 
-    const mealField = Object.keys(log).find(
-      (key) => ["breakfast", "lunch", "dinner", "snacks"].includes(key)
-    );
-    if (!mealField || !log[mealField][0]) {
-      throw new Error("Invalid meal field in log data");
-    }
-    log[mealField][0].dish_id = dishResult.dish_id;
-
-    if (!log.user_id || !log.log_date) {
-      throw new Error("Missing required log fields: user_id, log_date");
-    }
-    const parsedLogUserId = parseInt(log.user_id);
-    const logUserCheck = await db.query("SELECT id FROM users WHERE id = $1", [parsedLogUserId]);
-    if (logUserCheck.rows.length === 0) {
-      throw new Error("Invalid user ID for log");
-    }
-
-    const normalizedLogDate = log_date.split("T")[0];
-    const existingLog = await db.query(
-      "SELECT * FROM diet_logs WHERE user_id = $1 AND log_date::date = $2",
-      [parsedLogUserId, normalizedLogDate]
-    );
-
-    let dietLog;
-    if (existingLog.rows.length > 0) {
-      const existing = existingLog.rows[0];
-      const updatedMeals = {
-        breakfast: Array.isArray(log.breakfast) ? log.breakfast : parseJson(existing.breakfast),
-        lunch: Array.isArray(log.lunch) ? log.lunch : parseJson(existing.lunch),
-        dinner: Array.isArray(log.dinner) ? log.dinner : parseJson(existing.dinner),
-        snacks: Array.isArray(log.snacks) ? log.snacks : parseJson(existing.snacks),
-      };
-
-      Object.keys(updatedMeals).forEach((type) => {
-        if (Array.isArray(log[type]) && log[type].length > 0) {
-          updatedMeals[type] = [...parseJson(existing[type]), ...log[type]].filter(
-            (meal, index, self) =>
-              index === self.findIndex((m) => m.dish_id === meal.dish_id && m.dish_name === meal.dish_name)
-          );
-        }
-      });
-
-      const calculatedTotals = Object.values(updatedMeals).reduce(
-        (acc, meals) => {
-          if (!meals || !Array.isArray(meals)) return acc;
-          return meals.reduce(
-            (innerAcc, meal) => ({
-              calories: innerAcc.calories + (Number(meal.actual_calories) || 0),
-              proteins: innerAcc.proteins + (Number(meal.proteins) || 0),
-              carbs: innerAcc.carbs + (Number(meal.carbs) || 0),
-              fats: innerAcc.fats + (Number(meal.fats) || 0),
-            }),
-            acc
-          );
-        },
-        { calories: 0, proteins: 0, carbs: 0, fats: 0 }
-      );
-
-      dietLog = await updateDietLog(existing.log_id, {
-        user_id: parsedLogUserId,
-        template_id: existing.template_id,
-        log_date: normalizedLogDate,
-        breakfast: updatedMeals.breakfast,
-        lunch: updatedMeals.lunch,
-        dinner: updatedMeals.dinner,
-        snacks: updatedMeals.snacks,
-        total_calories: calculatedTotals.calories,
-        proteins: calculatedTotals.proteins,
-        fats: calculatedTotals.fats,
-        carbs: calculatedTotals.carbs,
-        adherence: existing.adherence,
-      });
-      console.log("✅ Diet log updated:", JSON.stringify(dietLog, null, 2));
-    } else {
-      const calculatedTotals = Object.entries({ breakfast: log.breakfast, lunch: log.lunch, dinner: log.dinner, snacks: log.snacks }).reduce(
-        (acc, [_, meals]) => {
-          if (!meals || !Array.isArray(meals)) return acc;
-          return meals.reduce(
-            (innerAcc, meal) => ({
-              calories: innerAcc.calories + (Number(meal.actual_calories) || 0),
-              proteins: innerAcc.proteins + (Number(meal.proteins) || 0),
-              carbs: innerAcc.carbs + (Number(meal.carbs) || 0),
-              fats: innerAcc.fats + (Number(meal.fats) || 0),
-            }),
-            acc
-          );
-        },
-        { calories: 0, proteins: 0, carbs: 0, fats: 0 }
-      );
-
-      dietLog = await insertDietLog({
-        user_id: parsedLogUserId,
-        log_date: normalizedLogDate,
-        breakfast: log.breakfast || [],
-        lunch: log.lunch || [],
-        dinner: log.dinner || [],
-        snacks: log.snacks || [],
-        total_calories: calculatedTotals.calories,
-        proteins: calculatedTotals.proteins,
-        fats: calculatedTotals.fats,
-        carbs: calculatedTotals.carbs,
-      });
-      console.log("✅ Diet log created:", JSON.stringify(dietLog, null, 2));
-    }
-
     await db.query("COMMIT");
-    res.status(201).json({ dish: dishResult, dietLog });
+    res.status(201).json({ dish: dishResult });
   } catch (err) {
     try {
       await db.query("ROLLBACK");
@@ -415,7 +310,7 @@ export const editDietLog = async (req, res) => {
     const existingLog = await db.query("SELECT * FROM diet_logs WHERE log_id = $1", [parseInt(id)]);
     if (existingLog.rows.length === 0) {
       console.error("❌ Diet log not found for id:", id);
-      return res.status(404).json({ error: "Diet log not found" });
+      return res.status(400).json({ error: "Diet log not found" });
     }
 
     const existing = existingLog.rows[0];
