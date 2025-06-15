@@ -3,37 +3,58 @@ import db from "../config/db.js";
 export const createHealthLog = async ({
   user_id,
   log_type,
-  value,
+  value, // keeping for backward compatibility
+  height,
+  weight,
   log_date,
 }) => {
   const query = `
-    INSERT INTO user_health_logs (user_id, log_type, value, log_date)
-    VALUES ($1, $2, $3, $4)
+    INSERT INTO user_health_logs (user_id, log_type, value, height, weight, log_date)
+    VALUES ($1, $2, $3, $4, $5, $6)
     RETURNING *;
   `;
-  const { rows } = await db.query(query, [user_id, log_type, value, log_date]);
+  const { rows } = await db.query(query, [
+    user_id, 
+    log_type, 
+    value,
+    height,
+    weight,
+    log_date
+  ]);
   return rows[0];
 };
 
 export const getRecentHealthLogs = async (user_id, log_type, limit = 5) => {
   const query = `
     SELECT * FROM user_health_logs
-    WHERE user_id = $1 AND log_type = $2
+    WHERE user_id = $1 ${log_type ? 'AND log_type = $2' : ''}
     ORDER BY log_date DESC
-    LIMIT $3;
+    LIMIT ${log_type ? '$3' : '$2'};
   `;
-  const { rows } = await db.query(query, [user_id, log_type, limit]);
+  const params = log_type ? [user_id, log_type, limit] : [user_id, limit];
+  const { rows } = await db.query(query, params);
   return rows;
 };
 
-export const updateHealthLog = async (log_id, user_id, value, log_date) => {
+export const updateHealthLog = async (log_id, user_id, value, height, weight, log_date) => {
   const query = `
     UPDATE user_health_logs
-    SET value = $1, log_date = $2
-    WHERE log_id = $3 AND user_id = $4
+    SET 
+      value = COALESCE($1, value),
+      height = COALESCE($2, height),
+      weight = COALESCE($3, weight),
+      log_date = $4
+    WHERE log_id = $5 AND user_id = $6
     RETURNING *;
   `;
-  const { rows } = await db.query(query, [value, log_date, log_id, user_id]);
+  const { rows } = await db.query(query, [
+    value,
+    height,
+    weight,
+    log_date,
+    log_id,
+    user_id
+  ]);
   return rows[0];
 };
 

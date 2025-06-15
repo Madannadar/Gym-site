@@ -5,8 +5,8 @@ import BmiLogo from "../assets/logos/bmiLogo";
 
 export default function BmiCalculator() {
   const [bmi, setBmi] = useState(null);
-  const [height, setHeight] = useState(null);
-  const [weight, setWeight] = useState(null);
+  const [height, setHeight] = useState("");
+  const [weight, setWeight] = useState("");
   const [classification, setClassification] = useState("");
   const [color, setColor] = useState(null);
   const [bmiData, setBmiData] = useState([]);
@@ -77,6 +77,8 @@ export default function BmiCalculator() {
           user_id: userId,
           log_type: "bmi",
           value: bmiValue,
+          height: height,
+          weight: weight,
           log_date: null,
         }
       );
@@ -235,9 +237,10 @@ export default function BmiCalculator() {
               </div>
 
               {/* no data avaiable in database */}
-              {/* <div className="text-sm text-gray-600 w-1/3 text-center">
-              {entry.height}cm • {entry.weight}kg • {entry.gender}
-            </div> */}
+              <div className="text-sm text-gray-600 w-1/3 text-center">
+              {parseInt(entry.height)}cm • {entry.weight}kg 
+              {/* • {entry.gender} */}
+            </div>
 
               <div className="text-sm text-gray-500 w-1/3 text-right">
                 {entry.created_at.slice(0, 10)}, {entry.created_at.slice(11, 16)}

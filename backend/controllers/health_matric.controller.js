@@ -6,11 +6,11 @@ import {
   getHealthLogById,
 } from "../model/health_matric.model.js";
 
-const allowedTypes = ["bmi", "weight"];
+const allowedTypes = ["bmi", "weight", "height"];
 
 export const addLog = async (req, res) => {
   try {
-    const { log_type, user_id, value, log_date } = req.body;
+    const { log_type, user_id, value, height, weight, log_date } = req.body;
     if (!allowedTypes.includes(log_type))
       return res.status(400).json({ error: "Invalid log type" });
 
@@ -18,6 +18,8 @@ export const addLog = async (req, res) => {
       user_id,
       log_type,
       value,
+      height,
+      weight,
       log_date: log_date || new Date().toISOString().split("T")[0],
     });
 
@@ -44,12 +46,14 @@ export const getLogs = async (req, res) => {
 export const updateLog = async (req, res) => {
   try {
     const { log_id, user_id } = req.params;
-    const { value, log_date } = req.body;
+    const { value, height, weight, log_date } = req.body;
 
     const updated = await updateHealthLog(
       log_id,
       user_id,
       value,
+      height,
+      weight,
       log_date || new Date().toISOString().split("T")[0],
     );
     if (!updated)
