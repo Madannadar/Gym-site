@@ -56,6 +56,7 @@ const MealCard = ({ title, meals, summary: initialSummary, dietTargets }) => {
     }
   }, [meals, title, availableMeals, getMealNutrition, mealNutritionData]);
 
+  // Update summary for Today
   useEffect(() => {
     if (title === "Today") {
       const totals = localSelectedMeals.reduce(
@@ -93,6 +94,14 @@ const MealCard = ({ title, meals, summary: initialSummary, dietTargets }) => {
       ]);
     }
   }, [localSelectedMeals, title, dietTargets]);
+
+  // Update summary for Yesterday when initialSummary changes
+  useEffect(() => {
+    if (title === "Yesterday") {
+      setSummary(initialSummary || []);
+      console.log("🔍 Updated summary for Yesterday:", initialSummary || []);
+    }
+  }, [initialSummary, title]);
 
   const handleMealTypeSelect = (e) => {
     const type = e.target.value;
@@ -190,105 +199,105 @@ const MealCard = ({ title, meals, summary: initialSummary, dietTargets }) => {
   };
 
   useEffect(() => {
-    const saveMealToBackend = async () => {
-      if (!uid || isNaN(parseInt(uid))) {
-        console.error("❌ Invalid user_id:", uid);
-        setError("Invalid user ID. Please log in again.");
-        return;
-      }
-
-      try {
-        const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
-        const totals = localSelectedMeals.reduce(
-          (acc, m) => ({
-            calories: acc.calories + (Number(m.actual_calories) || 0),
-            proteins: acc.proteins + (Number(m.proteins) || 0),
-            carbs: acc.carbs + (Number(m.carbs) || 0),
-            fats: acc.fats + (Number(m.fats) || 0),
-          }),
-          { calories: 0, proteins: 0, carbs: 0, fats: 0 }
-        );
-
-        const logData = {
-          user_id: parseInt(uid),
-          log_date: today,
-          total_calories: totals.calories,
-          proteins: totals.proteins,
-          carbs: totals.carbs,
-          fats: totals.fats,
-          breakfast: [],
-          lunch: [],
-          dinner: [],
-          snacks: [],
-        };
-
-        localSelectedMeals.forEach((meal) => {
-          if (meal.dish_name && meal.dish_id) {
-            const mealData = {
-              dish_id: meal.dish_id,
-              dish_name: meal.dish_name,
-              actual_calories: Number(meal.actual_calories) || 0,
-              proteins: Number(meal.proteins) || 0,
-              carbs: Number(meal.carbs) || 0,
-              fats: Number(meal.fats) || 0,
-              quantity: Number(meal.quantity) || 1,
-            };
-            const typeKey = meal.type.toLowerCase();
-            logData[typeKey].push(mealData);
-          }
-        });
-
-        const response = await apiClient.post("/diet-logs", logData);
-        const refreshResponse = await apiClient.get(`/diet-logs/user/${uid}?log_date=${today}`);
-        const logs = refreshResponse.data.logs || [];
-        const refreshedMeals = logs.flatMap((log) =>
-          ["breakfast", "lunch", "dinner", "snacks"].flatMap((type) => {
-            if (!log[type] || !Array.isArray(log[type])) return [];
-            return log[type].map((item) => ({
-              type: type.charAt(0).toUpperCase() + type.slice(1),
-              meal: item.dish_name,
-              dish_name: item.dish_name,
-              dish_id: item.dish_id,
-              actual_calories: Number(item.actual_calories) || 0,
-              proteins: Number(item.proteins) || 0,
-              carbs: Number(item.carbs) || 0,
-              fats: Number(item.fats) || 0,
-              quantity: Number(item.quantity) || 1,
-            }));
-          })
-        );
-
-        if (refreshedMeals.length === 0) {
-          lastSavedMealsRef.current = localSelectedMeals;
-        } else {
-          const isDifferent = refreshedMeals.some((rm, i) => {
-            const lm = localSelectedMeals[i] || {};
-            return (
-              rm.type !== lm.type ||
-              rm.dish_name !== lm.dish_name ||
-              rm.dish_id !== lm.dish_id ||
-              rm.actual_calories !== lm.actual_calories ||
-              rm.proteins !== lm.proteins ||
-              rm.carbs !== lm.carbs ||
-              rm.fats !== lm.fats ||
-              rm.quantity !== lm.quantity
-            );
-          }) || refreshedMeals.length !== localSelectedMeals.length;
-
-          if (isDifferent) {
-            setLocalSelectedMeals(refreshedMeals.sort((a, b) => mealTypes.indexOf(a.type) - mealTypes.indexOf(b.type)));
-            lastSavedMealsRef.current = refreshedMeals;
-          } else {
-            lastSavedMealsRef.current = localSelectedMeals;
-          }
-        }
-      } catch (err) {
-        console.error("❌ Error saving diet log:", err.response?.data || err.message);
-        setError("Failed to save meal log. Please try again.");
-      }
-    };
-
     if (title === "Today") {
+      const saveMealToBackend = async () => {
+        if (!uid || isNaN(parseInt(uid))) {
+          console.error("❌ Invalid user_id:", uid);
+          setError("Invalid user ID. Please log in again.");
+          return;
+        }
+
+        try {
+          const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+          const totals = localSelectedMeals.reduce(
+            (acc, m) => ({
+              calories: acc.calories + (Number(m.actual_calories) || 0),
+              proteins: acc.proteins + (Number(m.proteins) || 0),
+              carbs: acc.carbs + (Number(m.carbs) || 0),
+              fats: acc.fats + (Number(m.fats) || 0),
+            }),
+            { calories: 0, proteins: 0, carbs: 0, fats: 0 }
+          );
+
+          const logData = {
+            user_id: parseInt(uid),
+            log_date: today,
+            total_calories: totals.calories,
+            proteins: totals.proteins,
+            carbs: totals.carbs,
+            fats: totals.fats,
+            breakfast: [],
+            lunch: [],
+            dinner: [],
+            snacks: [],
+          };
+
+          localSelectedMeals.forEach((meal) => {
+            if (meal.dish_name && meal.dish_id) {
+              const mealData = {
+                dish_id: meal.dish_id,
+                dish_name: meal.dish_name,
+                actual_calories: Number(meal.actual_calories) || 0,
+                proteins: Number(meal.proteins) || 0,
+                carbs: Number(meal.carbs) || 0,
+                fats: Number(meal.fats) || 0,
+                quantity: Number(meal.quantity) || 1,
+              };
+              const typeKey = meal.type.toLowerCase();
+              logData[typeKey].push(mealData);
+            }
+          });
+
+          const response = await apiClient.post("/diet-logs", logData);
+          const refreshResponse = await apiClient.get(`/diet-logs/user/${uid}?log_date=${today}`);
+          const logs = refreshResponse.data.logs || [];
+          const refreshedMeals = logs.flatMap((log) =>
+            ["breakfast", "lunch", "dinner", "snacks"].flatMap((type) => {
+              if (!log[type] || !Array.isArray(log[type])) return [];
+              return log[type].map((item) => ({
+                type: type.charAt(0).toUpperCase() + type.slice(1),
+                meal: item.dish_name,
+                dish_name: item.dish_name,
+                dish_id: item.dish_id,
+                actual_calories: Number(item.actual_calories) || 0,
+                proteins: Number(item.proteins) || 0,
+                carbs: Number(item.carbs) || 0,
+                fats: Number(item.fats) || 0,
+                quantity: Number(item.quantity) || 1,
+              }));
+            })
+          );
+
+          if (refreshedMeals.length === 0) {
+            lastSavedMealsRef.current = localSelectedMeals;
+          } else {
+            const isDifferent = refreshedMeals.some((rm, i) => {
+              const lm = localSelectedMeals[i] || {};
+              return (
+                rm.type !== lm.type ||
+                rm.dish_name !== lm.dish_name ||
+                rm.dish_id !== lm.dish_id ||
+                rm.actual_calories !== lm.actual_calories ||
+                rm.proteins !== lm.proteins ||
+                rm.carbs !== lm.carbs ||
+                rm.fats !== lm.fats ||
+                rm.quantity !== lm.quantity
+              );
+            }) || refreshedMeals.length !== localSelectedMeals.length;
+
+            if (isDifferent) {
+              setLocalSelectedMeals(refreshedMeals.sort((a, b) => mealTypes.indexOf(a.type) - mealTypes.indexOf(b.type)));
+              lastSavedMealsRef.current = refreshedMeals;
+            } else {
+              lastSavedMealsRef.current = localSelectedMeals;
+            }
+          }
+        } catch (err) {
+          console.error("❌ Error saving diet log:", err.response?.data || err.message);
+          setError("Failed to save meal log. Please try again.");
+        }
+      };
+
       const hasNewMeal = localSelectedMeals.some((meal, i) => {
         const lastMeal = lastSavedMealsRef.current[i] || {};
         return (
