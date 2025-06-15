@@ -199,7 +199,7 @@ const Diet = () => {
                 description={plan.description}
                 calories={`${plan.calories} kcal`}
                 meals={plan.number_of_meals || "Unknown"}
-                difficulty={plan.description || "Unknown"}
+                difficulty={plan.difficulty || "Unknown"}
                 protein={plan.protein}
                 carbs={plan.carbs}
                 fats={plan.fats}
