@@ -1,92 +1,54 @@
 import { useState, useEffect } from "react";
 import { apiClient } from "../AxiosSetup";
-// import BmiLogo from "../assets/images/bmiLogo";
 import BmiLogo from "../assets/logos/bmiLogo";
+import { useAuth } from "../AuthProvider";
+
+const SkeletonLoader = () => (
+  <div className="p-4 sm:p-6 max-w-lg mx-auto animate-pulse">
+    <div className="h-8 bg-gray-200 rounded w-1/2 mb-6"></div>
+    <div className="p-6 bg-white shadow-lg rounded-lg border border-gray-200">
+      <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+      <div className="h-10 bg-gray-200 rounded mb-4"></div>
+      <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+      <div className="h-10 bg-gray-200 rounded mb-4"></div>
+      <div className="h-12 bg-gray-200 rounded"></div>
+    </div>
+    <div className="p-6 mt-5 bg-white shadow-lg rounded-lg border border-gray-200">
+      <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+    </div>
+  </div>
+);
 
 export default function BmiCalculator() {
+  const { uid, authenticated, loading: authLoading } = useAuth();
   const [bmi, setBmi] = useState(null);
   const [height, setHeight] = useState("");
   const [weight, setWeight] = useState("");
   const [classification, setClassification] = useState("");
   const [color, setColor] = useState(null);
   const [bmiData, setBmiData] = useState([]);
-
-  const userId = localStorage.getItem("gyid");
-  // const bmiData = [
-  //   {
-  //     bmi: 23.1,
-  //     height: 180,
-  //     weight: 75,
-  //     gender: "male",
-  //     date: "25/6",
-  //     time: "5:00PM",
-  //     color: "green",
-  //   },
-  //   {
-  //     bmi: 24.7,
-  //     height: 180,
-  //     weight: 80,
-  //     gender: "male",
-  //     date: "9/8",
-  //     time: "4:30PM",
-  //     color: "green",
-  //   },
-  //   {
-  //     bmi: 26.2,
-  //     height: 180,
-  //     weight: 85,
-  //     gender: "male",
-  //     date: "25/7",
-  //     time: "5:30PM",
-  //     color: "yellow",
-  //   },
-  //   {
-  //     bmi: 27.8,
-  //     height: 180,
-  //     weight: 90,
-  //     gender: "male",
-  //     date: "15/7",
-  //     time: "9:30PM",
-  //     color: "orange",
-  //   },
-  //   {
-  //     bmi: 30.4,
-  //     height: 180,
-  //     weight: 100,
-  //     gender: "male",
-  //     date: "30/6",
-  //     time: "5:30PM",
-  //     color: "orange",
-  //   },
-  //   {
-  //     bmi: 32.4,
-  //     height: 180,
-  //     weight: 105,
-  //     gender: "male",
-  //     date: "15/6",
-  //     time: "5:30PM",
-  //     color: "red",
-  //   },
-  // ];
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const sendData = async (bmiValue) => {
+    if (!authenticated || !uid) {
+      setError("Please log in to save BMI data.");
+      return;
+    }
     try {
-      const response = await apiClient.post(
-        `${import.meta.env.VITE_BACKEND_URL}/health-metrics/`,
-        {
-          user_id: userId,
-          log_type: "bmi",
-          value: bmiValue,
-          height: height,
-          weight: weight,
-          log_date: null,
-        }
-      );
-
-      console.log("Data sent successfully:");
+      const response = await apiClient.post(`/health-metrics/`, {
+        user_id: parseInt(uid),
+        log_type: "bmi",
+        value: parseFloat(bmiValue),
+        height: parseInt(height),
+        weight: parseInt(weight),
+        log_date: new Date().toISOString().split("T")[0],
+      });
+      console.log("Data sent successfully:", response.data);
+      fetchLogs();
     } catch (error) {
-      console.error("Error sending data:", error);
-      alert("Failed to send data. Please try again.");
+      console.error("Error sending data:", error.response?.data || error);
+      setError("Failed to save BMI data.");
     }
   };
 
@@ -95,12 +57,9 @@ export default function BmiCalculator() {
       alert("Please enter both height and weight.");
       return;
     }
-
     const heightInMeters = height / 100;
     const bmiValue = (weight / (heightInMeters * heightInMeters)).toFixed(1);
     setBmi(bmiValue);
-
-    sendData(bmiValue);
 
     let classification = "";
     let color = "";
@@ -109,7 +68,7 @@ export default function BmiCalculator() {
       color = "red";
     } else if (bmiValue >= 18.5 && bmiValue < 24.9) {
       classification = "Normal weight";
-      color="green";
+      color = "green";
     } else if (bmiValue >= 25 && bmiValue < 29.9) {
       classification = "Overweight";
       color = "orange";
@@ -119,27 +78,35 @@ export default function BmiCalculator() {
     }
     setClassification(classification);
     setColor(color);
-    fetchLogs();
-    
+
+    sendData(bmiValue);
   };
 
   const fetchLogs = async () => {
+    if (!authenticated || !uid) {
+      setLoading(false);
+      return;
+    }
     try {
-      const response = await apiClient.get(
-        `${import.meta.env.VITE_BACKEND_URL}/health-metrics/bmi/${userId}`
-      );
-      const data = response.data.logs;
+      const response = await apiClient.get(`/health-metrics/bmi/${uid}`);
+      const data = response.data.logs || [];
       setBmiData(data);
-      console.log(data);
+      console.log("Fetched BMI logs:", data);
     } catch (err) {
-      console.error("Error fetching logs:", err);
-      alert("Failed to fetch logs. Please try again.");
+      console.error("Error fetching logs:", err.response?.data || err);
+      setError("Failed to fetch BMI logs.");
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchLogs();
-  }, []);
+  }, [uid, authenticated]);
+
+  if (authLoading || loading) return <SkeletonLoader />;
+  if (!authenticated) return <p className="p-4 text-red-500">Please log in to use the BMI Calculator.</p>;
+  if (error) return <p className="p-4 text-red-500">{error}</p>;
 
   return (
     <div className="p-4 sm:p-6 max-w-lg mx-auto">
@@ -150,61 +117,38 @@ export default function BmiCalculator() {
             BMI Calculator
           </h1>
         </div>
-        {/* is age necessary? */}
-        {/* <div className="mt-4">
-          <label className="block text-lg font-semibold text-gray-800">
-            Age
-          </label>
-          <input
-            type="text"
-            className="mt-1 block w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter your age"
-          />
-        </div> */}
-
         <div className="mt-4">
           <label className="block text-lg font-semibold text-gray-800">
             Weight
           </label>
           <input
-            type="text"
+            type="number"
             className="mt-1 block w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Enter your weight in kg"
+            value={weight}
             onChange={(e) => setWeight(e.target.value)}
           />
         </div>
-
         <div className="mt-4">
           <label className="block text-lg font-semibold text-gray-800">
             Height
           </label>
           <input
-            type="text"
+            type="number"
             className="mt-1 block w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Enter your height in cm"
+            value={height}
             onChange={(e) => setHeight(e.target.value)}
           />
         </div>
-
-        {/* is male female necessary? */}
-        {/* <div className="flex justify-center gap-5 mt-5">
-          <button className="bg-gray-500 text-white text-sm px-4 py-2 w-1/2 sm:w-40 md:w-48 rounded-lg hover:bg-gray-600 transition duration-200">
-            Male
-          </button>
-          <button className="bg-blue-500 text-white text-sm px-4 py-2 w-1/2 sm:w-40 md:w-48 rounded-lg hover:bg-blue-600 transition duration-200">
-            Female
-          </button>
-        </div> */}
-
         <button
           className="mt-6 w-full py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-[#3588a2] transition duration-200 ease-in-out"
           onClick={() => calculateBmi(height, weight)}
         >
           CALCULATE
         </button>
-
         {bmi && (
-          <div className="text-center align mt-6 ">
+          <div className="text-center mt-6">
             <h1 className="text-3xl font-semibold text-gray-800">
               YOUR BMI IS: {bmi}
             </h1>
@@ -215,10 +159,9 @@ export default function BmiCalculator() {
           </div>
         )}
       </div>
-
       <div className="p-6 mt-5 bg-white shadow-lg rounded-lg border border-gray-200">
         <h5>Past Records:</h5>
-        {bmiData ? (
+        {bmiData.length > 0 ? (
           bmiData.map((entry, index) => (
             <div key={index} className="flex justify-between items-center mt-5">
               <div className="flex items-center space-x-2 w-1/3">
@@ -235,13 +178,9 @@ export default function BmiCalculator() {
                 ></span>
                 <span className="text-lg font-semibold">{entry.value}</span>
               </div>
-
-              {/* no data avaiable in database */}
               <div className="text-sm text-gray-600 w-1/3 text-center">
-              {parseInt(entry.height)}cm • {entry.weight}kg 
-              {/* • {entry.gender} */}
-            </div>
-
+                {parseInt(entry.height)}cm • {entry.weight}kg
+              </div>
               <div className="text-sm text-gray-500 w-1/3 text-right">
                 {entry.created_at.slice(0, 10)}, {entry.created_at.slice(11, 16)}
               </div>

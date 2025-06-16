@@ -2,90 +2,54 @@ import { useEffect, useState } from "react";
 import { apiClient } from "../../AxiosSetup";
 import { FaCalendarAlt, FaMapMarkerAlt } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../AuthProvider";
 
 export default function MyEvents() {
+  const { uid, authenticated, loading: authLoading } = useAuth();
   const [myevent, setMyevent] = useState([]);
   const [eventID, setEventID] = useState([]);
-  const userID = localStorage.getItem("gyid");
   const navigate = useNavigate();
 
   const joinEvent = async () => {
     try {
-      const response = await apiClient.get(
-        `${import.meta.env.VITE_BACKEND_URL}/events`
-      );
+      const response = await apiClient.get("/events");
       const data = response.data.events;
-
       setMyevent(data);
     } catch (error) {
       console.error("Error joining event:", error);
-      alert("Failed to join event. Please try again later.");
-    }
-  };
-
-  // fetching events people signed up for
-  const fetchMyEvents = async () => {
-    try {
-      const response = await apiClient.get(
-        `${import.meta.env.VITE_BACKEND_URL}/events/logs/user/${userID}`
-      );
-      const data = response.data.logs;
-      const eventIds = data.map((event) => event.event_id);
-      setEventID(eventIds);
-    } catch (error) {
-      console.error("Error fetching events:", error);
       alert("Failed to fetch events. Please try again later.");
     }
   };
 
+  const fetchMyEvents = async () => {
+    if (!authenticated || !uid) {
+      alert("Please log in to view your events.");
+      return;
+    }
+    try {
+      const response = await apiClient.get(`/events/logs/user/${uid}`);
+      const data = response.data.logs || [];
+      const eventIds = data.map((event) => event.event_id);
+      setEventID(eventIds);
+    } catch (error) {
+      console.error("Error fetching events:", error);
+      alert("Failed to fetch your events. Please try again later.");
+    }
+  };
+
   useEffect(() => {
-    fetchMyEvents();
-    joinEvent();
-  }, []);
+    if (!authLoading) {
+      fetchMyEvents();
+      joinEvent();
+    }
+  }, [authLoading, authenticated, uid]);
 
   const joinedEvents = myevent.filter((event) =>
     eventID.includes(event.event_id)
   );
 
-  const dummyEvents = [
-    {
-      id: 1,
-      title: "CrossFit Challenge",
-      category: "CrossFit",
-      date: "Oct 25, 2023",
-      time: "6:00 PM",
-      location: "Elite Fitness Gym",
-      participants: 30,
-      image:
-        "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    },
-    {
-      id: 2,
-      title: "Yoga & Meditation Retreat",
-      category: "Yoga",
-      date: "Nov 5, 2023",
-      time: "8:00 AM",
-      location: "Greenwood Park",
-      participants: 20,
-      image:
-        "https://images.unsplash.com/photo-1599901860904-17e6ed7083a0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    },
-    {
-      id: 3,
-      title: "Marathon Training",
-      category: "Running",
-      date: "Dec 10, 2023",
-      time: "7:00 AM",
-      location: "Cycling Tour",
-      participants: 50,
-      image:
-        "https://images.unsplash.com/photo-1541625602330-2277a4c46182?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    },
-  ];
-
-  const goTonewPage = () => {
-    navigate("/eventLeaderboard");
-  };
+  if (authLoading) return <p>Loading...</p>;
+  if (!authenticated) return <p>Please log in to view your events.</p>;
 
   return (
     <section className="pt-4 sm:pt-6 mx-auto">
@@ -100,13 +64,10 @@ export default function MyEvents() {
               className="bg-white shadow-md rounded-lg overflow-hidden relative"
             >
               <img
-              src="https://images.unsplash.com/photo-1599901860904-17e6ed7083a0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-              alt={events.title}
-              className="w-full h-56 object-cover rounded-t-lg"
-            />
-              {/* <p className="absolute top-2 right-2 bg-purple-500 text-white text-xs rounded-full px-2 py-1">
-              {events.category}
-            </p> */}
+                src="https://images.unsplash.com/photo-1599901860904-17e6ed7083a0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                alt={events.title}
+                className="w-full h-56 object-cover rounded-t-lg"
+              />
               <div className="p-4">
                 <h4 className="text-left text-lg font-medium">{events.name}</h4>
                 <div className="grid grid-cols-2 grid-rows-2 gap-2 mt-3 mb-0">
@@ -138,7 +99,7 @@ export default function MyEvents() {
                     Details
                   </button>
                   <button
-                    onClick={goTonewPage}
+                    onClick={() => navigate("/eventLeaderboard")}
                     className="bg-blue-500 text-white text-sm px-4 py-2 w-1/2 sm:w-40 md:w-48 rounded-lg hover:bg-blue-600 transition duration-200"
                   >
                     Leaderboard
@@ -149,8 +110,7 @@ export default function MyEvents() {
           ))
         ) : (
           <p className="text-gray-600 text-center col-span-full">
-            No events joined yet. Explore and join some events to see them
-            here!
+            No events joined yet. Explore and join some events to see them here!
           </p>
         )}
       </div>

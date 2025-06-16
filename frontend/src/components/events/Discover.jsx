@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { apiClient } from "../../AxiosSetup";
-
 import {
   FaCalendarAlt,
   FaMapMarkerAlt,
@@ -8,22 +7,20 @@ import {
   FaFilter,
   FaSearch,
 } from "react-icons/fa";
+import { useAuth } from "../../AuthProvider";
 
 export default function Discover() {
+  const { uid, authenticated, loading: authLoading } = useAuth();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterevents, setFilterevents] = useState("");
-
   const [open, setOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
   const fetchEvents = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get(
-        `${import.meta.env.VITE_BACKEND_URL}/events`
-      );
-
+      const response = await apiClient.get("/events");
       const data = response.data.events;
       setEvents(data);
     } catch (error) {
@@ -33,51 +30,15 @@ export default function Discover() {
     }
   };
 
-  // Fetch events 
   useEffect(() => {
-    fetchEvents();
-  }, []);
+    if (!authLoading) {
+      fetchEvents();
+    }
+  }, [authLoading]);
 
- 
-  if (loading) {
+  if (authLoading || loading) {
     return <p>Loading events...</p>;
   }
-
-  const dummyEvents = [
-    {
-      id: 1,
-      name: "CrossFit Challenge",
-      category: "CrossFit",
-      date: "Oct 25, 2023",
-      event_time: "6:00 PM",
-      event_location: "Elite Fitness Gym",
-      number_of_participants: 30,
-      image:
-        "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    },
-    {
-      id: 2,
-      name: "Yoga & Meditation Retreat",
-      category: "Yoga",
-      date: "Nov 5, 2023",
-      event_time: "8:00 AM",
-      event_location: "Greenwood Park",
-      number_of_participants: 20,
-      image:
-        "https://images.unsplash.com/photo-1599901860904-17e6ed7083a0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    },
-    {
-      id: 3,
-      name: "Marathon Training",
-      category: "Running",
-      date: "Dec 10, 2023",
-      event_time: "7:00 AM",
-      event_location: "Cycling Tour",
-      number_of_participants: 50,
-      image:
-        "https://images.unsplash.com/photo-1541625602330-2277a4c46182?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    },
-  ];
 
   const detailModal = (eventId) => {
     const event = events.find((evt) => evt.event_id === eventId);
@@ -85,48 +46,44 @@ export default function Discover() {
     setOpen(true);
   };
 
-  const filteredEvents = events.filter(
-    (event) => event.name.toLowerCase().includes(filterevents.toLowerCase())
-    //  || event.category.toLowerCase().includes(filterevents.toLowerCase())
+  const filteredEvents = events.filter((event) =>
+    event.name.toLowerCase().includes(filterevents.toLowerCase())
   );
 
   const joinEvent = async (eventID) => {
+    if (!authenticated || !uid) {
+      alert("Please log in to join events.");
+      return;
+    }
     try {
-      const response = await apiClient.post(
-        `${import.meta.env.VITE_BACKEND_URL}/events/logs`,
-        {
-          event_id: eventID,
-          user_id: localStorage.getItem("gyid"), 
-          regiment_id: null, 
-          workout_template_values: null, 
-          user_score: null,
-        }
-
-      )
+      const response = await apiClient.post("/events/logs", {
+        event_id: eventID,
+        user_id: parseInt(uid),
+        regiment_id: null,
+        workout_template_values: null,
+        user_score: null,
+      });
       alert("Successfully joined the event!");
       console.log("Event joined successfully:", response.data);
-    }catch (e){
-    console.error("Error joining event:", e);
-    alert("Failed to join the event. Please try again later.");
-  }
-  }
+    } catch (e) {
+      console.error("Error joining event:", e);
+      alert("Failed to join the event. Please try again later.");
+    }
+  };
 
   return (
     <>
       <div className="searchandFilter">
-        <div class="search-filter flex flex-col items-start gap-2 my-4 mx-7">
-          <div class="search-box w-full flex items-center bg-gray-200 p-2 rounded-full mb-4">
-            <FaSearch class="icon ml-1 mr-3 text-gray-500" />
+        <div className="search-filter flex flex-col items-start gap-2 my-4 mx-7">
+          <div className="search-box w-full flex items-center bg-gray-200 p-2 rounded-full mb-4">
+            <FaSearch className="icon ml-1 mr-3 text-gray-500" />
             <input
               type="text"
               placeholder="Search events by name, category..."
-              class="border-none bg-transparent outline-none flex-1"
+              className="border-none bg-transparent outline-none flex-1"
               onChange={(e) => setFilterevents(e.target.value)}
             />
           </div>
-          {/* <button class="filter-btn flex items-center bg-white border border-gray-300 rounded-md px-3 py-2 cursor-pointer">
-            <FaFilter class="icon mr-2 text-gray-500" /> Filters
-          </button> */}
         </div>
       </div>
 
@@ -148,11 +105,6 @@ export default function Discover() {
                       src="https://images.unsplash.com/photo-1541625602330-2277a4c46182?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
                       alt={events.name}
                     />
-                    {/* decide if we need category */}
-
-                    {/* <p className="absolute top-2 right-2 bg-purple-500 text-white text-xs rounded-full px-2 py-1">
-                      {events.category}
-                    </p> */}
                   </div>
 
                   <div className="p-4">
@@ -192,9 +144,10 @@ export default function Discover() {
                       >
                         Details
                       </button>
-                     
-                      <button className="bg-blue-500 text-white text-sm px-4 py-2 w-1/2 sm:w-40 md:w-48 rounded-lg hover:bg-blue-600 transition duration-200"
-                      onClick={() => joinEvent(events.event_id)}>
+                      <button
+                        className="bg-blue-500 text-white text-sm px-4 py-2 w-1/2 sm:w-40 md:w-48 rounded-lg hover:bg-blue-600 transition duration-200"
+                        onClick={() => joinEvent(events.event_id)}
+                      >
                         Join Event
                       </button>
                     </div>
@@ -209,19 +162,14 @@ export default function Discover() {
           </div>
         </div>
       </section>
-      {/* Modal Component */}
       {open && selectedEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md">
           <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-            <h2 className="text-xl font-bold mb-4">
-              {selectedEvent.name}
-            </h2>
-            
+            <h2 className="text-xl font-bold mb-4">{selectedEvent.name}</h2>
             <p className="mb-2">
               <strong>Description:</strong>{" "}
               {selectedEvent.description || "Not available"}
             </p>
-            
             <button
               className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
               onClick={() => setOpen(false)}
