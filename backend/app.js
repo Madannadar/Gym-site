@@ -22,6 +22,9 @@ dotenv.config();
 const app = express();
 
 // Middlewares
+// // Trust the proxy to get accurate client IPs
+app.set("trust proxy", 1);
+
 app.use(
   cors({
     origin: [
