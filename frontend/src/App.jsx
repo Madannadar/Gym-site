@@ -133,7 +133,9 @@ const App = () => {
             path="/"
             element={
               <ProtectedRoute>
-                <Home />
+                <MealProvider>
+                  <Home />
+                </MealProvider> 
               </ProtectedRoute>
             }
           />
