@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { apiClient, disguiseAndStoreToken } from "../AxiosSetup";
 import { useAuth } from "../AuthProvider";
 
-// Google Login Button Component
 const GoogleLoginButton = () => {
   const handleGoogleLogin = () => {
     window.location.href = `${import.meta.env.VITE_BACKEND_URL}/auth/google`;
@@ -12,10 +11,14 @@ const GoogleLoginButton = () => {
   return (
     <button
       onClick={handleGoogleLogin}
-      className="bg-red-500 text-white px-4 py-2 rounded shadow hover:bg-red-600 flex items-center gap-2"
+      className="grid grid-cols-[auto,1fr] items-center w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-200"
     >
-      <img src="/google-icon.svg" alt="Google" className="w-5 h-5" />
-      Continue with Google
+      <img
+        src="/googlelogo.webp"
+        alt="Google G"
+        className="center w-6 h-6 bg-white rounded-full"
+      />
+      <p className="pl-4 font-medium">Continue with Google</p>
     </button>
   );
 };
