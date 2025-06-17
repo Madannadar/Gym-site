@@ -59,12 +59,14 @@ const Navbar = () => {
       <div className="max-w-6xl mx-auto flex justify-between items-center">
         {/* Logo */}
         <div className="flex items-center gap-2 -ml-2">
-          <div className="w-9 h-9 flex items-center justify-center rounded-full text-lg font-bold bg-gradient-to-r from-blue-500 to-purple-500 text-white">
-            L
-          </div>
-          <span className="text-lg font-bold bg-gradient-to-r from-blue-500 to-purple-500 text-transparent bg-clip-text">
-            Logo
-          </span>
+          <Link to={"/"} className="flex items-center gap-2">
+            <div className="w-9 h-9 flex items-center justify-center rounded-full text-lg font-bold bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+              L
+            </div>
+            <span className="text-lg font-bold bg-gradient-to-r from-blue-500 to-purple-500 text-transparent bg-clip-text">
+              Logo
+            </span>
+          </Link>
         </div>
 
         {/* Desktop Menu */}
