@@ -50,13 +50,10 @@ const AttendanceScanPage = () => {
     if (data && data !== scannedData) {
       setScannedData(data);
       try {
-        const res = await apiClient.post(
-          `${import.meta.env.VITE_BACKEND_URL}/api/attendance/log`,
-          {
-            user_id: userId,
-            scanned_qr_code: data,
-          },
-        );
+        const res = await apiClient.post(`/api/attendance/log`, {
+          user_id: userId,
+          scanned_qr_code: data,
+        });
         setMessage("✅ Attendance marked successfully.");
         setError("");
       } catch (err) {

@@ -45,8 +45,9 @@ const updateAccessToken = (newAccessToken) => {
   disguiseAndStoreToken("access", newAccessToken);
 };
 
-// Axios instance
-const apiClient = axios.create();
+const apiClient = axios.create({
+  baseURL: `${import.meta.env.VITE_BACKEND_URL}`,
+});
 
 // Token refresh queue management
 let isRefreshing = false;
@@ -86,7 +87,7 @@ apiClient.interceptors.response.use(
       {
         status: response.status,
         data: response.data,
-      }
+      },
     );
     return response;
   },
@@ -99,14 +100,10 @@ apiClient.interceptors.response.use(
         status: error.response?.status,
         data: error.response?.data,
         message: error.message,
-      }
+      },
     );
 
-    if (
-      error.response?.status === 401 &&
-      !originalRequest._retry &&
-      originalRequest.url !== "/api/diet-logs"
-    ) {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve) => {
           addRefreshSubscriber((newToken) => {
@@ -123,7 +120,7 @@ apiClient.interceptors.response.use(
         const refreshToken = getRefreshToken();
         console.log("🔁 Refreshing access token...");
 
-        const response = await apiClient.post("/api/auth/refresh-token", {
+        const response = await apiClient.post("/auth/refresh-token", {
           token: refreshToken,
         });
 
@@ -136,14 +133,17 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (refreshError) {
         isRefreshing = false;
-        console.error("❌ Refresh token failed:", refreshError.response?.data || refreshError);
+        console.error(
+          "❌ Refresh token failed:",
+          refreshError.response?.data || refreshError,
+        );
         await logoutUser();
         return Promise.reject(refreshError);
       }
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 // Exports

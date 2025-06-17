@@ -23,10 +23,7 @@ const VerifyEmail = () => {
     setLoading(true);
     setError("");
     try {
-      await apiClient.post(
-        `${import.meta.env.VITE_BACKEND_URL}/auth/verify-email`,
-        { token },
-      );
+      await apiClient.post(`/auth/verify-email`, { token });
       setVerified(true);
       setLoading(false);
       setTimeout(() => navigate("/"), 2500);

@@ -48,10 +48,10 @@ const ResetPassword = () => {
     }
 
     try {
-      await apiClient.post(
-        `${import.meta.env.VITE_BACKEND_URL}/auth/reset-password`,
-        { token, newPassword: password },
-      );
+      await apiClient.post(`/auth/reset-password`, {
+        token,
+        newPassword: password,
+      });
       setSuccess("Password reset successful!");
     } catch (err) {
       setError(err.response?.data?.error || "Failed to reset password.");

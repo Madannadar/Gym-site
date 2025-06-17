@@ -28,7 +28,6 @@ import WorkoutLogForm from "./pages/workout/AddWorkout_log.jsx";
 import Workout_Management from "./pages/workout/Workout_Management.jsx";
 import StartWorkout from "./pages/workout/StartWorkout.jsx";
 
-
 import Login from "./pages/LoginPage.jsx";
 import Signup from "./pages/SignUpPage.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
@@ -47,7 +46,6 @@ const ProtectedRoute = ({ children }) => {
   if (loading) return <Loader />;
   if (!authenticated) return <Navigate to="/login" replace />;
   return children;
-
 };
 
 const App = () => {
@@ -69,13 +67,13 @@ const App = () => {
           <Route path="/create-regiment" element={<AddRegiment />} />
           <Route path="/create-workout_logs" element={<WorkoutLogForm />} />
           <Route path="/Workout_Management" element={<Workout_Management />} />
-          <Route path="/start-workout/:regimenId/:workoutId" element={<StartWorkout />} />
-
-          {/* Protected Routes */}
           <Route
-
+            path="/start-workout/:regimenId/:workoutId"
+            element={<StartWorkout />}
+          />
 
           {/* Protected Routes */}
+
           <Route
             path="/attendence-scan"
             element={
@@ -94,7 +92,6 @@ const App = () => {
           />
 
           <Route
-
             path="/"
             element={
               <ProtectedRoute>

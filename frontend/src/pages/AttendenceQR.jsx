@@ -9,9 +9,7 @@ const TodaysQRPage = () => {
 
   const fetchQRString = async () => {
     try {
-      const res = await apiClient.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/attendance/qr/string`,
-      );
+      const res = await apiClient.get(`/api/attendance/qr/string`);
       setQrString(res.data.qr_code);
     } catch (err) {
       console.error("❌ Failed to fetch QR string:", err);

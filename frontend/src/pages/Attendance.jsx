@@ -21,9 +21,7 @@ const Attendance = () => {
   useEffect(() => {
     const fetchAttendanceData = async () => {
       try {
-        const res = await apiClient.get(
-          `${import.meta.env.VITE_BACKEND_URL}/attendence/user/month/${uid}`,
-        );
+        const res = await apiClient.get(`/attendence/user/month/${uid}`);
         console.log(res);
         setMonthlyAttendence(res.data.monthly_attendance);
 

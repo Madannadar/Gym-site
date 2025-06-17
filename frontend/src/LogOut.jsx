@@ -20,7 +20,7 @@ const logoutUser = async () => {
     // Optional: if you want to notify server
     const refreshToken = localStorage.getItem("refresh_token_raw");
     if (refreshToken) {
-      await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/logout`, {
+      await fetch(`/auth/logout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

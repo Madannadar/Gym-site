@@ -41,9 +41,7 @@ const AttendanceHistoryPage = ({
         view === "monthly"
           ? `/attendance/user/month/${uid}`
           : `/attendance/user/${uid}`;
-      const res = await apiClient.get(
-        `${import.meta.env.VITE_BACKEND_URL}${endpoint}`,
-      );
+      const res = await apiClient.get(`${endpoint}`);
 
       const fetchedLogs =
         view === "monthly" ? res.data.monthly_attendance : res.data.logs;

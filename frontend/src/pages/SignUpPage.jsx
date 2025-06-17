@@ -16,8 +16,8 @@ const SignUpPage = () => {
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
 
-  const { setUid, setAccessToken, setRefreshToken, setAuthenticated } = useAuth();
-
+  const { setUid, setAccessToken, setRefreshToken, setAuthenticated } =
+    useAuth();
 
   const handleChange = (e) => {
     setForm((prev) => ({
@@ -30,14 +30,9 @@ const SignUpPage = () => {
     e.preventDefault();
     setError("");
     try {
-
-      const response = await apiClient.post(
-        `${import.meta.env.VITE_BACKEND_URL}/auth/register`,
-        form,
-      );
+      const response = await apiClient.post(`/auth/register`, form);
 
       const { accessToken, refreshToken, uid } = response.data;
-
 
       // Securely store tokens and UID
       disguiseAndStoreToken("access", accessToken);
@@ -53,7 +48,6 @@ const SignUpPage = () => {
       // Show success message
       setSuccess(true);
     } catch (err) {
-
       console.error("Signup error:", err);
 
       setError(err.response?.data?.error || "Signup failed. Try again.");

@@ -9,8 +9,8 @@ const LoginPage = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const { setUid, setAccessToken, setRefreshToken, setAuthenticated } = useAuth();
-
+  const { setUid, setAccessToken, setRefreshToken, setAuthenticated } =
+    useAuth();
 
   const handleChange = (e) => {
     setForm((prev) => ({
@@ -24,15 +24,11 @@ const LoginPage = () => {
     setError("");
 
     try {
-
-      const res = await apiClient.post(
-        `${import.meta.env.VITE_BACKEND_URL}/auth/login`,
-        form,
-      );
+      const res = await apiClient.post(`/auth/login`, form);
 
       const { accessToken, refreshToken, uid } = res.data;
-
-if (!accessToken || !refreshToken || uid) {
+      console.log(res.data);
+      if (!accessToken || !refreshToken || !uid) {
         throw new Error("Missing tokens or user ID in response");
       }
       disguiseAndStoreToken("access", accessToken);
@@ -51,7 +47,6 @@ if (!accessToken || !refreshToken || uid) {
       setError(err.response?.data?.error || "Login failed. Please try again.");
 
       console.error("🔍 Login error:", err);
-
     }
   };
 

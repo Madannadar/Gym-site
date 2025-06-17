@@ -6,7 +6,7 @@ import "./cron.js";
 import passport from "./config/passport.js";
 import { loggerMiddleware } from "./middlewares/logger.js";
 import dishRouter from "./routers/dish.router.js";
-import dietTempletRouter from "./routers/diet_templet.router.js";
+import dietTempletRouter from "./routers/diet_template.router.js";
 import dietLogRouter from "./routers/diet_log.router.js";
 import workoutRouter from "./routers/workout.router.js";
 import userRouter from "./routers/user.router.js";
@@ -18,17 +18,18 @@ import authRouter from "./routers/auth.router.js";
 import authenticate from "./middlewares/authenticate.middleware.js";
 import leaderboardRouter from "./routers/leaderboard.router.js";
 
-
 dotenv.config();
 const app = express();
 
 // Middlewares
-app.use(cors({
-  origin: ["http://localhost:5173", "http://localhost:3000"], // Adjust for production
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "http://localhost:3000"], // Adjust for production
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  }),
+);
 app.use(express.json());
 
 app.use(loggerMiddleware);
@@ -47,7 +48,6 @@ app.use(passport.session());
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
-
 });
 app.use(limiter);
 
@@ -58,7 +58,7 @@ app.get("/", (req, res) => {
 
 // API routes
 app.use("/api/dishes", dishRouter);
-app.use("/api/diet-templets", dietTemplateRouter); // Updated to match endpoint
+app.use("/api/diet-templets", dietTempletRouter); // Updated to match endpoint
 app.use("/api/diet-logs", dietLogRouter);
 app.use("/api/workouts", workoutRouter);
 

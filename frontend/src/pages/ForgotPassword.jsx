@@ -20,10 +20,7 @@ const ForgotPassword = () => {
 
     setLoading(true);
     try {
-      await apiClient.post(
-        `${import.meta.env.VITE_BACKEND_URL}/auth/request-password-reset`,
-        { email },
-      );
+      await apiClient.post(`/auth/request-password-reset`, { email });
       setSuccess(true);
       setEmail("");
     } catch (err) {

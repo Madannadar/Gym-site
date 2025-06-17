@@ -29,9 +29,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const response = await apiClient.get(
-        `${import.meta.env.VITE_BACKEND_URL}/auth/validate-tokens`,
-      );
+      const response = await apiClient.get(`/auth/validate-tokens`);
       if (response.status === 200) {
         setUid(storedUid);
         setAccessToken(storedAccessToken);
@@ -67,7 +65,6 @@ export const AuthProvider = ({ children }) => {
 
         checkAuth,
         loading,
-
       }}
     >
       {children}
