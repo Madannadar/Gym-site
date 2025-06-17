@@ -26,7 +26,7 @@ const LoginPage = () => {
     try {
       const res = await apiClient.post(`/auth/login`, form);
 
-      const { accessToken, refreshToken, uid } = res.data;
+      const { accessToken, refreshToken, uid, user } = res.data;
       console.log(res.data);
       if (!accessToken || !refreshToken || !uid) {
         throw new Error("Missing tokens or user ID in response");

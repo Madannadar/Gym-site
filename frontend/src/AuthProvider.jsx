@@ -10,6 +10,7 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [uid, setUid] = useState(null);
+
   const [accessToken, setAccessToken] = useState(null);
   const [refreshToken, setRefreshToken] = useState(null);
   const [authenticated, setAuthenticated] = useState(null);
@@ -62,7 +63,6 @@ export const AuthProvider = ({ children }) => {
         setAccessToken,
         setRefreshToken,
         setAuthenticated,
-
         checkAuth,
         loading,
       }}
