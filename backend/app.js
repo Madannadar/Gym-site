@@ -24,7 +24,11 @@ const app = express();
 // Middlewares
 app.use(
   cors({
-    origin: ["*"], // Adjust for production
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "https://gym-site-frontend.vercel.app",
+    ], // Adjust for production
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
