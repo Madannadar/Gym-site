@@ -62,16 +62,68 @@ const App = () => {
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/logout" element={<Logout />} />
 
-          <Route path="/create-exercise" element={<AddExercise />} />
-          <Route path="/create-workout" element={<AddWorkout />} />
-          <Route path="/create-regiment" element={<AddRegiment />} />
-          <Route path="/create-workout_logs" element={<WorkoutLogForm />} />
-          <Route path="/Workout_Management" element={<Workout_Management />} />
           <Route
-            path="/start-workout/:regimenId/:workoutId"
-            element={<StartWorkout />}
+            path="/create-exercise"
+            element={
+              <ProtectedRoute>
+                <AddExercise />
+              </ProtectedRoute>
+            }
           />
 
+          <Route
+            path="/create-workout"
+            element={
+              <ProtectedRoute>
+                <AddWorkout />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/create-regiment"
+            element={
+              <ProtectedRoute>
+                <AddRegiment />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/create-workout_logs"
+            element={
+              <ProtectedRoute>
+                <WorkoutLogForm />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/Workout_Management"
+            element={
+              <ProtectedRoute>
+                <Workout_Management />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/start-workout/:regimenId/:workoutId"
+            element={
+              <ProtectedRoute>
+                <StartWorkout />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/attendence-scan"
+            element={
+              <ProtectedRoute>
+                <AttendanceScanPage />
+              </ProtectedRoute>
+            }
+          />
           {/* Protected Routes */}
 
           <Route
