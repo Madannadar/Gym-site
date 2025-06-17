@@ -319,6 +319,10 @@ CREATE TABLE IF NOT EXISTS event_templates (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+--ALTER TABLE user_health_logs 
+--ADD COLUMN height DECIMAL(5,2),
+--ADD COLUMN weight DECIMAL(5,2);
+
 
 
 

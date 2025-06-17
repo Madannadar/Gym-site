@@ -15,7 +15,9 @@ const SignUpPage = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
+
   const { setUid, setAccessToken, setRefreshToken, setAuthenticated } = useAuth();
+
 
   const handleChange = (e) => {
     setForm((prev) => ({
@@ -28,17 +30,22 @@ const SignUpPage = () => {
     e.preventDefault();
     setError("");
     try {
-      console.log("VITE_BACKEND_URL:", import.meta.env.VITE_BACKEND_URL);
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000/api";
-      const response = await apiClient.post(`${backendUrl}/auth/register`, form);
 
-      const { accessToken, refreshToken, user } = response.data;
+      const response = await apiClient.post(
+        `${import.meta.env.VITE_BACKEND_URL}/auth/register`,
+        form,
+      );
+
+      const { accessToken, refreshToken, uid } = response.data;
+
 
       // Securely store tokens and UID
       disguiseAndStoreToken("access", accessToken);
       disguiseAndStoreToken("refresh", refreshToken);
-      localStorage.setItem("uid", btoa(user.id));
-      setUid(user.id);
+
+      localStorage.setItem("gyid", uid);
+      setUid(uid);
+
       setAccessToken(accessToken);
       setRefreshToken(refreshToken);
       setAuthenticated(true);
@@ -46,7 +53,9 @@ const SignUpPage = () => {
       // Show success message
       setSuccess(true);
     } catch (err) {
+
       console.error("Signup error:", err);
+
       setError(err.response?.data?.error || "Signup failed. Try again.");
     }
   };

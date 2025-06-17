@@ -14,33 +14,42 @@ export const AuthProvider = ({ children }) => {
   const [refreshToken, setRefreshToken] = useState(null);
   const [authenticated, setAuthenticated] = useState(null);
 
+  const [loading, setLoading] = useState(true);
+
+  const checkAuth = async () => {
+    const storedUid = getUid();
+    const storedAccessToken = getAccessToken();
+    const storedRefreshToken = getRefreshToken();
+    //console.log(storedAccessToken);
+    if (!storedUid || !storedAccessToken || !storedRefreshToken) {
+      //console.log("setting false ");
+      setAuthenticated(false);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await apiClient.get(
+        `${import.meta.env.VITE_BACKEND_URL}/auth/validate-tokens`,
+      );
+      if (response.status === 200) {
+        setUid(storedUid);
+        setAccessToken(storedAccessToken);
+        setRefreshToken(storedRefreshToken);
+        setAuthenticated(true);
+        console.log(uid);
+      } else {
+        setAuthenticated(false);
+      }
+    } catch (error) {
+      console.error("Token validation failed:", error);
+      setAuthenticated(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const checkAuth = async () => {
-      const storedUid = getUid();
-      const storedAccessToken = getAccessToken();
-      const storedRefreshToken = getRefreshToken();
-
-      if (!storedUid || !storedAccessToken || !storedRefreshToken) {
-        setAuthenticated(false);
-        return;
-      }
-
-      try {
-        const response = await apiClient.get("/auth/validate-tokens"); // Changed from "/api/auth/validate-tokens"
-        if (response.status === 200) {
-          setUid(storedUid);
-          setAccessToken(storedAccessToken);
-          setRefreshToken(storedRefreshToken);
-          setAuthenticated(true);
-        } else {
-          setAuthenticated(false);
-        }
-      } catch (error) {
-        console.error("Error during token validation:", error);
-        setAuthenticated(false);
-      }
-    };
-
     checkAuth();
   }, []);
 
@@ -55,6 +64,10 @@ export const AuthProvider = ({ children }) => {
         setAccessToken,
         setRefreshToken,
         setAuthenticated,
+
+        checkAuth,
+        loading,
+
       }}
     >
       {children}

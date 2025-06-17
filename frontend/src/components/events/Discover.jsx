@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiClient } from "../../AxiosSetup";
+
 import {
   FaCalendarAlt,
   FaMapMarkerAlt,
@@ -17,10 +18,18 @@ export default function Discover() {
   const [open, setOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
+
+  const [open, setOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+
   const fetchEvents = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get("/events");
+      const response = await apiClient.get(
+        `${import.meta.env.VITE_BACKEND_URL}/events`
+      );
+
+
       const data = response.data.events;
       setEvents(data);
     } catch (error) {
@@ -29,6 +38,7 @@ export default function Discover() {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     if (!authLoading) {
@@ -71,6 +81,7 @@ export default function Discover() {
     }
   };
 
+
   return (
     <>
       <div className="searchandFilter">
@@ -84,6 +95,7 @@ export default function Discover() {
               onChange={(e) => setFilterevents(e.target.value)}
             />
           </div>
+
         </div>
       </div>
 
@@ -105,6 +117,7 @@ export default function Discover() {
                       src="https://images.unsplash.com/photo-1541625602330-2277a4c46182?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
                       alt={events.name}
                     />
+
                   </div>
 
                   <div className="p-4">
@@ -144,10 +157,12 @@ export default function Discover() {
                       >
                         Details
                       </button>
+
                       <button
                         className="bg-blue-500 text-white text-sm px-4 py-2 w-1/2 sm:w-40 md:w-48 rounded-lg hover:bg-blue-600 transition duration-200"
                         onClick={() => joinEvent(events.event_id)}
                       >
+
                         Join Event
                       </button>
                     </div>
@@ -162,14 +177,21 @@ export default function Discover() {
           </div>
         </div>
       </section>
+
+      {/* Modal Component */}
       {open && selectedEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md">
           <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-            <h2 className="text-xl font-bold mb-4">{selectedEvent.name}</h2>
+            <h2 className="text-xl font-bold mb-4">
+              {selectedEvent.name}
+            </h2>
+            
+
             <p className="mb-2">
               <strong>Description:</strong>{" "}
               {selectedEvent.description || "Not available"}
             </p>
+
             <button
               className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
               onClick={() => setOpen(false)}

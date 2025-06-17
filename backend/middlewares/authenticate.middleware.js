@@ -1,3 +1,4 @@
+
 import { verifyAccessToken } from '../utils/jwt.util.js';
 
 function authenticate(req, res, next) {
@@ -6,6 +7,7 @@ function authenticate(req, res, next) {
   const token = authHeader && authHeader.split(' ')[1];
   console.log(`🔍 Token: ${token ? 'Present' : 'Missing'}`);
 
+
   if (token) {
     try {
       const decoded = verifyAccessToken(token);
@@ -13,17 +15,19 @@ function authenticate(req, res, next) {
       req.user = decoded;
       return next();
     } catch (error) {
+
       console.error(`❌ Token Error: ${error.name} - ${error.message}`);
       if (error.name === 'TokenExpiredError') {
+
         return res.status(401).json({
           success: false,
-          error: 'Token expired',
+          error: "Token expired",
           isExpired: true,
         });
       }
       return res.status(403).json({
         success: false,
-        error: 'Invalid token',
+        error: "Invalid token",
       });
     }
   }
@@ -43,7 +47,7 @@ function authenticate(req, res, next) {
   console.error('❌ No token or session found');
   return res.status(401).json({
     success: false,
-    error: 'Authorization token or session required',
+    error: "Authorization token or session required",
   });
 }
 

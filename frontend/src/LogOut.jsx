@@ -35,7 +35,8 @@ const logoutUser = async () => {
   // Clear disguised tokens and uid
   clearDisguisedToken("access");
   clearDisguisedToken("refresh");
-  localStorage.removeItem("uid");
+
+  localStorage.removeItem("gyid");
   localStorage.removeItem("refresh_token_raw"); // If stored separately
 
   // Redirect to login

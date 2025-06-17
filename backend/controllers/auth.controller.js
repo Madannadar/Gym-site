@@ -13,6 +13,7 @@ const registerUser = async (req, res) => {
     if (existingUser) {
       return res
         .status(409)
+
         .json({ success: false, error: "Email already in use" });
     }
 
@@ -35,8 +36,9 @@ const registerUser = async (req, res) => {
       accessToken,
       refreshToken,
       expiresIn: 180,
+      uid: user.id,
       user: {
-        id: user.id,
+
         email: user.email,
         firstName: user.first_name,
         lastName: user.last_name,
@@ -57,6 +59,7 @@ const loginUser = async (req, res) => {
     if (!user) {
       return res
         .status(401)
+
         .json({ success: false, error: "Invalid credentials" });
     }
 
@@ -68,12 +71,14 @@ const loginUser = async (req, res) => {
     if (!isValid) {
       return res
         .status(401)
+
         .json({ success: false, error: "Invalid credentials" });
     }
 
     if (!user.is_verified) {
       return res
         .status(403)
+
         .json({ success: false, error: "Email not verified" });
     }
 
@@ -85,8 +90,8 @@ const loginUser = async (req, res) => {
       accessToken,
       refreshToken,
       expiresIn: 900,
+      uid: user.id,
       user: {
-        id: user.id,
         email: user.email,
         firstName: user.first_name,
         lastName: user.last_name,
@@ -94,6 +99,7 @@ const loginUser = async (req, res) => {
     });
   } catch (error) {
     console.log(error);
+
     res.status(500).json({ success: false, error: "Login failed" });
   }
 };
@@ -104,6 +110,7 @@ const refreshAccessToken = async (req, res) => {
     if (!refreshToken) {
       return res
         .status(400)
+
         .json({ success: false, error: "Refresh token is required" });
     }
 
@@ -114,6 +121,7 @@ const refreshAccessToken = async (req, res) => {
     console.log(error);
     res
       .status(403)
+
       .json({ success: false, error: "Invalid or expired refresh token" });
   }
 };
@@ -142,6 +150,7 @@ const verifyUserEmail = async (req, res) => {
     if (!verificationToken) {
       return res.status(400).json({
         success: false,
+
         error: "Invalid or expired verification token",
       });
     }
@@ -188,6 +197,7 @@ const resetUserPassword = async (req, res) => {
     if (!resetToken) {
       return res
         .status(400)
+
         .json({ success: false, error: "Invalid or expired reset token" });
     }
 
@@ -216,8 +226,8 @@ const googleLogin = async (req, res) => {
       accessToken,
       refreshToken,
       expiresIn: 900,
+      uid: req.user.id,
       user: {
-        id: req.user.id,
         email: req.user.email,
         firstName: req.user.first_name,
         lastName: req.user.last_name,
@@ -226,6 +236,7 @@ const googleLogin = async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).json({ success: false, error: "Google login failed" });
+
   }
 };
 
@@ -248,6 +259,7 @@ const validateTokens = async (req, res) => {
     res.json({ success: true, user });
   } catch (error) {
     res.status(401).json({ success: false, error: "Invalid or expired token" });
+
   }
 };
 
@@ -260,5 +272,7 @@ export {
   requestPasswordResetLink,
   resetUserPassword,
   googleLogin,
+
   validateTokens,
+
 };

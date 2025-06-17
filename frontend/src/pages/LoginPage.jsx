@@ -8,7 +8,9 @@ const LoginPage = () => {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const navigate = useNavigate();
+
   const { setUid, setAccessToken, setRefreshToken, setAuthenticated } = useAuth();
+
 
   const handleChange = (e) => {
     setForm((prev) => ({
@@ -22,18 +24,24 @@ const LoginPage = () => {
     setError("");
 
     try {
-      const res = await apiClient.post("/auth/login", form); // Changed from "/api/auth/login"
-      console.log("🔍 Login response:", res.data);
-      const { accessToken, refreshToken, user } = res.data;
 
-      if (!accessToken || !refreshToken || !user?.id) {
+      const res = await apiClient.post(
+        `${import.meta.env.VITE_BACKEND_URL}/auth/login`,
+        form,
+      );
+
+      const { accessToken, refreshToken, uid } = res.data;
+
+if (!accessToken || !refreshToken || uid) {
         throw new Error("Missing tokens or user ID in response");
       }
-
       disguiseAndStoreToken("access", accessToken);
       disguiseAndStoreToken("refresh", refreshToken);
-      localStorage.setItem("uid", btoa(user.id));
-      setUid(user.id);
+      // const dis_uid = btoa(uid);
+      localStorage.setItem("gyid", uid); // base64 encode UID
+      setUid(uid);
+      // console.log(uid, "done");
+
       setAccessToken(accessToken);
       setRefreshToken(refreshToken);
       setAuthenticated(true);
@@ -41,7 +49,9 @@ const LoginPage = () => {
       navigate("/");
     } catch (err) {
       setError(err.response?.data?.error || "Login failed. Please try again.");
+
       console.error("🔍 Login error:", err);
+
     }
   };
 

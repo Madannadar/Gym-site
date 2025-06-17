@@ -52,8 +52,10 @@ export const updateLog = async (req, res) => {
   try {
     const { log_id, user_id } = req.params;
     const { value, height, weight, log_date } = req.body;
+
     if (!user_id || isNaN(parseInt(user_id)))
       return res.status(400).json({ error: "Invalid or missing user ID" });
+
 
     const updated = await updateHealthLog(
       log_id,
@@ -61,7 +63,9 @@ export const updateLog = async (req, res) => {
       value,
       height,
       weight,
+
       log_date || new Date().toISOString().split("T")[0]
+
     );
     if (!updated)
       return res.status(404).json({ error: "Log not found or unauthorized" });
