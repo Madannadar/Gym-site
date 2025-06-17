@@ -37,6 +37,7 @@ import Loader from "./pages/Loader.jsx";
 import Logout from "./pages/Logout.jsx";
 import { AuthProvider, useAuth } from "./AuthProvider";
 import { AuthCallback } from "./components/GoogleAuth.jsx";
+import { MealProvider } from "./context/MealContext.jsx";
 import AttendanceScanPage from "./pages/scanAttendenceQR.jsx";
 import AttendanceHistoryPage from "./pages/UserAttendenceHistory.jsx";
 
@@ -63,6 +64,7 @@ const App = () => {
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/logout" element={<Logout />} />
 
+          {/* Protected Routes */}
           <Route
             path="/create-exercise"
             element={
@@ -71,7 +73,6 @@ const App = () => {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/create-workout"
             element={
@@ -80,7 +81,6 @@ const App = () => {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/create-regiment"
             element={
@@ -89,7 +89,6 @@ const App = () => {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/create-workout_logs"
             element={
@@ -98,7 +97,6 @@ const App = () => {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/Workout_Management"
             element={
@@ -107,7 +105,6 @@ const App = () => {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/start-workout/:regimenId/:workoutId"
             element={
@@ -116,17 +113,6 @@ const App = () => {
               </ProtectedRoute>
             }
           />
-
-          <Route
-            path="/attendence-scan"
-            element={
-              <ProtectedRoute>
-                <AttendanceScanPage />
-              </ProtectedRoute>
-            }
-          />
-          {/* Protected Routes */}
-
           <Route
             path="/attendence-scan"
             element={
@@ -143,7 +129,6 @@ const App = () => {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/"
             element={
@@ -152,11 +137,15 @@ const App = () => {
               </ProtectedRoute>
             }
           />
+
+          {/* Diet-related routes with MealProvider */}
           <Route
             path="/diet"
             element={
               <ProtectedRoute>
-                <Diet />
+                <MealProvider>
+                  <Diet />
+                </MealProvider>
               </ProtectedRoute>
             }
           />
@@ -164,7 +153,9 @@ const App = () => {
             path="/meal-tracker"
             element={
               <ProtectedRoute>
-                <MealTracker />
+                <MealProvider>
+                  <MealTracker />
+                </MealProvider>
               </ProtectedRoute>
             }
           />
@@ -172,7 +163,9 @@ const App = () => {
             path="/nutrition"
             element={
               <ProtectedRoute>
-                <Nutrition />
+                <MealProvider>
+                  <Nutrition />
+                </MealProvider>
               </ProtectedRoute>
             }
           />
@@ -180,7 +173,9 @@ const App = () => {
             path="/custom-diet"
             element={
               <ProtectedRoute>
-                <CustomDiet />
+                <MealProvider>
+                  <CustomDiet />
+                </MealProvider>
               </ProtectedRoute>
             }
           />
@@ -188,10 +183,13 @@ const App = () => {
             path="/new-meal"
             element={
               <ProtectedRoute>
-                <NewMeal />
+                <MealProvider>
+                  <NewMeal />
+                </MealProvider>
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/user-attendance"
             element={
