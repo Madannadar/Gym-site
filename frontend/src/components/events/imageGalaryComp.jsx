@@ -86,3 +86,51 @@ const GymImageGallery = ({
 };
 
 export default GymImageGallery;
+
+/*
+example use :
+
+
+import React, { useState } from "react";
+import GymImageGallery from "./GymImageGallery";
+
+const App = () => {
+  const [selectedImage, setSelectedImage] = useState(null);
+
+  return (
+    <div className="max-w-5xl mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6 text-center">
+        Select a Gym Image
+      </h1>
+
+{/* Selected image preview */ /*} */
+/*
+      {selectedImage && (
+        <div className="mb-6 text-center">
+          <h2 className="text-lg font-semibold mb-2">Selected Image</h2>
+          <img
+            src={selectedImage}
+            alt="Selected"
+            className="mx-auto max-h-64 rounded shadow-md"
+          />
+          <p className="mt-2 text-sm text-gray-600">{selectedImage}</p>
+        </div>
+      )}
+
+      {/* Gym Image Gallery */ /* }*/
+/*
+      <GymImageGallery
+        topic="gym"
+        total={24}
+        pageSize={6}
+        selectedImage={selectedImage}
+        onSelectImage={setSelectedImage}
+      />
+    </div>
+  );
+};
+
+export default App;
+
+
+*/

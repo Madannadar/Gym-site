@@ -117,8 +117,8 @@ export default function BmiCalculator() {
   if (error) return <p className="p-4 text-red-500">{error}</p>;
 
   return (
+    // <GymImageGallery selectedImage={selected} onSelectImage={setselected} />
     <div className="p-4 sm:p-6 max-w-lg mx-auto">
-      <GymImageGallery selectedImage={selected} onSelectImage={setselected} />
       <div className="p-6 bg-white shadow-lg rounded-lg border border-gray-200">
         <div className="flex items-center gap-2 mb-6">
           <BmiLogo />
