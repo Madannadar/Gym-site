@@ -1,0 +1,205 @@
+import React, { useCallback, useEffect, useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+
+const Workout_Management = () => {
+  const [regiments, setRegiments] = useState([]);
+  const [expandedRegimentId, setExpandedRegimentId] = useState(null);
+  const [expandedWorkoutId, setExpandedWorkoutId] = useState(null);
+  const [workoutDetails, setWorkoutDetails] = useState({});
+  const [workoutNames, setWorkoutNames] = useState({});
+  const [error, setError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    axios
+      .get("http://localhost:3000/api/workouts/regiments")
+      .then(async (res) => {
+        const regimentsData = res.data.items || [];
+        setRegiments(regimentsData);
+
+        // Extract all unique workout_ids
+        const workoutIds = new Set();
+        for (const regiment of regimentsData) {
+          for (const day of regiment.workout_structure) {
+            if (day.workout_id) workoutIds.add(day.workout_id);
+          }
+        }
+
+
+
+        // Fetch all workout names in parallel
+        const workoutPromises = [...workoutIds].map((id) =>
+          axios.get(`http://localhost:3000/api/workouts/${id}`).then((res) => ({
+            id,
+            name: res.data?.item?.name || `Workout ${id}`,
+          }))
+        );
+
+        const workoutResults = await Promise.all(workoutPromises);
+        const workoutMap = {};
+        workoutResults.forEach(({ id, name }) => {
+          workoutMap[id] = name;
+        });
+
+        setWorkoutNames(workoutMap);
+      })
+      .catch((err) => {
+        console.error("Error fetching regiments:", err);
+        setError("Failed to load regiments.");
+      });
+  }, []);
+
+
+  const toggleRegiment = (regimentId) => {
+    setExpandedRegimentId((prev) => (prev === regimentId ? null : regimentId));
+    setExpandedWorkoutId(null);
+  };
+
+
+  const filteredRegiments = regiments
+    .map((regiment) => {
+      const matchesRegiment = regiment?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const filteredWorkouts = regiment.workout_structure.filter((day) =>
+        day?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+
+      // If the regiment name matches, show all workouts; otherwise, only show matched workouts
+      return {
+        ...regiment,
+        workout_structure: matchesRegiment ? regiment.workout_structure : filteredWorkouts,
+      };
+    })
+    .filter((regiment) => regiment.workout_structure.length > 0);
+
+
+  const toggleWorkout = useCallback(async (workout_id) => {
+    if (expandedWorkoutId === workout_id) {
+      setExpandedWorkoutId(null);
+      return;
+    }
+
+    if (!workoutDetails[workout_id]) {
+      try {
+        const res = await axios.get(
+          `http://localhost:3000/api/workouts/${workout_id}`
+        );
+        setWorkoutDetails((prev) => ({
+          ...prev,
+          [workout_id]: res.data.item,
+        }));
+      } catch (err) {
+        console.error("Error fetching workout:", err);
+        setError("Failed to load workout details.");
+      }
+    }
+
+    setExpandedWorkoutId(workout_id);
+  }, [expandedWorkoutId, workoutDetails]);
+
+
+  return (
+    <div className="max-w-4xl mx-auto mt-8 px-4">
+      <h1 className="text-3xl font-bold mb-4">Workout Manager</h1>
+      <button
+        onClick={() => navigate("/create-regiment")}
+        className="mb-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+      >
+        Create Regiment
+      </button>
+      {error && <p className="text-red-600">{error}</p>}
+      <input
+        type="text"
+        placeholder="Search workout name..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="mb-4 p-2 border border-gray-300 rounded w-full"
+      />
+
+      {filteredRegiments.map((regiment) => (
+        <div
+          key={regiment.regiment_id}
+          className="bg-white shadow rounded-lg mb-4 p-4 border"
+        >
+          <h2
+            className="text-xl font-semibold cursor-pointer text-blue-600"
+            onClick={() => toggleRegiment(regiment.regiment_id)}
+          >
+            {regiment.name}
+          </h2>
+
+          {expandedRegimentId === regiment.regiment_id && (
+            <div className="mt-3 space-y-2 ml-4">
+              {regiment.workout_structure.map((day) => (
+                <div key={day.workout_id}>
+
+                  <div className="flex items-center justify-between pr-4">
+                    <p
+                      className="text-blue-500 cursor-pointer hover:underline"
+                      onClick={() => toggleWorkout(day.workout_id)}
+                    >
+                      {day.name} - {workoutNames[day.workout_id] || "Loading..."}
+                    </p>
+
+
+                    <button
+                      onClick={() => navigate(`/start-workout/${regiment.regiment_id}/${day.workout_id}`)}
+                      className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                    >
+                      Start
+                    </button>
+                  </div>
+
+                  {expandedWorkoutId === day.workout_id &&
+                    workoutDetails[day.workout_id] && (
+                      <div className="ml-4 mt-2 space-y-4">
+                        {workoutDetails[day.workout_id].structure.map(
+                          (exercise, i) => (
+                            <div
+                              key={i}
+                              className="p-3 border rounded-md bg-gray-50"
+                            >
+                              <h3 className="font-semibold text-lg">
+                                {exercise.exercise_details.name}{" "}
+                                <span className="text-sm text-gray-500">
+                                  ({exercise.exercise_details.muscle_group})
+                                </span>
+                              </h3>
+
+                              <div className="ml-3 mt-1 text-sm">
+                                {Object.entries(exercise.sets).map(
+                                  ([setNumber, setDetails]) => (
+                                    <div key={setNumber}>
+                                      <strong>Set {setNumber}:</strong>{" "}
+                                      {setDetails.reps
+                                        ? `${setDetails.reps} reps`
+                                        : ""}
+                                      {setDetails.weight
+                                        ? `, ${setDetails.weight} ${exercise.weight_unit}`
+                                        : ""}
+                                      {setDetails.time
+                                        ? `, ${setDetails.time} ${exercise.time_unit}`
+                                        : ""}
+                                    </div>
+                                  )
+                                )}
+                              </div>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default Workout_Management;

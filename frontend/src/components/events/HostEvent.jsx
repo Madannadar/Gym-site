@@ -1,32 +1,28 @@
 import React, { useState } from "react";
-import { apiClient} from "../../AxiosSetup";
+import { apiClient } from "../../AxiosSetup";
+import { useAuth } from "../../AuthProvider";
 
 export default function HostEvent() {
+  const { uid, authenticated } = useAuth();
   const [images, setImage] = useState(null);
-  const uid = localStorage.getItem("gyid");
-
   const [form, setForm] = useState({
-    created_by: uid,
+    created_by: uid || null,
     name: "",
     description: "",
     regiment_id: null,
     event_date: "",
     event_time: "",
     event_location: "",
-    number_of_participants: null,     
+    number_of_participants: null,
   });
 
   const handleChange = (e) => {
     setForm((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }));
   };
 
-  
-
-  
-  
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -37,212 +33,209 @@ export default function HostEvent() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    console.log(form);
-
-    try{
-      const response = await apiClient.post(
-        `${import.meta.env.VITE_BACKEND_URL}/events`,form,
-      )
+    if (!authenticated || !uid) {
+      alert("Please log in to create an event.");
+      return;
+    }
+    try {
+      const response = await apiClient.post("/events", {
+        ...form,
+        created_by: parseInt(uid),
+        number_of_participants: form.number_of_participants
+          ? parseInt(form.number_of_participants)
+          : null,
+      });
       alert("Event created successfully!");
-    }catch(err){
+    } catch (err) {
       console.error("Error creating event:", err);
       alert("Failed to create event. Please try again.");
     }
-  }
+  };
 
   return (
-    <div className="pt-5 sm:pt-6 max-w-md mx-auto">
-      <form onSubmit={handleSubmit} className="max-w-sm mx-auto">
-        <div class="mb-2">
-          <label
-            for="base-input"
-            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-          >
-            Event Name
-          </label>
-          <input
-            type="text"
-            name="name"
-            value={form.name}
-            id="base-input"
-            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-            onChange={handleChange}
-          />
-        </div>
+    <div className="p-4 sm:p-6 max-w-lg mx-auto">
+      <div className="p-6 bg-white shadow-lg rounded-lg border border-gray-200">
+        <h1 className="text-2xl sm:text-3xl font-bold text-black mb-6">
+          Host an Event
+        </h1>
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label
+              htmlFor="name"
+              className="block text-lg font-semibold text-gray-800 mb-1"
+            >
+              Event Name
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={form.name}
+              id="name"
+              placeholder="Enter event name"
+              className="mt-1 block w-full border border-gray-200 rounded-lg p-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              onChange={handleChange}
+            />
+          </div>
 
-        <div class="mb-2">
-          <label
-            for="message"
-            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-          >
-            Description
-          </label>
-          <textarea
-            id="message"
-            rows="4"
-            name="description"
-            value={form.description}
-            class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-            placeholder="Leave a comment..."
-            onChange={handleChange}
-                   
-          ></textarea>
-        </div>
+          <div className="mb-4">
+            <label
+              htmlFor="description"
+              className="block text-lg font-semibold text-gray-800 mb-1"
+            >
+              Description
+            </label>
+            <textarea
+              id="description"
+              rows="4"
+              name="description"
+              value={form.description}
+              placeholder="Describe your event"
+              className="mt-1 block w-full border border-gray-200 rounded-lg p-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              onChange={handleChange}
+            ></textarea>
+          </div>
 
-        <div class="mb-2">
-          <label
-            for="message"
-            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-          >
-            Cover Image
-          </label>
-          <div class="flex items-center justify-center w-full">
+          <div className="mb-4">
             <label
               htmlFor="dropzone-file"
-              className="relative block w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600"
+              className="block text-lg font-semibold text-gray-800 mb-1"
             >
-              {images ? (
-                <img
-                  src={images}
-                  alt="Cover Preview"
-                  className="w-full h-full object-cover rounded-lg"
-                />
-              ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <svg
-                    className="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 20 16"
-                  >
-                    <path
-                      stroke="currentColor"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"
-                    />
-                  </svg>
-                  <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                    <span className="font-semibold">Click to upload</span> or
-                    drag and drop
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    SVG, PNG, JPG or GIF (MAX. 800x400px)
-                  </p>
-                </div>
-              )}
-              <input
-                id="dropzone-file"
-                accept="image/*"
-                type="file"
-                className="absolute inset-0 w-full h-full opacity-0"
-                onChange={handleImageChange}
-              />
+              Cover Image
             </label>
+            <div className="flex items-center justify-center w-full">
+              <label
+                htmlFor="dropzone-file"
+                className="relative block w-full h-64 border-2 border-gray-200 border-dashed rounded-lg cursor-pointer bg-white hover:bg-gray-50"
+              >
+                {images ? (
+                  <img
+                    src={images}
+                    alt="Cover Preview"
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <svg
+                      className="w-8 h-8 mb-4 text-gray-400"
+                      aria-hidden="true"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 20 16"
+                    >
+                      <path
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"
+                      />
+                    </svg>
+                    <p className="mb-2 text-sm text-gray-500">
+                      <span className="font-semibold">Click to upload</span> or
+                      drag and drop
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      SVG, PNG, JPG or GIF (MAX. 800x400px)
+                    </p>
+                  </div>
+                )}
+                <input
+                  id="dropzone-file"
+                  accept="image/*"
+                  type="file"
+                  className="absolute inset-0 w-full h-full opacity-0"
+                  onChange={handleImageChange}
+                />
+              </label>
+            </div>
           </div>
-        </div>
 
-        <div class="mb-2">
-          <label
-            for="base-input"
-            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-          >
-            Date 
-          </label>
-          <input
-            type="text"
-            id="base-input"
-            name="event_date"
-            value={form.event_date}
-            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-           onChange={handleChange}
-          />
-        </div>
-
-        <div class="mb-2">
-          <label
-            for="base-input"
-            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-          >
-            Time
-          </label>
-          <input
-            type="text"
-            id="base-input"
-            value={form.event_time}
-            name="event_time"
-            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-            onChange={handleChange}
-          />
-        </div>
-
-        <div class="mb-2">
-          <label
-            for="base-input"
-            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-          >
-            Location
-          </label>
-          <input
-            type="text"
-            id="base-input"
-            name="event_location"
-            value={form.event_location}
-            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-           onChange={handleChange}
-          />
-        </div>
-        {/*decide if we need workout */}
-        {/* <div className="max-w-sm mx-auto">
-          <label
-            for="countries"
-            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-          >
-            Select Workout
-          </label>
-          <div class="flex gap-4 mb-2">
-            <select
-              id="countries"
-              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+          <div className="mb-4">
+            <label
+              htmlFor="event_date"
+              className="block text-lg font-semibold text-gray-800 mb-1"
             >
-              <option>United States</option>
-              <option>Canada</option>
-              <option>France</option>
-              <option>Germany</option>
-            </select>
-
-            <select
-              id="countries"
-              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-            >
-              <option>United States</option>
-              <option>Canada</option>
-              <option>France</option>
-              <option>Germany</option>
-            </select>
+              Date
+            </label>
+            <input
+              type="date"
+              id="event_date"
+              name="event_date"
+              value={form.event_date}
+              className="mt-1 block w-full border border-gray-200 rounded-lg p-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              onChange={handleChange}
+            />
           </div>
-        </div> */}
 
-        <div className="grid grid-cols-2 gap-4 mb-4 mt-10">
-          <button
-            style={{ borderRadius: "0.5rem" }}
-            type="button"
-            className="py-2.5 px-3 me-2 mb-2 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
-          >
-            Cancel
-          </button>
-          <button
-            style={{ borderRadius: "0.5rem" }}
-            type="sumbit"
-            className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-small rounded-lg text-sm px-3 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
-          >
-            Create Event
-          </button>
-        </div>
-      </form>
+          <div className="mb-4">
+            <label
+              htmlFor="event_time"
+              className="block text-lg font-semibold text-gray-800 mb-1"
+            >
+              Time
+            </label>
+            <input
+              type="time"
+              id="event_time"
+              name="event_time"
+              value={form.event_time}
+              className="mt-1 block w-full border border-gray-200 rounded-lg p-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              onChange={handleChange}
+            />
+          </div>
+
+          <div className="mb-4">
+            <label
+              htmlFor="event_location"
+              className="block text-lg font-semibold text-gray-800 mb-1"
+            >
+              Location
+            </label>
+            <input
+              type="text"
+              id="event_location"
+              name="event_location"
+              value={form.event_location}
+              placeholder="Enter event location"
+              className="mt-1 block w-full border border-gray-200 rounded-lg p-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              onChange={handleChange}
+            />
+          </div>
+
+          <div className="mb-4">
+            <label
+              htmlFor="number_of_participants"
+              className="block text-lg font-semibold text-gray-800 mb-1"
+            >
+              Number of Participants
+            </label>
+            <input
+              type="number"
+              id="number_of_participants"
+              name="number_of_participants"
+              value={form.number_of_participants || ""}
+              placeholder="Enter number of participants"
+              className="mt-1 block w-full border border-gray-200 rounded-lg p-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              onChange={handleChange}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mt-6">
+            <button
+              type="button"
+              className="py-2.5 px-3 text-sm font-medium text-gray-900 bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:outline-none focus:ring-4 focus:ring-gray-100"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="py-2.5 px-3 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-[#3588a2] focus:outline-none focus:ring-4 focus:ring-blue-300 transition duration-200"
+            >
+              Create Event
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

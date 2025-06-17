@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { apiClient, disguiseAndStoreToken } from "../AxiosSetup";
 import { CheckCircle } from "lucide-react";
 import { useAuth } from "../AuthProvider";
+
 const SignUpPage = () => {
   const [form, setForm] = useState({
     firstName: "",
@@ -14,8 +15,10 @@ const SignUpPage = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
-  const { setUid, setAccessToken, setRefreshToken, setAuthenticated } =
-    useAuth();
+
+  const { setUid, setAccessToken, setRefreshToken, setAuthenticated } = useAuth();
+
+
   const handleChange = (e) => {
     setForm((prev) => ({
       ...prev,
@@ -27,6 +30,7 @@ const SignUpPage = () => {
     e.preventDefault();
     setError("");
     try {
+
       const response = await apiClient.post(
         `${import.meta.env.VITE_BACKEND_URL}/auth/register`,
         form,
@@ -34,11 +38,14 @@ const SignUpPage = () => {
 
       const { accessToken, refreshToken, uid } = response.data;
 
+
       // Securely store tokens and UID
       disguiseAndStoreToken("access", accessToken);
       disguiseAndStoreToken("refresh", refreshToken);
+
       localStorage.setItem("gyid", uid);
       setUid(uid);
+
       setAccessToken(accessToken);
       setRefreshToken(refreshToken);
       setAuthenticated(true);
@@ -46,7 +53,9 @@ const SignUpPage = () => {
       // Show success message
       setSuccess(true);
     } catch (err) {
-      console.log(err);
+
+      console.error("Signup error:", err);
+
       setError(err.response?.data?.error || "Signup failed. Try again.");
     }
   };

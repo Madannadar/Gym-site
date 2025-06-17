@@ -3,12 +3,15 @@ import { useNavigate, Link } from "react-router-dom";
 import { apiClient } from "../AxiosSetup";
 import { disguiseAndStoreToken } from "../AxiosSetup";
 import { useAuth } from "../AuthProvider";
+
 const LoginPage = () => {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { setUid, setAccessToken, setRefreshToken, setAuthenticated } =
-    useAuth();
+
+  const { setUid, setAccessToken, setRefreshToken, setAuthenticated } = useAuth();
+
+
   const handleChange = (e) => {
     setForm((prev) => ({
       ...prev,
@@ -21,6 +24,7 @@ const LoginPage = () => {
     setError("");
 
     try {
+
       const res = await apiClient.post(
         `${import.meta.env.VITE_BACKEND_URL}/auth/login`,
         form,
@@ -28,12 +32,16 @@ const LoginPage = () => {
 
       const { accessToken, refreshToken, uid } = res.data;
 
+if (!accessToken || !refreshToken || uid) {
+        throw new Error("Missing tokens or user ID in response");
+      }
       disguiseAndStoreToken("access", accessToken);
       disguiseAndStoreToken("refresh", refreshToken);
       // const dis_uid = btoa(uid);
       localStorage.setItem("gyid", uid); // base64 encode UID
       setUid(uid);
       // console.log(uid, "done");
+
       setAccessToken(accessToken);
       setRefreshToken(refreshToken);
       setAuthenticated(true);
@@ -41,6 +49,9 @@ const LoginPage = () => {
       navigate("/");
     } catch (err) {
       setError(err.response?.data?.error || "Login failed. Please try again.");
+
+      console.error("🔍 Login error:", err);
+
     }
   };
 

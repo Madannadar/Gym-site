@@ -38,6 +38,7 @@ const registerUser = async (req, res) => {
       expiresIn: 180,
       uid: user.id,
       user: {
+
         email: user.email,
         firstName: user.first_name,
         lastName: user.last_name,
@@ -131,7 +132,6 @@ const logoutUser = async (req, res) => {
     if (!refreshToken) {
       return res
         .status(400)
-
         .json({ success: false, error: "Refresh token is required" });
     }
 
@@ -180,13 +180,11 @@ const requestPasswordResetLink = async (req, res) => {
 
     res.json({
       success: true,
-
       message: "Password reset link sent to your email",
     });
   } catch (error) {
     res
       .status(500)
-
       .json({ success: false, error: "Failed to request password reset" });
   }
 };
@@ -238,6 +236,30 @@ const googleLogin = async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).json({ success: false, error: "Google login failed" });
+
+  }
+};
+
+const validateTokens = async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res
+        .status(401)
+        .json({ success: false, error: "Access token required" });
+    }
+    const token = authHeader.split(" ")[1];
+    const decoded = await tokenService.verifyAccessToken(token);
+    const user = await authModel.getUserById(decoded.userId);
+    if (!user) {
+      return res
+        .status(401)
+        .json({ success: false, error: "Invalid token" });
+    }
+    res.json({ success: true, user });
+  } catch (error) {
+    res.status(401).json({ success: false, error: "Invalid or expired token" });
+
   }
 };
 
@@ -250,4 +272,7 @@ export {
   requestPasswordResetLink,
   resetUserPassword,
   googleLogin,
+
+  validateTokens,
+
 };

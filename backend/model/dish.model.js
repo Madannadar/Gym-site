@@ -1,6 +1,6 @@
 import db from "../config/db.js";
 
-const insertDishModel = async (dishData) => {
+export const insertDishModel = async (dishData, client = db) => {
   const {
     created_by,
     dish_name,
@@ -11,55 +11,58 @@ const insertDishModel = async (dishData) => {
     units,
     meal_type,
     is_vegetarian,
+    unit_value,
   } = dishData;
 
   const query = `
     INSERT INTO diet_dishes (
       created_by, dish_name, calories, protein, fat, carbs,
-      units, meal_type, is_vegetarian
-    )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      units, meal_type, is_vegetarian, unit_value
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
     RETURNING *;
   `;
 
   const values = [
     created_by || null,
     dish_name,
-    calories,
-    protein,
-    fat,
-    carbs,
-    units || null,
-    meal_type,
-    is_vegetarian,
+    calories || 0,
+    protein || 0,
+    fat || 0,
+    carbs || 0,
+    units ? `{${units}}` : null,
+    meal_type || null,
+    is_vegetarian || false,
+    unit_value || null,
   ];
 
-  const result = await db.query(query, values);
+  const result = await client.query(query, values);
   return result.rows[0];
 };
 
-const getAllDishesModel = async () => {
-  const query = `
-    SELECT * FROM diet_dishes
-    ORDER BY created_at DESC;
-  `;
-
-  const result = await db.query(query);
+export const getAllDishesModel = async () => {
+  const result = await db.query(
+    "SELECT * FROM diet_dishes ORDER BY created_at DESC"
+  );
   return result.rows;
 };
 
-const getDishByIdModel = async (dish_id) => {
-  const query = `
-    SELECT * FROM diet_dishes
-    WHERE dish_id = $1;
-  `;
-
-  const values = [dish_id];
-  const result = await db.query(query, values);
+export const getDishByIdModel = async (id) => {
+  const result = await db.query(
+    "SELECT * FROM diet_dishes WHERE dish_id = $1",
+    [id]
+  );
   return result.rows[0];
 };
 
-const updateDishModel = async (dish_id, updateData) => {
+export const getDishByNameModel = async (name) => {
+  const result = await db.query(
+    "SELECT * FROM diet_dishes WHERE dish_name = $1",
+    [name]
+  );
+  return result.rows[0];
+};
+
+export const updateDishModel = async (id, dishData) => {
   const {
     dish_name,
     calories,
@@ -69,20 +72,22 @@ const updateDishModel = async (dish_id, updateData) => {
     units,
     meal_type,
     is_vegetarian,
-  } = updateData;
-  console.log(updateData);
+    unit_value,
+  } = dishData;
 
   const query = `
     UPDATE diet_dishes
-    SET dish_name = $1,
-        calories = $2,
-        protein = $3,
-        fat = $4,
-        carbs = $5,
-        units = $6,
-        meal_type = $7,
-        is_vegetarian = $8
-    WHERE dish_id = $9
+    SET
+      dish_name = COALESCE($1, dish_name),
+      calories = COALESCE($2, calories),
+      protein = COALESCE($3, protein),
+      fat = COALESCE($4, fat),
+      carbs = COALESCE($5, carbs),
+      units = COALESCE($6, units),
+      meal_type = COALESCE($7, meal_type),
+      is_vegetarian = COALESCE($8, is_vegetarian),
+      unit_value = COALESCE($9, unit_value)
+    WHERE dish_id = $10
     RETURNING *;
   `;
 
@@ -92,58 +97,37 @@ const updateDishModel = async (dish_id, updateData) => {
     protein,
     fat,
     carbs,
-    units,
+    units ? `{${units}}` : null,
     meal_type,
     is_vegetarian,
-    dish_id,
+    unit_value,
+    id,
   ];
 
   const result = await db.query(query, values);
   return result.rows[0];
 };
 
-const deleteDishModel = async (dish_id) => {
-  const query = `
-    DELETE FROM diet_dishes
-    WHERE dish_id = $1
-    RETURNING *;
-  `;
-
-  const values = [dish_id];
-  const result = await db.query(query, values);
+export const deleteDishModel = async (id) => {
+  const result = await db.query(
+    "DELETE FROM diet_dishes WHERE dish_id = $1 RETURNING *",
+    [id]
+  );
   return result.rows[0];
 };
 
-const getDishByUserIdModel = async (user_id) => {
-  const query = `
-    SELECT * FROM diet_dishes
-    WHERE created_by = $1
-    ORDER BY created_at DESC;
-  `;
-
-  const values = [user_id];
-  const result = await db.query(query, values);
+export const getDishByUserIdModel = async (userId) => {
+  const result = await db.query(
+    "SELECT * FROM diet_dishes WHERE created_by = $1 ORDER BY created_at DESC",
+    [userId]
+  );
   return result.rows;
 };
 
-const deleteAllDishCreatedByUserIdModel = async (user_id) => {
-  const query = `
-    DELETE FROM diet_dishes
-    WHERE created_by = $1
-    RETURNING *;
-  `;
-
-  const values = [user_id];
-  const result = await db.query(query, values);
+export const deleteAllDishCreatedByUserIdModel = async (userId) => {
+  const result = await db.query(
+    "DELETE FROM diet_dishes WHERE created_by = $1 RETURNING *",
+    [userId]
+  );
   return result.rows;
-};
-
-export {
-  getDishByIdModel,
-  getDishByUserIdModel,
-  getAllDishesModel,
-  deleteDishModel,
-  deleteAllDishCreatedByUserIdModel,
-  updateDishModel,
-  insertDishModel,
 };

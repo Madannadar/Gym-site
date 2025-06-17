@@ -5,7 +5,7 @@ import Discover from "../components/events/Discover.jsx";
 
 import EventsLogo from "../assets/logos/eventlogo.jsx";
 import MyEvents from "../components/events/MyEvents.jsx";
-import Host from "../components/events/hostEvent.jsx";
+import Host from "../components/events/HostEvent.jsx";
 
 export default function Events() {
   const [events, setEvents] = useState("discover");

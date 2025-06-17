@@ -1,4 +1,4 @@
-import db from "../config/db.js";
+import db from "../config/db.js"
 
 // Exercise Functions
 const recordExercise = async ({
@@ -35,9 +35,10 @@ const recordExercise = async ({
   return rows[0];
 };
 
+
 const fetchAllExercises = async () => {
   const query = `
-    SELECT e.*, u.name AS created_by_name
+    SELECT e.*, u.first_name AS created_by_name
     FROM exercises e
     LEFT JOIN users u ON e.created_by = u.id
     ORDER BY e.created_at DESC;
@@ -48,7 +49,7 @@ const fetchAllExercises = async () => {
 
 const fetchExerciseById = async (id) => {
   const query = `
-    SELECT e.*, u.name as created_by_name
+    SELECT e.*, u.first_name as created_by_name
     FROM exercises e
     LEFT JOIN users u ON e.created_by = u.id
     WHERE e.exercise_id = $1;
@@ -166,7 +167,7 @@ const recordWorkout = async ({
 
 const fetchAllWorkouts = async () => {
   const query = `
-    SELECT w.*, u.name AS created_by_name
+    SELECT w.*, u.first_name AS created_by_name
     FROM workouts w
     LEFT JOIN users u ON w.created_by = u.id
     ORDER BY w.created_at DESC;
@@ -177,7 +178,7 @@ const fetchAllWorkouts = async () => {
 
 const fetchWorkoutById = async (id) => {
   const workoutQuery = `
-    SELECT w.*, u.name AS created_by_name
+    SELECT w.*, u.first_name AS created_by_name
     FROM workouts w
     LEFT JOIN users u ON w.created_by = u.id
     WHERE w.workout_id = $1;
@@ -299,9 +300,9 @@ const recordWorkoutLog = async ({
   actual_workout,
   score,
 }) => {
-  if (!(await checkExists('users', 'id', user_id))) {
-    throw new Error(`User with id ${user_id} does not exist.`);
-  }
+  // if (!(await checkExists('users', 'user_id', user_id))) { // Changed from id to user_id
+  //   throw new Error(`User with id ${user_id} does not exist.`);
+  // }
   if (!(await checkExists('regiments', 'regiment_id', regiment_id))) {
     throw new Error(`Regiment with id ${regiment_id} does not exist.`);
   }
@@ -315,19 +316,19 @@ const recordWorkoutLog = async ({
   }
 
   const query = `
-    INSERT INTO workout_logs (
-      user_id,
-      regiment_id,
-      regiment_day_index,
-      log_date,
-      planned_workout_id,
-      actual_workout,
-      score
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-    RETURNING *;
-  `;
-  const values = [
+  INSERT INTO workout_logs (
     user_id,
+    regiment_id,
+    regiment_day_index,
+    log_date,
+    planned_workout_id,
+    actual_workout,
+    score
+  ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+  RETURNING *;
+`;
+  const values = [
+    user_id, 
     regiment_id,
     regiment_day_index,
     log_date,
@@ -340,33 +341,33 @@ const recordWorkoutLog = async ({
   return rows[0];
 };
 
-const fetchUserWorkoutLogs = async (user_id, limit = 50, offset = 0) => {
+const fetchUserWorkoutLogs = async (id, limit = 50, offset = 0) => {
   const query = `
     SELECT wl.*,
-           u.name,
+           u.first_name,
            w.name as planned_workout_name,
            r.name as regiment_name
     FROM workout_logs wl
-    LEFT JOIN users u ON wl.user_id = u.id
+    LEFT JOIN users u ON wl.id = u.id
     LEFT JOIN workouts w ON wl.planned_workout_id = w.workout_id
     LEFT JOIN regiments r ON wl.regiment_id = r.regiment_id
-    WHERE wl.user_id = $1
+    WHERE wl.id = $1
     ORDER BY wl.log_date DESC, wl.created_at DESC
     LIMIT $2 OFFSET $3;
   `;
-  const { rows } = await db.query(query, [user_id, limit, offset]);
+  const { rows } = await db.query(query, [id, limit, offset]);
   return rows;
 };
 
 const fetchWorkoutLogById = async (id) => {
   const query = `
     SELECT wl.*,
-           u.name,
+           u.first_name,
            w.name as planned_workout_name,
            w.structure as planned_workout_structure,
            r.name as regiment_name
     FROM workout_logs wl
-    LEFT JOIN users u ON wl.user_id = u.id
+    LEFT JOIN users u ON wl.id = u.id
     LEFT JOIN workouts w ON wl.planned_workout_id = w.workout_id
     LEFT JOIN regiments r ON wl.regiment_id = r.regiment_id
     WHERE wl.workout_log_id = $1;
@@ -467,7 +468,7 @@ const fetchAllRegiments = async () => {
     SELECT 
       r.regiment_id,
       r.created_by,
-      u.name AS created_by_name,
+      u.first_name AS created_by_name,
       r.name,
       r.description,
       r.workout_structure,
@@ -481,9 +482,21 @@ const fetchAllRegiments = async () => {
   return rows;
 };
 
+// // Test query - add this temporarily
+// const testQuery = `
+//   SELECT table_name, column_name 
+//   FROM information_schema.columns 
+//   WHERE table_name IN ('users', 'regiments')
+//   ORDER BY table_name, column_name;
+// `;
+// const result = await db.query(testQuery);
+// console.log('Database structure:', result.rows);
+
+
+
 const fetchRegimentById = async (id) => {
   const regimentQuery = `
-    SELECT r.*, u.name AS created_by_name
+    SELECT r.*, u.first_name AS created_by_name
     FROM regiments r
     LEFT JOIN users u ON r.created_by = u.id
     WHERE r.regiment_id = $1;
@@ -529,8 +542,8 @@ const calculateAverageIntensity = async (workoutStructure) => {
 
   return intensities.length > 0
     ? parseFloat(
-        (intensities.reduce((acc, val) => acc + val, 0) / intensities.length).toFixed(2)
-      )
+      (intensities.reduce((acc, val) => acc + val, 0) / intensities.length).toFixed(2)
+    )
     : 0;
 };
 

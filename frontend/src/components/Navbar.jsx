@@ -11,7 +11,7 @@ const Navbar = () => {
     { name: "Attendance", icon: <FaClipboardList />, path: "/user-attendance" },
     { name: "BMI Calculator", icon: <FaWeight />, path: "/bmi-calculator" },
     { name: "Diet", icon: <FaAppleAlt />, path: "/diet" },
-    { name: "Workouts", icon: <FaDumbbell />, path: "/workouts" },
+    { name: "Workouts", icon: <FaDumbbell />, path: "/Workout_Management" },
     { name: "Events", icon: <FaCalendarAlt />, path: "/events" },
     { name: "Leaderboard", icon: <FaTrophy />, path: "/leaderboard" },
   ];

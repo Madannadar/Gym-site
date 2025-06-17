@@ -7,31 +7,22 @@ import {
   getDishesByUserIdController,
   deleteAllDishesByUserIdController,
   createDishController,
+  createDishAndLog,
+  getDishByNameController,
 } from "../controllers/dish.controller.js";
+import authenticate from "../middlewares/authenticate.middleware.js";
 
 const router = express.Router();
 
-//all routes work here as expected
-
-// Create a new dish
-router.post("/", createDishController);
-
-// Get all dishes
+// Routes
+router.post("/add", authenticate, createDishAndLog);
+router.post("/", authenticate, createDishController);
 router.get("/", getAllDishesController);
-
-// Get a dish by ID
+router.get("/dishes_id", getDishByNameController); // New endpoint for name query
 router.get("/:id", getDishByIdController);
-
-// Update a dish by ID
-router.put("/:id", updateDishController);
-
-// Delete a dish by ID
-router.delete("/:id", deleteDishController);
-
-// Get all dishes created by a specific user
-router.get("/user/:userId", getDishesByUserIdController);
-
-// Delete all dishes created by a specific user
-router.delete("/user/:userId", deleteAllDishesByUserIdController);
+router.put("/:id", authenticate, updateDishController);
+router.delete("/:id", authenticate, deleteDishController);
+router.get("/user/:userId", authenticate, getDishesByUserIdController);
+router.delete("/user/:userId", authenticate, deleteAllDishesByUserIdController);
 
 export default router;

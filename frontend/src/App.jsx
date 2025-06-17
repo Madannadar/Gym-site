@@ -21,6 +21,14 @@ import Events from "./pages/Events.jsx";
 import Leaderboards from "./pages/Leaderboards.jsx";
 import EventLeaderboard from "./components/events/EventLeaderboard.jsx";
 
+import AddExercise from "./pages/workout/AddExercise.jsx";
+import AddWorkout from "./pages/workout/AddWorkout.jsx";
+import AddRegiment from "./pages/workout/AddRegiment.jsx";
+import WorkoutLogForm from "./pages/workout/AddWorkout_log.jsx";
+import Workout_Management from "./pages/workout/Workout_Management.jsx";
+import StartWorkout from "./pages/workout/StartWorkout.jsx";
+
+
 import Login from "./pages/LoginPage.jsx";
 import Signup from "./pages/SignUpPage.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
@@ -29,6 +37,7 @@ import VerifyEmail from "./pages/VerifyEmail.jsx";
 import Loader from "./pages/Loader.jsx";
 import Logout from "./pages/Logout.jsx";
 import { AuthProvider, useAuth } from "./AuthProvider";
+
 import AttendanceScanPage from "./pages/scanAttendenceQR.jsx";
 import AttendanceHistoryPage from "./pages/UserAttendenceHistory.jsx";
 
@@ -38,6 +47,7 @@ const ProtectedRoute = ({ children }) => {
   if (loading) return <Loader />;
   if (!authenticated) return <Navigate to="/login" replace />;
   return children;
+
 };
 
 const App = () => {
@@ -53,6 +63,17 @@ const App = () => {
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/logout" element={<Logout />} />
+
+          <Route path="/create-exercise" element={<AddExercise />} />
+          <Route path="/create-workout" element={<AddWorkout />} />
+          <Route path="/create-regiment" element={<AddRegiment />} />
+          <Route path="/create-workout_logs" element={<WorkoutLogForm />} />
+          <Route path="/Workout_Management" element={<Workout_Management />} />
+          <Route path="/start-workout/:regimenId/:workoutId" element={<StartWorkout />} />
+
+          {/* Protected Routes */}
+          <Route
+
 
           {/* Protected Routes */}
           <Route
@@ -73,6 +94,7 @@ const App = () => {
           />
 
           <Route
+
             path="/"
             element={
               <ProtectedRoute>

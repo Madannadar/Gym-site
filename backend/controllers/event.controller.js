@@ -62,7 +62,11 @@ export const handleGetLogsByEventId = async (req, res) => {
 
 export const handleGetLogsByUserId = async (req, res) => {
   try {
-    const logs = await getEventLogsByUserId(req.params.user_id);
+    const { user_id } = req.params;
+    if (!user_id || isNaN(parseInt(user_id))) {
+      return res.status(400).json({ error: "Invalid or missing user ID" });
+    }
+    const logs = await getEventLogsByUserId(parseInt(user_id));
     res.json({ logs });
   } catch (err) {
     console.error("❌ Failed to fetch logs:", err.stack);

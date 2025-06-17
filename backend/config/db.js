@@ -1,6 +1,6 @@
 import pkg from "pg";
 import dotenv from "dotenv";
-import schema from "./schema.js";
+// import schema from "./schema.js"; // Commented out as per your code
 
 dotenv.config();
 
@@ -11,7 +11,8 @@ const dbUrl =
   "postgres://your-db-user:your-db-password@localhost:5432/your-db-name";
 
 const isLocal = dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1");
-console.log(dbUrl);
+console.log("🔍 Database URL:", dbUrl);
+
 const db = new Client({
   connectionString: dbUrl,
   connectionTimeoutMillis: 10000,
@@ -25,17 +26,25 @@ async function connectAndCreateTables() {
     await db.connect();
     console.log("✅ Connected to PostgreSQL");
 
+    // Uncomment if you need to create tables
     // await db.query(schema);
     // console.log("✅ Database tables created successfully!");
-
-    // DON'T disconnect here, keep connection alive
   } catch (err) {
-    console.error("❌ PostgreSQL connection error", err.stack);
-    process.exit(1); // Exit app if DB connection fails
+    console.error("❌ PostgreSQL connection error:", err.stack);
+    process.exit(1);
   }
 }
 
 // Connect once at app start
-await connectAndCreateTables();
+connectAndCreateTables().catch((err) => {
+  console.error("❌ Failed to initialize database:", err.stack);
+  process.exit(1);
+});
+
+// Handle client errors
+db.on("error", (err) => {
+  console.error("❌ Client error:", err.stack);
+  process.exit(1);
+});
 
 export default db;

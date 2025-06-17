@@ -33,8 +33,6 @@ function retrieveAndAssembleToken(keyPrefix) {
 
 // Accessor for UID (already base64-encoded in localStorage)
 const getUid = () => {
-  // const encodedUid = localStorage.getItem("gyid");
-  // return encodedUid ? encodedUid : null;
   return localStorage.getItem("gyid");
 };
 
@@ -50,7 +48,7 @@ const updateAccessToken = (newAccessToken) => {
 // Axios instance
 const apiClient = axios.create();
 
-// Request interceptor
+// Token refresh queue management
 let isRefreshing = false;
 let refreshSubscribers = [];
 
@@ -63,23 +61,56 @@ function addRefreshSubscriber(callback) {
   refreshSubscribers.push(callback);
 }
 
+// Request interceptor
 apiClient.interceptors.request.use((config) => {
   const token = getAccessToken();
-  if (token) config.headers["Authorization"] = `Bearer ${token}`;
+  console.log(`🔍 Request: ${config.method.toUpperCase()} ${config.url}`, {
+    headers: {
+      Authorization: token ? `Bearer ${token.slice(0, 10)}...` : "None",
+      "Content-Type": config.headers["Content-Type"],
+    },
+    data: config.data,
+  });
+
+  if (token) {
+    config.headers["Authorization"] = `Bearer ${token}`;
+  }
   return config;
 });
 
+// Response interceptor
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log(
+      `✅ Response: ${response.config.method.toUpperCase()} ${response.config.url}`,
+      {
+        status: response.status,
+        data: response.data,
+      }
+    );
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response.status === 401 && !originalRequest._retry) {
+    console.error(
+      `❌ Response Error: ${originalRequest?.method?.toUpperCase()} ${originalRequest?.url}`,
+      {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+      }
+    );
+
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      originalRequest.url !== "/api/diet-logs"
+    ) {
       if (isRefreshing) {
-        // If refresh is in progress, queue the request
         return new Promise((resolve) => {
-          addRefreshSubscriber((token) => {
-            originalRequest.headers["Authorization"] = "Bearer " + token;
+          addRefreshSubscriber((newToken) => {
+            originalRequest.headers["Authorization"] = "Bearer " + newToken;
             resolve(apiClient(originalRequest));
           });
         });
@@ -90,11 +121,13 @@ apiClient.interceptors.response.use(
 
       try {
         const refreshToken = getRefreshToken();
-        const response = await apiClient.post("/auth/refresh-token", {
+        console.log("🔁 Refreshing access token...");
+
+        const response = await apiClient.post("/api/auth/refresh-token", {
           token: refreshToken,
         });
-        const newAccessToken = response.data.accessToken;
 
+        const newAccessToken = response.data.accessToken;
         updateAccessToken(newAccessToken);
         isRefreshing = false;
         onAccessTokenFetched(newAccessToken);
@@ -103,16 +136,17 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (refreshError) {
         isRefreshing = false;
+        console.error("❌ Refresh token failed:", refreshError.response?.data || refreshError);
         await logoutUser();
         return Promise.reject(refreshError);
       }
     }
 
     return Promise.reject(error);
-  },
+  }
 );
 
-// Export everything needed
+// Exports
 export {
   getAccessToken,
   getRefreshToken,
