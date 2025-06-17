@@ -38,7 +38,6 @@ const registerUser = async (req, res) => {
       expiresIn: 180,
       uid: user.id,
       user: {
-
         email: user.email,
         firstName: user.first_name,
         lastName: user.last_name,
@@ -215,28 +214,30 @@ const resetUserPassword = async (req, res) => {
 const googleLogin = async (req, res) => {
   try {
     if (!req.user) {
-      return res
-        .status(401)
-        .json({ success: false, error: "Google login failed" });
+      return res.redirect(
+        "http://localhost:5173/login/google?error=GoogleLoginFailed",
+      );
     }
+
     const { accessToken, refreshToken } =
       await tokenService.issueTokenPairForUser(req.user);
-    res.json({
-      success: true,
+
+    const query = new URLSearchParams({
       accessToken,
       refreshToken,
       expiresIn: 900,
       uid: req.user.id,
-      user: {
-        email: req.user.email,
-        firstName: req.user.first_name,
-        lastName: req.user.last_name,
-      },
-    });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ success: false, error: "Google login failed" });
+      email: req.user.email,
+      firstName: req.user.first_name,
+      lastName: req.user.last_name,
+    }).toString();
 
+    res.redirect(`http://localhost:5173/auth/google/callback?${query}`);
+  } catch (error) {
+    console.error("Google login error:", error);
+    res.redirect(
+      "http://localhost:5173/login/google?error=GoogleLoginInternalError",
+    );
   }
 };
 
@@ -252,14 +253,11 @@ const validateTokens = async (req, res) => {
     const decoded = await tokenService.verifyAccessToken(token);
     const user = await authModel.getUserById(decoded.userId);
     if (!user) {
-      return res
-        .status(401)
-        .json({ success: false, error: "Invalid token" });
+      return res.status(401).json({ success: false, error: "Invalid token" });
     }
     res.json({ success: true, user });
   } catch (error) {
     res.status(401).json({ success: false, error: "Invalid or expired token" });
-
   }
 };
 
@@ -272,7 +270,5 @@ export {
   requestPasswordResetLink,
   resetUserPassword,
   googleLogin,
-
   validateTokens,
-
 };

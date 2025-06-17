@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { apiClient } from "../AxiosSetup";
 import { disguiseAndStoreToken } from "../AxiosSetup";
 import { useAuth } from "../AuthProvider";
-
+import { GoogleLoginButton } from "../components/GoogleAuth";
 const LoginPage = () => {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
@@ -103,6 +103,9 @@ const LoginPage = () => {
             </Link>
           </div>
         </form>
+        <div>
+          <GoogleLoginButton />
+        </div>
       </div>
     </div>
   );

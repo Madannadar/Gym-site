@@ -36,7 +36,7 @@ import VerifyEmail from "./pages/VerifyEmail.jsx";
 import Loader from "./pages/Loader.jsx";
 import Logout from "./pages/Logout.jsx";
 import { AuthProvider, useAuth } from "./AuthProvider";
-
+import { AuthCallback } from "./components/GoogleAuth.jsx";
 import AttendanceScanPage from "./pages/scanAttendenceQR.jsx";
 import AttendanceHistoryPage from "./pages/UserAttendenceHistory.jsx";
 
@@ -57,6 +57,7 @@ const App = () => {
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/auth/google/callback" element={<AuthCallback />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
