@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { apiClient } from "../AxiosSetup";
 import BmiLogo from "../assets/logos/bmiLogo";
 import { useAuth } from "../AuthProvider";
+import GymImageGallery from "../components/events/imageGalaryComp";
 
 const SkeletonLoader = () => (
   <div className="p-4 sm:p-6 max-w-lg mx-auto animate-pulse">
@@ -29,6 +30,8 @@ export default function BmiCalculator() {
   const [bmiData, setBmiData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [selected, setselected] = useState();
 
   const sendData = async (bmiValue) => {
     if (!authenticated || !uid) {
@@ -105,11 +108,17 @@ export default function BmiCalculator() {
   }, [uid, authenticated]);
 
   if (authLoading || loading) return <SkeletonLoader />;
-  if (!authenticated) return <p className="p-4 text-red-500">Please log in to use the BMI Calculator.</p>;
+  if (!authenticated)
+    return (
+      <p className="p-4 text-red-500">
+        Please log in to use the BMI Calculator.
+      </p>
+    );
   if (error) return <p className="p-4 text-red-500">{error}</p>;
 
   return (
     <div className="p-4 sm:p-6 max-w-lg mx-auto">
+      <GymImageGallery selectedImage={selected} onSelectImage={setselected} />
       <div className="p-6 bg-white shadow-lg rounded-lg border border-gray-200">
         <div className="flex items-center gap-2 mb-6">
           <BmiLogo />
@@ -170,10 +179,10 @@ export default function BmiCalculator() {
                     entry.value < 18.5
                       ? "bg-blue-500"
                       : entry.value < 24.9
-                      ? "bg-green-500"
-                      : entry.value < 29.9
-                      ? "bg-orange-500"
-                      : "bg-red-500"
+                        ? "bg-green-500"
+                        : entry.value < 29.9
+                          ? "bg-orange-500"
+                          : "bg-red-500"
                   }`}
                 ></span>
                 <span className="text-lg font-semibold">{entry.value}</span>
@@ -182,7 +191,8 @@ export default function BmiCalculator() {
                 {parseInt(entry.height)}cm • {entry.weight}kg
               </div>
               <div className="text-sm text-gray-500 w-1/3 text-right">
-                {entry.created_at.slice(0, 10)}, {entry.created_at.slice(11, 16)}
+                {entry.created_at.slice(0, 10)},{" "}
+                {entry.created_at.slice(11, 16)}
               </div>
             </div>
           ))
