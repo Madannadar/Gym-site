@@ -103,6 +103,8 @@ const RecordWorkoutForm = () => {
           if ("reps" in set) cleanedSet.reps = Number(set.reps) || 0;
           if ("weight" in set) cleanedSet.weight = Number(set.weight) || 0;
           if ("time" in set) cleanedSet.time = Number(set.time) || 0;
+          if ("laps" in set) cleanedSet.laps = Number(set.laps) || 0;
+
           return [key, cleanedSet];
         })
       ),
@@ -187,6 +189,7 @@ const RecordWorkoutForm = () => {
 
             {Object.entries(exercise.sets).map(([setKey, set]) => (
               <div key={setKey} className="grid grid-cols-4 gap-2 mb-2">
+
                 {"reps" in set && (
                   <input
                     type="number"
@@ -208,13 +211,11 @@ const RecordWorkoutForm = () => {
                     <input
                       type="text"
                       value={exercise.weight_unit}
-                      onChange={(e) =>
-                        setFormData((prev) => {
-                          const updated = [...prev.actual_workout];
-                          updated[i].weight_unit = e.target.value;
-                          return { ...prev, actual_workout: updated };
-                        })
-                      }
+                      onChange={(e) => {
+                        const updated = [...formData.actual_workout];
+                        updated[i].weight_unit = e.target.value;
+                        setFormData((prev) => ({ ...prev, actual_workout: updated }));
+                      }}
                       className="border p-1 rounded"
                     />
                   </>
@@ -231,17 +232,25 @@ const RecordWorkoutForm = () => {
                     <input
                       type="text"
                       value={exercise.time_unit}
-                      onChange={(e) =>
-                        setFormData((prev) => {
-                          const updated = [...prev.actual_workout];
-                          updated[i].time_unit = e.target.value;
-                          return { ...prev, actual_workout: updated };
-                        })
-                      }
+                      onChange={(e) => {
+                        const updated = [...formData.actual_workout];
+                        updated[i].time_unit = e.target.value;
+                        setFormData((prev) => ({ ...prev, actual_workout: updated }));
+                      }}
                       className="border p-1 rounded"
                     />
                   </>
                 )}
+                {"laps" in set && (
+                  <input
+                    type="number"
+                    placeholder="Laps"
+                    value={set.laps}
+                    onChange={(e) => handleSetChange(i, setKey, "laps", e.target.value)}
+                    className="border p-1 rounded"
+                  />
+                )}
+
               </div>
             ))}
           </div>

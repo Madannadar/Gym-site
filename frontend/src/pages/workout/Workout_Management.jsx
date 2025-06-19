@@ -4,200 +4,230 @@ import { useNavigate } from "react-router-dom";
 
 const Workout_Management = () => {
   const [regiments, setRegiments] = useState([]);
+  const [workoutLogs, setWorkoutLogs] = useState([]);
+  const [workoutNames, setWorkoutNames] = useState({});
+  const [workoutDetails, setWorkoutDetails] = useState({});
+  const [logCounts, setLogCounts] = useState({});
   const [expandedRegimentId, setExpandedRegimentId] = useState(null);
   const [expandedWorkoutId, setExpandedWorkoutId] = useState(null);
-  const [workoutDetails, setWorkoutDetails] = useState({});
-  const [workoutNames, setWorkoutNames] = useState({});
-  const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-
+  const [showLogs, setShowLogs] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
+  const userId = 15;
 
   useEffect(() => {
-    axios
-      .get("http://localhost:3000/api/workouts/regiments")
+    // Load regiments
+    axios.get("http://localhost:3000/api/workouts/regiments")
       .then(async (res) => {
         const regimentsData = res.data.items || [];
         setRegiments(regimentsData);
 
-        // Extract all unique workout_ids
+        // Preload workout names
         const workoutIds = new Set();
-        for (const regiment of regimentsData) {
-          for (const day of regiment.workout_structure) {
+        regimentsData.forEach(reg => {
+          reg.workout_structure.forEach(day => {
             if (day.workout_id) workoutIds.add(day.workout_id);
-          }
-        }
-
-
-
-        // Fetch all workout names in parallel
-        const workoutPromises = [...workoutIds].map((id) =>
-          axios.get(`http://localhost:3000/api/workouts/${id}`).then((res) => ({
-            id,
-            name: res.data?.item?.name || `Workout ${id}`,
-          }))
-        );
-
-        const workoutResults = await Promise.all(workoutPromises);
-        const workoutMap = {};
-        workoutResults.forEach(({ id, name }) => {
-          workoutMap[id] = name;
+          });
         });
 
-        setWorkoutNames(workoutMap);
+        const nameMap = {};
+        await Promise.all([...workoutIds].map(async (id) => {
+          const res = await axios.get(`http://localhost:3000/api/workouts/${id}`);
+          nameMap[id] = res.data?.item?.name || `Workout ${id}`;
+        }));
+        setWorkoutNames(nameMap);
       })
-      .catch((err) => {
-        console.error("Error fetching regiments:", err);
+      .catch(err => {
+        console.error(err);
         setError("Failed to load regiments.");
       });
+
+    // Load workout logs
+    axios.get("http://localhost:3000/api/workouts/logs/user/15")
+      .then(res => {
+        const logs = res.data.items || [];
+        setWorkoutLogs(logs);
+
+        const counts = {};
+        logs.forEach(log => {
+          counts[log.regiment_id] = (counts[log.regiment_id] || 0) + 1;
+        });
+        setLogCounts(counts);
+      })
+      .catch(err => {
+        console.error(err);
+        setError("Failed to load workout logs.");
+      });
+
   }, []);
 
-
-  const toggleRegiment = (regimentId) => {
-    setExpandedRegimentId((prev) => (prev === regimentId ? null : regimentId));
+  const toggleRegiment = (id) => {
+    setExpandedRegimentId(prev => (prev === id ? null : id));
     setExpandedWorkoutId(null);
   };
 
-
-  const filteredRegiments = regiments
-    .map((regiment) => {
-      const matchesRegiment = regiment?.name?.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const filteredWorkouts = regiment.workout_structure.filter((day) =>
-        day?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-
-      // If the regiment name matches, show all workouts; otherwise, only show matched workouts
-      return {
-        ...regiment,
-        workout_structure: matchesRegiment ? regiment.workout_structure : filteredWorkouts,
-      };
-    })
-    .filter((regiment) => regiment.workout_structure.length > 0);
-
-
-  const toggleWorkout = useCallback(async (workout_id) => {
-    if (expandedWorkoutId === workout_id) {
+  const toggleWorkout = useCallback(async (id) => {
+    if (expandedWorkoutId === id) {
       setExpandedWorkoutId(null);
       return;
     }
-
-    if (!workoutDetails[workout_id]) {
+    if (!workoutDetails[id]) {
       try {
-        const res = await axios.get(
-          `http://localhost:3000/api/workouts/${workout_id}`
-        );
-        setWorkoutDetails((prev) => ({
-          ...prev,
-          [workout_id]: res.data.item,
-        }));
+        const res = await axios.get(`http://localhost:3000/api/workouts/${id}`);
+        setWorkoutDetails(prev => ({ ...prev, [id]: res.data.item }));
       } catch (err) {
-        console.error("Error fetching workout:", err);
+        console.error(err);
         setError("Failed to load workout details.");
       }
     }
-
-    setExpandedWorkoutId(workout_id);
+    setExpandedWorkoutId(id);
   }, [expandedWorkoutId, workoutDetails]);
+
+  const systemRegiments = regiments.filter(r => r.created_by !== userId);
+  const userRegiments = regiments.filter(r => r.created_by === userId);
+
+  const renderRegimentCard = (regiment, includeLogCount = true) => (
+    <div key={regiment.regiment_id} className="bg-white shadow rounded-lg mb-4 p-4 border">
+      <h2
+        className="text-xl font-semibold cursor-pointer text-blue-600"
+        onClick={() => toggleRegiment(regiment.regiment_id)}
+      >
+        {regiment.name}
+        {includeLogCount && (
+          <span className="text-sm text-gray-500 ml-2">
+            (Logged {logCounts[regiment.regiment_id] || 0} times)
+          </span>
+        )}
+      </h2>
+      {expandedRegimentId === regiment.regiment_id && (
+        <div className="mt-3 space-y-2 ml-4">
+          {regiment.workout_structure.map(day => (
+            <div key={day.workout_id} className="flex items-center justify-between pr-4">
+              <p
+                className="text-blue-500 cursor-pointer hover:underline"
+                onClick={() => toggleWorkout(day.workout_id)}
+              >
+                {day.name} - {workoutNames[day.workout_id] || "Loading..."}
+              </p>
+              <button
+                onClick={() => navigate(`/start-workout/${regiment.regiment_id}/${day.workout_id}`)}
+                className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+              >
+                Start
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderLogCard = (regiment, logs) => (
+    <div key={regiment.regiment_id} className="bg-white shadow rounded-lg mb-4 p-4 border">
+      <h2
+        className="text-xl font-semibold cursor-pointer text-blue-600"
+        onClick={() => toggleRegiment(regiment.regiment_id)}
+      >
+        {regiment.name}
+        <span className="text-sm text-gray-500 ml-2">({logs.length} logs)</span>
+      </h2>
+      {expandedRegimentId === regiment.regiment_id && (
+        <div className="mt-3 space-y-4 ml-4">
+          {logs
+            .sort((a, b) => new Date(b.log_date) - new Date(a.log_date))
+            .map(log => (
+              <div key={log.workout_log_id} className="p-3 border rounded-md bg-gray-50">
+                <p><strong>Date:</strong> {log.log_date}</p>
+                <p><strong>Workout:</strong> {log.planned_workout_name}</p>
+                <p><strong>Score:</strong> {log.score}</p>
+
+                {log.actual_workout?.length > 0 ? (
+                  <div className="mt-2">
+                    <h4 className="font-semibold text-gray-700 mb-1">Exercises:</h4>
+                    {log.actual_workout.map((exercise, index) => (
+                      <div key={index} className="mb-2 ml-2">
+                        <p className="font-semibold text-blue-500">Exercise ID: {exercise.exercise_id}</p>
+                        <div className="ml-4">
+                          {Object.entries(exercise.sets).map(([setName, setData]) => (
+                            <div key={setName} className="text-sm text-gray-700">
+                              <strong>{setName}:</strong>
+                              {setData.reps !== undefined && ` ${setData.reps} reps`}
+                              {setData.weight !== undefined && `, ${setData.weight}${setData.weight_unit || ""}`}
+                              {setData.time !== undefined && `, ${setData.time} sec`}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 mt-2">No actual workout data recorded.</p>
+                )}
+              </div>
+            ))}
+        </div>
+      )}
+    </div>
+  );
 
 
   return (
-    <div className="max-w-4xl mx-auto mt-8 px-4">
+    <div className="max-w-5xl mx-auto mt-8 px-4">
       <h1 className="text-3xl font-bold mb-4">Workout Manager</h1>
-      <button
-        onClick={() => navigate("/create-regiment")}
-        className="mb-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-      >
-        Create Regiment
-      </button>
+
+      <div className="flex justify-between items-center mb-4">
+        <button
+          onClick={() => navigate("/create-regiment")}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          Create Regiment
+        </button>
+        <button
+          onClick={() => setShowLogs(prev => !prev)}
+          className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600"
+        >
+          {showLogs ? "View Regiments" : "View Workout Logs"}
+        </button>
+      </div>
+
       {error && <p className="text-red-600">{error}</p>}
+
       <input
         type="text"
-        placeholder="Search workout name..."
+        placeholder="Search by regiment name..."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         className="mb-4 p-2 border border-gray-300 rounded w-full"
       />
 
-      {filteredRegiments.map((regiment) => (
-        <div
-          key={regiment.regiment_id}
-          className="bg-white shadow rounded-lg mb-4 p-4 border"
-        >
-          <h2
-            className="text-xl font-semibold cursor-pointer text-blue-600"
-            onClick={() => toggleRegiment(regiment.regiment_id)}
-          >
-            {regiment.name}
-          </h2>
+      {!showLogs && (
+        <>
+          <h2 className="text-2xl font-bold mb-2 text-purple-600">System Regiments</h2>
+          {systemRegiments
+            .filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()))
+            .sort((a, b) => (logCounts[b.regiment_id] || 0) - (logCounts[a.regiment_id] || 0))
+            .map(regiment => renderRegimentCard(regiment, true))}
 
-          {expandedRegimentId === regiment.regiment_id && (
-            <div className="mt-3 space-y-2 ml-4">
-              {regiment.workout_structure.map((day) => (
-                <div key={day.workout_id}>
+          <h2 className="text-2xl font-bold mb-2 text-green-600">Your Regiments</h2>
+          {userRegiments
+            .filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()))
+            .map(regiment => renderRegimentCard(regiment, false))}
+        </>
+      )}
 
-                  <div className="flex items-center justify-between pr-4">
-                    <p
-                      className="text-blue-500 cursor-pointer hover:underline"
-                      onClick={() => toggleWorkout(day.workout_id)}
-                    >
-                      {day.name} - {workoutNames[day.workout_id] || "Loading..."}
-                    </p>
-
-
-                    <button
-                      onClick={() => navigate(`/start-workout/${regiment.regiment_id}/${day.workout_id}`)}
-                      className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
-                    >
-                      Start
-                    </button>
-                  </div>
-
-                  {expandedWorkoutId === day.workout_id &&
-                    workoutDetails[day.workout_id] && (
-                      <div className="ml-4 mt-2 space-y-4">
-                        {workoutDetails[day.workout_id].structure.map(
-                          (exercise, i) => (
-                            <div
-                              key={i}
-                              className="p-3 border rounded-md bg-gray-50"
-                            >
-                              <h3 className="font-semibold text-lg">
-                                {exercise.exercise_details.name}{" "}
-                                <span className="text-sm text-gray-500">
-                                  ({exercise.exercise_details.muscle_group})
-                                </span>
-                              </h3>
-
-                              <div className="ml-3 mt-1 text-sm">
-                                {Object.entries(exercise.sets).map(
-                                  ([setNumber, setDetails]) => (
-                                    <div key={setNumber}>
-                                      <strong>Set {setNumber}:</strong>{" "}
-                                      {setDetails.reps
-                                        ? `${setDetails.reps} reps`
-                                        : ""}
-                                      {setDetails.weight
-                                        ? `, ${setDetails.weight} ${exercise.weight_unit}`
-                                        : ""}
-                                      {setDetails.time
-                                        ? `, ${setDetails.time} ${exercise.time_unit}`
-                                        : ""}
-                                    </div>
-                                  )
-                                )}
-                              </div>
-                            </div>
-                          )
-                        )}
-                      </div>
-                    )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
+      {showLogs && (
+        <>
+          <h2 className="text-2xl font-bold mb-4 text-purple-600">Workout Logs</h2>
+          {[...systemRegiments, ...userRegiments]
+            .filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()))
+            .map(regiment => {
+              const logs = workoutLogs.filter(log => log.regiment_id === regiment.regiment_id);
+              if (logs.length === 0) return null;
+              return renderLogCard(regiment, logs);
+            })}
+        </>
+      )}
     </div>
   );
 };

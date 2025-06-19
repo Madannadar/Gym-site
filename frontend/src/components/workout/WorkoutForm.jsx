@@ -19,13 +19,13 @@ const CreateWorkout = () => {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("")
   const { uid } = useAuth();
-;
+  ;
 
   useEffect(() => {
-      if (uid) {
-        setFormData((prev) => ({ ...prev, created_by: uid }));
-      }
-    }, [uid]);
+    if (uid) {
+      setFormData((prev) => ({ ...prev, created_by: uid }));
+    }
+  }, [uid]);
 
   useEffect(() => {
     axios
@@ -106,7 +106,8 @@ const CreateWorkout = () => {
             const response = await axios.post("http://localhost:3000/api/workouts", {
               ...formData,
               score: Number(formData.score),
-              structure: formData.structure.map(({ units, ...rest }) => rest),
+              // send full structure, don't strip 'units'
+              structure: formData.structure,
             });
             setMessage("Workout created successfully");
             setFormData({ name: "", description: "", score: "", created_by: 1, structure: [] });
@@ -116,6 +117,7 @@ const CreateWorkout = () => {
         }}
         className="space-y-8"
       >
+
         <div>
           <label className="block text-gray-700 font-semibold mb-2">Name</label>
           <input

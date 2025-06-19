@@ -18,7 +18,7 @@ const db = new Pool({
   connectionString: dbUrl,
   max: 10, // max connections
   idleTimeoutMillis: 30000, // close idle clients after 30s
-  connectionTimeoutMillis: 10000,
+  connectionTimeoutMillis: 100000, // wait up to 100s for a connection
   query_timeout: 5000,
   ssl: isLocal ? false : { rejectUnauthorized: false },
 });

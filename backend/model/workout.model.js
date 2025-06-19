@@ -9,7 +9,7 @@ const recordExercise = async ({
   created_by,
   intensity,
 }) => {
-  // Check for duplicate exercise by name and created_by
+  // Check for duplicate exercise
   const duplicateCheckQuery = `
     SELECT 1 FROM exercises WHERE name = $1 AND created_by = $2 LIMIT 1;
   `;
@@ -18,16 +18,19 @@ const recordExercise = async ({
     throw new Error("Exercise already present");
   }
 
+  // Convert JS array to Postgres array string
+  const pgUnitsArray = units && Array.isArray(units) ? `{${units.join(",")}}` : null;
+
   const query = `
     INSERT INTO exercises (name, description, muscle_group, units, created_by, intensity)
-    VALUES ($1, $2, $3, $4, $5, $6)
+    VALUES ($1, $2, $3, $4::TEXT[], $5, $6)
     RETURNING *;
   `;
   const values = [
     name,
     description,
     muscle_group,
-    units && Array.isArray(units) ? units : null,
+    pgUnitsArray,
     created_by,
     intensity,
   ];
@@ -291,6 +294,8 @@ const checkExists = async (table, idName, id) => {
   return rowCount > 0;
 };
 
+
+
 const recordWorkoutLog = async ({
   user_id,
   regiment_id,
@@ -328,7 +333,7 @@ const recordWorkoutLog = async ({
   RETURNING *;
 `;
   const values = [
-    user_id, 
+    user_id,
     regiment_id,
     regiment_day_index,
     log_date,
@@ -341,42 +346,45 @@ const recordWorkoutLog = async ({
   return rows[0];
 };
 
-const fetchUserWorkoutLogs = async (id, limit = 50, offset = 0) => {
+
+const fetchUserWorkoutLogs = async (user_id, limit = 50, offset = 0) => {
   const query = `
     SELECT wl.*,
            u.first_name,
-           w.name as planned_workout_name,
-           r.name as regiment_name
+           w.name AS planned_workout_name,
+           r.name AS regiment_name
     FROM workout_logs wl
-    LEFT JOIN users u ON wl.id = u.id
+    LEFT JOIN users u ON wl.user_id = u.id  -- Corrected here
     LEFT JOIN workouts w ON wl.planned_workout_id = w.workout_id
     LEFT JOIN regiments r ON wl.regiment_id = r.regiment_id
-    WHERE wl.id = $1
+    WHERE wl.user_id = $1
     ORDER BY wl.log_date DESC, wl.created_at DESC
     LIMIT $2 OFFSET $3;
   `;
-  const { rows } = await db.query(query, [id, limit, offset]);
+  const { rows } = await db.query(query, [user_id, limit, offset]);
   return rows;
 };
 
-const fetchWorkoutLogById = async (id) => {
+const fetchWorkoutLogById = async (workout_log_id) => {
   const query = `
     SELECT wl.*,
            u.first_name,
-           w.name as planned_workout_name,
-           w.structure as planned_workout_structure,
-           r.name as regiment_name
+           w.name AS planned_workout_name,
+           w.structure AS planned_workout_structure,
+           r.name AS regiment_name
     FROM workout_logs wl
-    LEFT JOIN users u ON wl.id = u.id
+    LEFT JOIN users u ON wl.user_id = u.id  -- Corrected here
     LEFT JOIN workouts w ON wl.planned_workout_id = w.workout_id
     LEFT JOIN regiments r ON wl.regiment_id = r.regiment_id
     WHERE wl.workout_log_id = $1;
   `;
-  const { rows } = await db.query(query, [id]);
+  const { rows } = await db.query(query, [workout_log_id]);
   return rows[0];
 };
 
-const updateWorkoutLogById = async (id, { actual_workout, score }) => {
+
+// Update workout log
+const updateWorkoutLogById = async (workout_log_id, { actual_workout, score }) => {
   const query = `
     UPDATE workout_logs
     SET actual_workout = COALESCE($1, actual_workout),
@@ -387,21 +395,24 @@ const updateWorkoutLogById = async (id, { actual_workout, score }) => {
   const values = [
     actual_workout ? JSON.stringify(actual_workout) : null,
     score,
-    id,
+    workout_log_id,
   ];
   const { rows } = await db.query(query, values);
   return rows[0];
 };
 
-const deleteWorkoutLogById = async (id) => {
+// Delete workout log
+const deleteWorkoutLogById = async (workout_log_id) => {
   const query = `
     DELETE FROM workout_logs
     WHERE workout_log_id = $1
     RETURNING *;
   `;
-  const { rows } = await db.query(query, [id]);
+  const { rows } = await db.query(query, [workout_log_id]);
   return rows[0];
 };
+
+
 
 // Regiment Functions 
 const recordRegiment = async ({
@@ -491,7 +502,6 @@ const fetchAllRegiments = async () => {
 // `;
 // const result = await db.query(testQuery);
 // console.log('Database structure:', result.rows);
-
 
 
 const fetchRegimentById = async (id) => {

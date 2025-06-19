@@ -87,6 +87,7 @@ const StartWorkout = () => {
             if (setVal.reps !== undefined) actualSet.reps = setVal.reps;
             if (setVal.weight !== undefined) actualSet.weight = setVal.weight;
             if (setVal.time !== undefined) actualSet.time = setVal.time;
+            if (setVal.laps !== undefined) actualSet.laps = setVal.laps;
             
             actualExercise.sets[setKey] = actualSet;
           });
@@ -255,6 +256,7 @@ const StartWorkout = () => {
             reps: actualSet.reps ?? plannedSet.reps,
             weight: actualSet.weight ?? plannedSet.weight,
             time: actualSet.time ?? plannedSet.time,
+            laps: actualSet.laps ?? plannedSet.laps,
             weight_unit: plannedSet.weight_unit || "kg",
             time_unit: plannedSet.time_unit || "seconds"
           };
@@ -443,6 +445,7 @@ const StartWorkout = () => {
                         ? `${set.time} ${timeUnit}`
                         : `${set.reps} Reps`}
                       {set.weight ? ` / ${set.weight} ${weightUnit}` : ""}
+                      {set.laps ? ` / ${set.laps} Laps` : ""}
                     </p>
                   </div>
 
@@ -503,6 +506,18 @@ const StartWorkout = () => {
                           type="number"
                           value={actualSet.time}
                           onChange={(e) => handleActualSetChange(eIdx, setNumber, "time", e.target.value)}
+                          className="border p-1 rounded w-full"
+                          min="0"
+                        />
+                      </div>
+                    )}
+                    {"laps" in actualSet && (
+                      <div>
+                        <label className="block text-xs text-gray-500">Laps</label>
+                        <input
+                          type="number"
+                          value={actualSet.laps}
+                          onChange={(e) => handleActualSetChange(eIdx, setNumber, "laps", e.target.value)}
                           className="border p-1 rounded w-full"
                           min="0"
                         />
