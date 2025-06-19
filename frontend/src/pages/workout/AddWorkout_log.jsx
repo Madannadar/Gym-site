@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useAuth } from "../../AuthProvider";
 
 const RecordWorkoutForm = () => {
   const [formData, setFormData] = useState({
-    user_id: 1,
+    user_id: null,
     regiment_id: "",
     regiment_day_index: "",
     log_date: "",
@@ -15,7 +16,16 @@ const RecordWorkoutForm = () => {
   const [regiments, setRegiments] = useState([]);
   const [exercises, setExercises] = useState([]);
   const [workouts, setWorkouts] = useState([]);
+  const { uid } = useAuth();
 
+
+  useEffect(() => {
+    if (uid) {
+      setFormData((prev) => ({ ...prev, user_id: uid }));
+    }
+  }, [uid]);
+
+  
   useEffect(() => {
     const fetchData = async () => {
       try {

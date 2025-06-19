@@ -26,7 +26,6 @@ const CreateRegiment = () => {
         }
     }, [uid]);
 
-
     useEffect(() => {
         axios
             .get("http://localhost:3000/api/workouts")
@@ -87,8 +86,7 @@ const CreateRegiment = () => {
         }
 
         try {
-            console.log("formData",formData);
-            const res = await axios.post("http://localhost:3000/api/workouts/regiments", {
+            await axios.post("http://localhost:3000/api/workouts/regiments", {
                 created_by: formData.created_by,
                 name,
                 description,
@@ -97,31 +95,32 @@ const CreateRegiment = () => {
                     workout_id: Number(day.workout_id),
                 })),
             });
-            
-            setMessage("Regiment created successfully!");
 
-            // Navigate to home after short delay
+            setMessage("Regiment created successfully!");
             setTimeout(() => {
                 navigate('/');
-            }, 1000); // optional delay to show success message before redirect
-
+            }, 1000);
         } catch (err) {
             const msg = err?.response?.data?.error?.message || "Failed to create regiment.";
             setError(msg);
         }
     };
 
-
     return (
-        <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-md p-6 mt-6">
-            <h2 className="text-2xl font-bold mb-4">Create Workout Regiment</h2>
-            <button type="submit" className="bg-green-600 text-white py-2 px-4 rounded w-full" onClick={() => navigate('/create-workout')}>
-                Create Workout
+        <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-md p-6 mt-6 font-sans">
+            <h2 className="text-2xl font-bold mb-6 text-[#4B9CD3]">Create Workout Regiment</h2>
+
+            <button
+                type="button"
+                className="bg-[#4B9CD3] text-white py-2 px-4 rounded w-full mb-6 hover:bg-blue-500"
+                onClick={() => navigate('/create-workout')}
+            >
+                ➕ Create New Workout
             </button>
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                    <label className="block font-medium mb-1">Regiment Name</label>
+                    <label className="block font-medium mb-1 text-[#4B9CD3]">Regiment Name</label>
                     <input
                         type="text"
                         value={formData.name}
@@ -132,7 +131,7 @@ const CreateRegiment = () => {
                 </div>
 
                 <div>
-                    <label className="block font-medium mb-1">Description</label>
+                    <label className="block font-medium mb-1 text-[#4B9CD3]">Description</label>
                     <textarea
                         rows={3}
                         value={formData.description}
@@ -142,11 +141,11 @@ const CreateRegiment = () => {
                 </div>
 
                 <div>
-                    <label className="block font-medium mb-1">Workout Structure</label>
+                    <label className="block font-medium mb-1 text-[#4B9CD3]">Workout Structure</label>
                     {formData.workout_structure.map((day, idx) => (
                         <div
                             key={idx}
-                            className="bg-gray-100 p-3 rounded mb-3 flex flex-col md:flex-row gap-3 items-center"
+                            className="bg-gray-100 p-3 rounded mb-3 flex flex-col md:flex-row gap-3 items-center border"
                         >
                             <input
                                 type="text"
@@ -172,45 +171,28 @@ const CreateRegiment = () => {
                             <button
                                 type="button"
                                 onClick={() => removeDay(idx)}
-                                className="text-red-500"
+                                className="text-red-500 font-semibold"
                             >
-                                Remove
+                                ✖ Remove
                             </button>
                         </div>
                     ))}
                     <button
                         type="button"
                         onClick={addDay}
-                        className="text-blue-600 text-sm mt-2"
+                        className="text-[#4B9CD3] text-sm mt-2 hover:underline"
                     >
-                        + Add Day
+                        ➕ Add Day
                     </button>
                 </div>
 
-                <button type="submit" className="bg-green-600 text-white py-2 px-4 rounded w-full">
-                    Create Regiment
+                <button type="submit" className="bg-[#4B9CD3] text-white py-2 px-4 rounded w-full hover:bg-blue-500">
+                    ✅ Create Regiment
                 </button>
+
                 {message && <p className="text-green-600 text-center">{message}</p>}
                 {error && <p className="text-red-600 text-center">{error}</p>}
             </form>
-
-            {/* {formData.workout_structure.length > 0 && (
-                <div className="mt-8 bg-gray-50 border rounded p-4">
-                    <h3 className="text-lg font-semibold mb-2">Workout Structure Preview</h3>
-                    <ul className="space-y-2">
-                        {formData.workout_structure.map((day, idx) => {
-                            const workout = availableWorkouts.find(
-                                (w) => w.workout_id === Number(day.workout_id)
-                            );
-                            return (
-                                <li key={idx} className="border p-2 rounded bg-white shadow-sm">
-                                    <strong>{day.name}</strong>: {workout ? workout.name : "Unknown Workout"}
-                                </li>
-                            );
-                        })}
-                    </ul>
-                </div>
-            )} */}
         </div>
     );
 };
