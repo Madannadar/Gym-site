@@ -1,4 +1,4 @@
-import db from "../config/db.js"
+import {pool} from "../db/db.js"
 
 // Exercise Functions
 const recordExercise = async ({
@@ -13,7 +13,7 @@ const recordExercise = async ({
   const duplicateCheckQuery = `
     SELECT 1 FROM exercises WHERE name = $1 AND created_by = $2 LIMIT 1;
   `;
-  const duplicateCheck = await db.query(duplicateCheckQuery, [name, created_by]);
+  const duplicateCheck = await pool.query(duplicateCheckQuery, [name, created_by]);
   if (duplicateCheck.rowCount > 0) {
     throw new Error("Exercise already present");
   }
@@ -34,7 +34,7 @@ const recordExercise = async ({
     created_by,
     intensity,
   ];
-  const { rows } = await db.query(query, values);
+  const { rows } = await pool.query(query, values);
   return rows[0];
 };
 
@@ -46,7 +46,7 @@ const fetchAllExercises = async () => {
     LEFT JOIN users u ON e.created_by = u.id
     ORDER BY e.created_at DESC;
   `;
-  const { rows } = await db.query(query);
+  const { rows } = await pool.query(query);
   return rows;
 };
 
@@ -57,7 +57,7 @@ const fetchExerciseById = async (id) => {
     LEFT JOIN users u ON e.created_by = u.id
     WHERE e.exercise_id = $1;
   `;
-  const { rows } = await db.query(query, [id]);
+  const { rows } = await pool.query(query, [id]);
   return rows[0];
 };
 
@@ -70,7 +70,7 @@ const updateExerciseById = async (
     const duplicateCheckQuery = `
       SELECT 1 FROM exercises WHERE name = $1 AND exercise_id != $2 LIMIT 1;
     `;
-    const duplicateCheck = await db.query(duplicateCheckQuery, [name, id]);
+    const duplicateCheck = await pool.query(duplicateCheckQuery, [name, id]);
     if (duplicateCheck.rowCount > 0) {
       throw new Error("Exercise name already present");
     }
@@ -87,7 +87,7 @@ const updateExerciseById = async (
     RETURNING *;
   `;
   const values = [name, description, muscle_group, units, intensity, id];
-  const { rows } = await db.query(query, values);
+  const { rows } = await pool.query(query, values);
   return rows[0];
 };
 
@@ -97,112 +97,76 @@ const deleteExerciseById = async (id) => {
     WHERE exercise_id = $1
     RETURNING *;
   `;
-  const { rows } = await db.query(query, [id]);
+  const { rows } = await pool.query(query, [id]);
   return rows[0];
 };
 
 // Workout Functions
-// Workout Functions
-const intensityLookup = {
-  "Push-up": 3,
-  "Squat": 4,
-  "Deadlift": 5,
-  "Bench Press": 4,
-  "Plank": 2,
-  "Pull-up": 5,
-  "Jumping Jacks": 2,
-  "Bicep Curl": 3,
-  "Lunges": 3,
-  "Burpees": 5,
-};
-
-const calculateScoreFromStructure = (structure, intensityLookup, existingExercises) => {
-  let totalScore = 0;
-
-  for (const item of structure) {
-    const exercise = existingExercises.find(e => e.exercise_id === item.exercise_id);
-    const exerciseName = exercise?.name;
-    if (!exerciseName || !(exerciseName in intensityLookup)) continue;
-
-    const baseIntensity = intensityLookup[exerciseName];
-
-    for (const key in (item.sets || {})) {
-      const set = item.sets[key];
-      const reps = parseFloat(set.reps) || 1;
-      const weight = parseFloat(set.weight) || 1;
-      const time = set.time ? (parseFloat(set.time) * 1.5) : 1;
-      const laps = set.laps ? (parseFloat(set.laps) * 3) : 1;
-
-      const setScore = baseIntensity * reps * weight * time * laps;
-      totalScore += setScore;
-    }
-  }
-
-  let normalizedScore = totalScore / 1000;
-  normalizedScore = Math.min(10, Math.max(1, normalizedScore.toFixed(2)));
-  return parseFloat(normalizedScore);
-};
-
-
-const recordWorkout = async ({ name, created_by, description, structure }) => {
-  // Duplicate check
+const recordWorkout = async ({
+  name,
+  created_by,
+  description,
+  structure,
+  score,
+}) => {
+  // Check for duplicate workout by name and created_by
   const duplicateCheckQuery = `
     SELECT 1 FROM workouts WHERE name = $1 AND created_by = $2 LIMIT 1;
   `;
-  const duplicateCheck = await db.query(duplicateCheckQuery, [name, created_by]);
+  const duplicateCheck = await pool.query(duplicateCheckQuery, [name, created_by]);
   if (duplicateCheck.rowCount > 0) {
     throw new Error("Workout already present");
   }
 
-  // Validate exercise ids
   const exerciseIds = structure.map(item => item.exercise_id);
+
   const checkQuery = `
-    SELECT exercise_id, name
+    SELECT exercise_id, intensity
     FROM exercises
     WHERE exercise_id = ANY($1)
   `;
-  const { rows: existingExercises } = await db.query(checkQuery, [exerciseIds]);
+  const { rows: existingExercises } = await pool.query(checkQuery, [exerciseIds]);
 
   const existingIds = existingExercises.map(e => e.exercise_id);
   const missingIds = exerciseIds.filter(id => !existingIds.includes(id));
 
   if (missingIds.length > 0) {
-    throw new Error(`Invalid exercise_id(s): ${missingIds.join(', ')}`);
+    throw new Error(
+      `Invalid exercise_id(s) in structure: ${missingIds.join(', ')}`
+    );
   }
 
-  // Intensity lookup map
-  // const intensityLookup = {
-  //   "Bench Press": 3,
-  //   "Squats": 4,
-  //   "Deadlift": 5,
-  //   "Pushups": 2,
-  //   "Pullups": 3.5,
-  //   // Add your full list here
-  // };
+  const intensityScale = {
+    low: 2,
+    medium: 3,
+    high: 5,
+  };
 
-  // ✅ Use shared calculate function
-  const finalScore = calculateScoreFromStructure(structure, intensityLookup, existingExercises);
+  const numericIntensities = existingExercises
+    .map(e => intensityScale[e.intensity] || e.intensity)
+    .filter(n => typeof n === 'number');
 
-  console.log(`Normalized Score: ${finalScore}`);
+  const avgIntensity =
+    numericIntensities.reduce((acc, val) => acc + val, 0) / numericIntensities.length || 1;
+
+  const finalIntensity = Math.min(5, Math.max(1, parseFloat(avgIntensity.toFixed(2))));
 
   const insertQuery = `
-    INSERT INTO workouts (name, created_by, description, structure, score)
-    VALUES ($1, $2, $3, $4, $5)
+    INSERT INTO workouts (name, created_by, description, structure, score, intensity)
+    VALUES ($1, $2, $3, $4, $5, $6)
     RETURNING *;
   `;
-
   const values = [
     name,
     created_by,
     description,
     JSON.stringify(structure),
-    finalScore
+    score,
+    finalIntensity,
   ];
-
-  const { rows } = await db.query(insertQuery, values);
+  const { rows } = await pool.query(insertQuery, values);
   return rows[0];
 };
-
 
 const fetchAllWorkouts = async () => {
   const query = `
@@ -211,7 +175,7 @@ const fetchAllWorkouts = async () => {
     LEFT JOIN users u ON w.created_by = u.id
     ORDER BY w.created_at DESC;
   `;
-  const { rows } = await db.query(query);
+  const { rows } = await pool.query(query);
   return rows;
 };
 
@@ -222,7 +186,7 @@ const fetchWorkoutById = async (id) => {
     LEFT JOIN users u ON w.created_by = u.id
     WHERE w.workout_id = $1;
   `;
-  const workoutResult = await db.query(workoutQuery, [id]);
+  const workoutResult = await pool.query(workoutQuery, [id]);
   if (workoutResult.rows.length === 0) return null;
 
   const workout = workoutResult.rows[0];
@@ -234,11 +198,11 @@ const fetchWorkoutById = async (id) => {
 
   if (exerciseIds.length > 0) {
     const exercisesQuery = `
-      SELECT exercise_id, name, description, muscle_group, units
+      SELECT exercise_id, name, description, muscle_group, units, intensity
       FROM exercises
       WHERE exercise_id = ANY($1);
     `;
-    const exercisesResult = await db.query(exercisesQuery, [exerciseIds]);
+    const exercisesResult = await pool.query(exercisesQuery, [exerciseIds]);
     const exercisesMap = exercisesResult.rows.reduce((acc, exercise) => {
       acc[exercise.exercise_id] = exercise;
       return acc;
@@ -253,15 +217,40 @@ const fetchWorkoutById = async (id) => {
   return workout;
 };
 
-const updateWorkoutById = async (id, { name, description, structure, score }) => {
-  // Duplicate name check if updating name
+const updateWorkoutById = async (
+  id,
+  { name, description, structure, score }
+) => {
+  // Check for duplicate name if updated
   if (name) {
     const duplicateCheckQuery = `
       SELECT 1 FROM workouts WHERE name = $1 AND workout_id != $2 LIMIT 1;
     `;
-    const duplicateCheck = await db.query(duplicateCheckQuery, [name, id]);
+    const duplicateCheck = await pool.query(duplicateCheckQuery, [name, id]);
     if (duplicateCheck.rowCount > 0) {
       throw new Error("Workout name already present");
+    }
+  }
+
+  let updatedIntensity = null;
+
+  if (structure) {
+    const exerciseIds = structure.map(item => item.exercise_id);
+    const { rows: existingExercises } = await pool.query(
+      `SELECT intensity FROM exercises WHERE exercise_id = ANY($1)`,
+      [exerciseIds]
+    );
+
+    const intensityScale = { low: 2, medium: 3, high: 5 };
+    const numericIntensities = existingExercises
+      .map(e => intensityScale[e.intensity] || e.intensity)
+      .filter(n => typeof n === 'number');
+
+    if (numericIntensities.length > 0) {
+      const avg =
+        numericIntensities.reduce((acc, val) => acc + val, 0) /
+        numericIntensities.length;
+      updatedIntensity = parseFloat(Math.min(5, Math.max(1, avg)).toFixed(2));
     }
   }
 
@@ -270,8 +259,9 @@ const updateWorkoutById = async (id, { name, description, structure, score }) =>
     SET name = COALESCE($1, name),
         description = COALESCE($2, description),
         structure = COALESCE($3, structure),
-        score = COALESCE($4, score)
-    WHERE workout_id = $5
+        score = COALESCE($4, score),
+        intensity = COALESCE($5, intensity)
+    WHERE workout_id = $6
     RETURNING *;
   `;
 
@@ -280,10 +270,11 @@ const updateWorkoutById = async (id, { name, description, structure, score }) =>
     description,
     structure ? JSON.stringify(structure) : null,
     score,
-    id
+    updatedIntensity,
+    id,
   ];
 
-  const { rows } = await db.query(query, values);
+  const { rows } = await pool.query(query, values);
   return rows[0];
 };
 
@@ -293,17 +284,17 @@ const deleteWorkoutById = async (id) => {
     WHERE workout_id = $1
     RETURNING *;
   `;
-  const { rows } = await db.query(query, [id]);
+  const { rows } = await pool.query(query, [id]);
   return rows[0];
 };
 
-
-
 const checkExists = async (table, idName, id) => {
   const query = `SELECT 1 FROM ${table} WHERE ${idName} = $1 LIMIT 1`;
-  const { rowCount } = await db.query(query, [id]);
+  const { rowCount } = await pool.query(query, [id]);
   return rowCount > 0;
 };
+
+
 
 const recordWorkoutLog = async ({
   user_id,
@@ -311,9 +302,12 @@ const recordWorkoutLog = async ({
   regiment_day_index,
   log_date,
   planned_workout_id,
-  actual_workout
+  actual_workout,
+  score,
 }) => {
-  // Validate references
+  // if (!(await checkExists('users', 'user_id', user_id))) { // Changed from id to user_id
+  //   throw new Error(`User with id ${user_id} does not exist.`);
+  // }
   if (!(await checkExists('regiments', 'regiment_id', regiment_id))) {
     throw new Error(`Regiment with id ${regiment_id} does not exist.`);
   }
@@ -326,42 +320,18 @@ const recordWorkoutLog = async ({
     }
   }
 
-  // ✅ Fetch exercise names (needed for intensity lookup)
-  const exerciseIds = actual_workout.map(item => item.exercise_id);
-  const checkQuery = `
-    SELECT exercise_id, name
-    FROM exercises
-    WHERE exercise_id = ANY($1)
-  `;
-  const { rows: existingExercises } = await db.query(checkQuery, [exerciseIds]);
-
-  // ✅ Intensity lookup (should ideally be a centralized shared constant)
-  const intensityLookup = {
-    "Bench Press": 3,
-    "Squats": 4,
-    "Deadlift": 5,
-    "Pushups": 2,
-    "Pullups": 3.5,
-    // Add full list
-  };
-
-  // ✅ Calculate score based on actual workout using shared function
-  const calculatedScore = calculateScoreFromStructure(actual_workout, intensityLookup, existingExercises);
-
-  console.log(`Calculated Score for Workout Log: ${calculatedScore}`);
-
   const query = `
-    INSERT INTO workout_logs (
-      user_id,
-      regiment_id,
-      regiment_day_index,
-      log_date,
-      planned_workout_id,
-      actual_workout,
-      score
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-    RETURNING *;
-  `;
+  INSERT INTO workout_logs (
+    user_id,
+    regiment_id,
+    regiment_day_index,
+    log_date,
+    planned_workout_id,
+    actual_workout,
+    score
+  ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+  RETURNING *;
+`;
   const values = [
     user_id,
     regiment_id,
@@ -369,52 +339,49 @@ const recordWorkoutLog = async ({
     log_date,
     planned_workout_id,
     JSON.stringify(actual_workout),
-    calculatedScore
+    score || 0,
   ];
 
-  const { rows } = await db.query(query, values);
+  const { rows } = await pool.query(query, values);
   return rows[0];
 };
 
-
-const fetchUserWorkoutLogs = async (user_id, limit = 50, offset = 0) => {
+const fetchUserWorkoutLogs = async (id, limit = 50, offset = 0) => {
   const query = `
     SELECT wl.*,
            u.first_name,
-           w.name AS planned_workout_name,
-           r.name AS regiment_name
+           w.name as planned_workout_name,
+           r.name as regiment_name
     FROM workout_logs wl
-    LEFT JOIN users u ON wl.user_id = u.id  -- Corrected here
+    LEFT JOIN users u ON wl.id = u.id
     LEFT JOIN workouts w ON wl.planned_workout_id = w.workout_id
     LEFT JOIN regiments r ON wl.regiment_id = r.regiment_id
-    WHERE wl.user_id = $1
+    WHERE wl.id = $1
     ORDER BY wl.log_date DESC, wl.created_at DESC
     LIMIT $2 OFFSET $3;
   `;
-  const { rows } = await db.query(query, [user_id, limit, offset]);
+  const { rows } = await pool.query(query, [id, limit, offset]);
   return rows;
 };
 
-const fetchWorkoutLogById = async (workout_log_id) => {
+const fetchWorkoutLogById = async (id) => {
   const query = `
     SELECT wl.*,
            u.first_name,
-           w.name AS planned_workout_name,
-           w.structure AS planned_workout_structure,
-           r.name AS regiment_name
+           w.name as planned_workout_name,
+           w.structure as planned_workout_structure,
+           r.name as regiment_name
     FROM workout_logs wl
-    LEFT JOIN users u ON wl.user_id = u.id  -- Corrected here
+    LEFT JOIN users u ON wl.id = u.id
     LEFT JOIN workouts w ON wl.planned_workout_id = w.workout_id
     LEFT JOIN regiments r ON wl.regiment_id = r.regiment_id
     WHERE wl.workout_log_id = $1;
   `;
-  const { rows } = await db.query(query, [workout_log_id]);
+  const { rows } = await pool.query(query, [id]);
   return rows[0];
 };
 
-
-// Update workout log
-const updateWorkoutLogById = async (workout_log_id, { actual_workout, score }) => {
+const updateWorkoutLogById = async (id, { actual_workout, score }) => {
   const query = `
     UPDATE workout_logs
     SET actual_workout = COALESCE($1, actual_workout),
@@ -425,24 +392,25 @@ const updateWorkoutLogById = async (workout_log_id, { actual_workout, score }) =
   const values = [
     actual_workout ? JSON.stringify(actual_workout) : null,
     score,
-    workout_log_id,
+    id,
   ];
-  const { rows } = await db.query(query, values);
+  const { rows } = await pool.query(query, values);
   return rows[0];
 };
 
-// Delete workout log
-const deleteWorkoutLogById = async (workout_log_id) => {
+const deleteWorkoutLogById = async (id) => {
   const query = `
     DELETE FROM workout_logs
     WHERE workout_log_id = $1
     RETURNING *;
   `;
-  const { rows } = await db.query(query, [workout_log_id]);
+  const { rows } = await pool.query(query, [id]);
   return rows[0];
 };
 
 
+
+// Regiment Functions 
 const recordRegiment = async ({
   created_by,
   name,
@@ -453,7 +421,7 @@ const recordRegiment = async ({
   const duplicateCheckQuery = `
     SELECT 1 FROM regiments WHERE name = $1 AND created_by = $2 LIMIT 1;
   `;
-  const duplicateCheck = await db.query(duplicateCheckQuery, [name, created_by]);
+  const duplicateCheck = await pool.query(duplicateCheckQuery, [name, created_by]);
   if (duplicateCheck.rowCount > 0) {
     throw new Error("Regiment already present");
   }
@@ -465,11 +433,11 @@ const recordRegiment = async ({
   const workoutIds = workout_structure.map((day) => day.workout_id);
 
   const query = `
-    SELECT workout_id, score
+    SELECT workout_id, intensity
     FROM workouts
     WHERE workout_id = ANY($1);
   `;
-  const { rows: workouts } = await db.query(query, [workoutIds]);
+  const { rows: workouts } = await pool.query(query, [workoutIds]);
 
   const existingWorkoutIds = workouts.map((w) => w.workout_id);
   const missingWorkoutIds = workoutIds.filter(
@@ -480,14 +448,9 @@ const recordRegiment = async ({
     throw new Error(`Workout ID(s) not found: ${missingWorkoutIds.join(", ")}`);
   }
 
-  // ✅ Compute intensity from scores (direct average on 1-10 scale)
-  const scores = workouts.map((w) => Number(w.score) || 0);
-  const averageScore =
-    scores.reduce((acc, val) => acc + val, 0) / scores.length;
-
-  let regimentIntensity = Math.min(10, Math.max(1, averageScore.toFixed(2)));
-
-  console.log(`Average Score: ${averageScore}, Regiment Intensity: ${regimentIntensity}`);
+  const intensities = workouts.map((w) => Number(w.intensity) || 0);
+  const averageIntensity =
+    intensities.reduce((acc, val) => acc + val, 0) / intensities.length;
 
   const insertQuery = `
     INSERT INTO regiments (
@@ -500,13 +463,12 @@ const recordRegiment = async ({
     name,
     description,
     JSON.stringify(workout_structure),
-    regimentIntensity,
+    averageIntensity,
   ];
 
-  const { rows } = await db.query(insertQuery, values);
+  const { rows } = await pool.query(insertQuery, values);
   return rows[0];
 };
-
 
 const fetchAllRegiments = async () => {
   const query = `
@@ -523,7 +485,7 @@ const fetchAllRegiments = async () => {
     LEFT JOIN users u ON r.created_by = u.id
     ORDER BY r.created_at DESC;
   `;
-  const { rows } = await db.query(query);
+  const { rows } = await pool.query(query);
   return rows;
 };
 
@@ -534,7 +496,7 @@ const fetchAllRegiments = async () => {
 //   WHERE table_name IN ('users', 'regiments')
 //   ORDER BY table_name, column_name;
 // `;
-// const result = await db.query(testQuery);
+// const result = await pool.query(testQuery);
 // console.log('Database structure:', result.rows);
 
 
@@ -545,7 +507,7 @@ const fetchRegimentById = async (id) => {
     LEFT JOIN users u ON r.created_by = u.id
     WHERE r.regiment_id = $1;
   `;
-  const regimentResult = await db.query(regimentQuery, [id]);
+  const regimentResult = await pool.query(regimentQuery, [id]);
   if (regimentResult.rows.length === 0) return null;
 
   const regiment = regimentResult.rows[0];
@@ -559,7 +521,7 @@ const fetchRegimentById = async (id) => {
       FROM workouts
       WHERE workout_id = ANY($1);
     `;
-    const workoutsResult = await db.query(workoutsQuery, [workoutIds]);
+    const workoutsResult = await pool.query(workoutsQuery, [workoutIds]);
     const workoutsMap = workoutsResult.rows.reduce((acc, workout) => {
       acc[workout.workout_id] = workout;
       return acc;
@@ -574,13 +536,30 @@ const fetchRegimentById = async (id) => {
   return regiment;
 };
 
+const calculateAverageIntensity = async (workoutStructure) => {
+  const workoutIds = workoutStructure.map((w) => w.workout_id);
+  const query = `
+    SELECT intensity
+    FROM workouts
+    WHERE workout_id = ANY($1);
+  `;
+  const { rows } = await pool.query(query, [workoutIds]);
+  const intensities = rows.map((row) => Number(row.intensity) || 0);
+
+  return intensities.length > 0
+    ? parseFloat(
+      (intensities.reduce((acc, val) => acc + val, 0) / intensities.length).toFixed(2)
+    )
+    : 0;
+};
+
 const updateRegimentById = async (id, { name, description, workout_structure }) => {
   // Check for duplicate name if updated
   if (name) {
     const duplicateCheckQuery = `
       SELECT 1 FROM regiments WHERE name = $1 AND regiment_id != $2 LIMIT 1;
     `;
-    const duplicateCheck = await db.query(duplicateCheckQuery, [name, id]);
+    const duplicateCheck = await pool.query(duplicateCheckQuery, [name, id]);
     if (duplicateCheck.rowCount > 0) {
       throw new Error("Regiment name already present");
     }
@@ -608,7 +587,7 @@ const updateRegimentById = async (id, { name, description, workout_structure }) 
     id,
   ];
 
-  const { rows } = await db.query(query, values);
+  const { rows } = await pool.query(query, values);
   return rows[0];
 };
 
@@ -618,7 +597,7 @@ const deleteRegimentById = async (id) => {
     WHERE regiment_id = $1
     RETURNING *;
   `;
-  const { rows } = await db.query(query, [id]);
+  const { rows } = await pool.query(query, [id]);
   return rows[0];
 };
 

@@ -16,7 +16,17 @@ const Workout_Management = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const { uid } = useAuth();
-  const userId = Number(uid);  // cast to number to avoid string vs number issues
+  const userId = Number(uid);
+
+  const formatDate = (isoDateStr) => {
+    if (!isoDateStr) return "N/A";
+    const dateObj = new Date(isoDateStr);
+    return dateObj.toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
 
   useEffect(() => {
     axios.get("http://localhost:3000/api/workouts/regiments")
@@ -98,6 +108,12 @@ const Workout_Management = () => {
           </span>
         )}
       </h2>
+
+      <p className="mt-1 text-sm text-gray-600">
+        <strong>Intensity:</strong> {regiment.intensity != null ? regiment.intensity : "N/A"}/10
+      </p>
+
+
       {expandedRegimentId === regiment.regiment_id && (
         <div className="mt-3 space-y-2 ml-4">
           {regiment.workout_structure.map(day => (
@@ -130,13 +146,18 @@ const Workout_Management = () => {
         {regiment.name}
         <span className="text-sm text-gray-500 ml-2">({logs.length} logs)</span>
       </h2>
+
+      <p className="mt-1 text-sm text-gray-600">
+        <strong>Intensity:</strong> {regiment.intensity ?? "N/A"}
+      </p>
+
       {expandedRegimentId === regiment.regiment_id && (
         <div className="mt-3 space-y-4 ml-4">
           {logs
             .sort((a, b) => new Date(b.log_date) - new Date(a.log_date))
             .map(log => (
               <div key={log.workout_log_id} className="p-3 border rounded-md bg-gray-50">
-                <p><strong>Date:</strong> {log.log_date}</p>
+                <p><strong>Date:</strong> {formatDate(log.log_date)}</p>
                 <p><strong>Workout:</strong> {log.planned_workout_name}</p>
                 <p><strong>Score:</strong> {log.score}</p>
 
@@ -150,11 +171,17 @@ const Workout_Management = () => {
                           {Object.entries(exercise.sets).map(([setName, setData]) => (
                             <div key={setName} className="text-sm text-gray-700">
                               <strong>{setName}:</strong>
-                              {setData.reps !== undefined && ` ${setData.reps} reps`}
-                              {setData.weight !== undefined && `, ${setData.weight}${setData.weight_unit || ""}`}
-                              {setData.time !== undefined && `, ${setData.time} sec`}
+                              <span>
+                                {[
+                                  (setData.reps != null && setData.reps !== "") ? `${setData.reps} reps` : null,
+                                  (setData.weight != null && setData.weight !== "") ? `${setData.weight}${setData.weight_unit || ""}` : null,
+                                  (setData.time != null && setData.time !== "") ? `${setData.time} sec` : null,
+                                  (setData.laps != null && setData.laps !== "") ? `${setData.laps} laps` : null,
+                                ].filter(Boolean).join(", ")}
+                              </span>
                             </div>
                           ))}
+
                         </div>
                       </div>
                     ))}

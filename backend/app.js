@@ -17,6 +17,7 @@ import rateLimit from "express-rate-limit";
 import authRouter from "./routers/auth.router.js";
 import authenticate from "./middlewares/authenticate.middleware.js";
 import leaderboardRouter from "./routers/leaderboard.router.js";
+import client, { register } from "prom-client"
 
 dotenv.config();
 const app = express();
@@ -59,6 +60,15 @@ app.use(limiter);
 app.get("/", (req, res) => {
   res.send("Gym Site API is running 🚀");
 });
+// Prometheus metrics endpoint
+const collectDefaultMetrics = client.collectDefaultMetrics;
+collectDefaultMetrics( {register: client.register} )
+
+app.get("/metrics", async (req, res) => {
+  res.setHeader("Content-Type", client.register.contentType)
+  const metrics = await client.register.metrics()
+  res.send(metrics)
+})
 
 // API routes
 app.use("/api/dishes", dishRouter);

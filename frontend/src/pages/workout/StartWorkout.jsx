@@ -14,16 +14,13 @@ const StartWorkout = () => {
   const [checkedSets, setCheckedSets] = useState({});
   const [timers, setTimers] = useState({});
   const [selectedTimer, setSelectedTimer] = useState(null);
-  
+
   const [logData, setLogData] = useState({
     user_id: uid,
     regiment_id: regimenId ? Number(regimenId) : null,
-    regiment_day_index: 1,
-    log_date: new Date().toISOString().split('T')[0],
-    planned_workout_id: workoutId,
     actual_workout: [],
-    score: null,
   });
+
 
   // Timer state
   const [timer, setTimer] = useState({
@@ -71,7 +68,7 @@ const StartWorkout = () => {
 
           Object.entries(exercise.sets).forEach(([setKey, setVal]) => {
             initChecked[eIdx][setKey] = false;
-            
+
             const timeInSeconds = setVal.time_unit?.toLowerCase().includes("min")
               ? (setVal.time || 0) * 60
               : setVal.time || 0;
@@ -88,7 +85,7 @@ const StartWorkout = () => {
             if (setVal.weight !== undefined) actualSet.weight = setVal.weight;
             if (setVal.time !== undefined) actualSet.time = setVal.time;
             if (setVal.laps !== undefined) actualSet.laps = setVal.laps;
-            
+
             actualExercise.sets[setKey] = actualSet;
           });
 
@@ -113,11 +110,11 @@ const StartWorkout = () => {
 
   const startTimer = () => {
     if (timer.isRunning) return;
-    
+
     const intervalId = setInterval(() => {
       setTimer(prev => {
         let { hours, minutes, seconds } = prev;
-        
+
         if (seconds > 0) {
           seconds--;
         } else if (minutes > 0) {
@@ -129,7 +126,7 @@ const StartWorkout = () => {
           seconds = 59;
         } else {
           clearInterval(intervalId);
-          
+
           if (selectedTimer) {
             const { eIdx, setNumber } = selectedTimer;
             setCheckedSets(prevChecked => ({
@@ -139,7 +136,7 @@ const StartWorkout = () => {
                 [setNumber]: true,
               },
             }));
-            
+
             setLogData(prev => {
               const updated = [...prev.actual_workout];
               const exercise = workout.structure[eIdx];
@@ -148,10 +145,10 @@ const StartWorkout = () => {
               return { ...prev, actual_workout: updated };
             });
           }
-          
+
           return { ...prev, isRunning: false };
         }
-        
+
         return { hours, minutes, seconds, isRunning: true, intervalId };
       });
     }, 1000);
@@ -167,10 +164,10 @@ const StartWorkout = () => {
 
   const resetTimer = (timeInSeconds) => {
     if (timer.intervalId) clearInterval(timer.intervalId);
-    
+
     const minutes = Math.floor(timeInSeconds / 60);
     const seconds = timeInSeconds % 60;
-    
+
     setTimer({
       hours: 0,
       minutes,
@@ -193,12 +190,12 @@ const StartWorkout = () => {
   const handleSelectTimer = (eIdx, setNumber) => {
     const exercise = workout.structure[eIdx];
     const set = exercise.sets[setNumber];
-    
+
     if (set.time) {
       const timeInSeconds = set.time_unit?.toLowerCase().includes("min")
         ? set.time * 60
         : set.time;
-      
+
       resetTimer(timeInSeconds);
       setSelectedTimer({ eIdx, setNumber });
     }
@@ -213,9 +210,9 @@ const StartWorkout = () => {
   };
 
   const handleLogFieldChange = (field, value) => {
-    setLogData(prev => ({ 
-      ...prev, 
-      [field]: field === 'regiment_id' ? (value === "" ? null : Number(value)) : value 
+    setLogData(prev => ({
+      ...prev,
+      [field]: field === 'regiment_id' ? (value === "" ? null : Number(value)) : value
     }));
   };
 
@@ -224,7 +221,6 @@ const StartWorkout = () => {
     updated[exerciseIdx].sets[setKey][field] = value;
     setLogData(prev => ({ ...prev, actual_workout: updated }));
   };
-
   const handleFinish = async () => {
     if (!uid) {
       alert("User not authenticated. Please log in.");
@@ -251,7 +247,7 @@ const StartWorkout = () => {
         Object.entries(exercise.sets).forEach(([setKey, setVal]) => {
           const actualSet = logData.actual_workout[eIdx]?.sets[setKey] || {};
           const plannedSet = exercise.sets[setKey];
-          
+
           exerciseLog.sets[setKey] = {
             reps: actualSet.reps ?? plannedSet.reps,
             weight: actualSet.weight ?? plannedSet.weight,
@@ -274,12 +270,12 @@ const StartWorkout = () => {
       const payload = {
         user_id: Number(uid),
         regiment_id: logData.regiment_id ? Number(logData.regiment_id) : null,
-        regiment_day_index: Number(logData.regiment_day_index) || 1,
-        log_date: logData.log_date,
-        planned_workout_id: Number(workoutId),
-        actual_workout: actualWorkoutWithUnits,
-        score: logData.score ? Number(logData.score) : null,
+        regiment_day_index: 1, // hardcoded default (or you can remove if backend handles it)
+        log_date: new Date().toISOString().split('T')[0],  // auto-generate current date
+        planned_workout_id: Number(workoutId),  // from useParams directly
+        actual_workout: actualWorkoutWithUnits
       };
+
 
       await axios.post("http://localhost:3000/api/workouts/logs", payload);
       alert("Workout completed and logged successfully!");
@@ -295,6 +291,7 @@ const StartWorkout = () => {
       alert(`Error completing workout: ${errorMessage}`);
     }
   };
+
 
   if (error) return <p className="text-red-600 p-4">{error}</p>;
   if (!workout) return <p className="p-4">Loading workout...</p>;
@@ -337,22 +334,20 @@ const StartWorkout = () => {
         <button
           onClick={startTimer}
           disabled={timer.isRunning}
-          className={`w-full py-2 rounded-full ${
-            timer.isRunning
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-gray-200 text-black hover:bg-gray-300'
-          }`}
+          className={`w-full py-2 rounded-full ${timer.isRunning
+            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            : 'bg-gray-200 text-black hover:bg-gray-300'
+            }`}
         >
           Start
         </button>
         <button
           onClick={stopTimer}
           disabled={!timer.isRunning}
-          className={`w-full py-2 rounded-full ${
-            !timer.isRunning
-              ? 'bg-blue-300 text-white cursor-not-allowed'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-          }`}
+          className={`w-full py-2 rounded-full ${!timer.isRunning
+            ? 'bg-blue-300 text-white cursor-not-allowed'
+            : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
         >
           Stop
         </button>
@@ -361,177 +356,134 @@ const StartWorkout = () => {
   );
 
   return (
-  <div className="max-w-4xl mx-auto p-4 mt-6 bg-white min-h-screen font-sans">
-    <div className="flex justify-between mb-6">
-      <button
-        onClick={handleFinish}
-        disabled={!allExercisesComplete()}
-        className={`px-6 py-2 rounded-full shadow ${
-          allExercisesComplete()
+    <div className="max-w-4xl mx-auto p-4 mt-6 bg-white min-h-screen font-sans">
+      <div className="flex justify-between mb-6">
+        <button
+          onClick={handleFinish}
+          disabled={!allExercisesComplete()}
+          className={`px-6 py-2 rounded-full shadow ${allExercisesComplete()
             ? "bg-green-600 text-white hover:bg-green-700"
             : "bg-gray-100 text-gray-400 cursor-not-allowed"
-        }`}
-      >
-        Finish & Log Workout
-      </button>
-    </div>
-
-    <div className="bg-gray-50 p-4 rounded-lg mb-6 border">
-      <h3 className="text-lg font-semibold mb-4 text-[#4B9CD3]">Workout Log Details</h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <select
-          value={logData.regiment_id || ""}
-          onChange={(e) => handleLogFieldChange("regiment_id", e.target.value)}
-          className="border p-2 rounded"
+            }`}
         >
-          <option value="">Select Regiment (Optional)</option>
-          {regiments.map((reg) => (
-            <option key={reg.regiment_id} value={reg.regiment_id}>
-              {reg.name || `Regiment ${reg.regiment_id}`}
-            </option>
-          ))}
-        </select>
-
-        <input
-          type="number"
-          placeholder="Day Index"
-          value={logData.regiment_day_index}
-          onChange={(e) => handleLogFieldChange("regiment_day_index", e.target.value)}
-          className="border p-2 rounded"
-          min="1"
-        />
-
-        <input
-          type="date"
-          value={logData.log_date}
-          onChange={(e) => handleLogFieldChange("log_date", e.target.value)}
-          className="border p-2 rounded"
-        />
+          Finish & Log Workout
+        </button>
       </div>
 
-      <div className="mt-4">
-        <input
-          type="number"
-          placeholder="Overall Score (Optional)"
-          value={logData.score || ""}
-          onChange={(e) => handleLogFieldChange("score", e.target.value)}
-          className="border p-2 rounded w-full md:w-1/3"
-          min="0"
-          max="10"
-        />
+      <div className="bg-gray-50 p-4 rounded-lg mb-6 border">
+        <h3 className="text-lg font-semibold mb-4 text-[#4B9CD3]">Workout Log Details</h3>
+
       </div>
-    </div>
 
-    {workout.structure.map((exercise, eIdx) => (
-      <div key={eIdx} className="mb-6 bg-white rounded-lg shadow p-4 border">
-        <h2 className="text-lg font-semibold mb-4 text-[#4B9CD3]">
-          {exercise.exercise_details?.name || `Exercise ${exercise.exercise_id}`}
-        </h2>
+      {workout.structure.map((exercise, eIdx) => (
+        <div key={eIdx} className="mb-6 bg-white rounded-lg shadow p-4 border">
+          <h2 className="text-lg font-semibold mb-4 text-[#4B9CD3]">
+            {exercise.exercise_details?.name || `Exercise ${exercise.exercise_id}`}
+          </h2>
 
-        {Object.entries(exercise.sets).map(([setNumber, set]) => {
-          const isTime = !!set.time;
-          const isChecked = checkedSets?.[eIdx]?.[setNumber];
-          const actualSet = logData.actual_workout[eIdx]?.sets[setNumber] || {};
-          const weightUnit = set.weight_unit || "kg";
-          const timeUnit = set.time_unit || "seconds";
+          {Object.entries(exercise.sets).map(([setNumber, set]) => {
+            const isTime = !!set.time;
+            const isChecked = checkedSets?.[eIdx]?.[setNumber];
+            const actualSet = logData.actual_workout[eIdx]?.sets[setNumber] || {};
+            const weightUnit = set.weight_unit || "kg";
+            const timeUnit = set.time_unit || "seconds";
 
-          return (
-            <div key={setNumber} className="border rounded-lg p-3 mb-3 bg-gray-50">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <p className="font-medium text-[#4B9CD3]">Set {setNumber}</p>
-                  <p className="text-sm text-gray-600">
-                    Planned: {isTime ? `${set.time} ${timeUnit}` : `${set.reps} Reps`}
-                    {set.weight ? ` / ${set.weight} ${weightUnit}` : ""}
-                    {set.laps ? ` / ${set.laps} Laps` : ""}
-                  </p>
-                </div>
+            return (
+              <div key={setNumber} className="border rounded-lg p-3 mb-3 bg-gray-50">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <p className="font-medium text-[#4B9CD3]">Set {setNumber}</p>
+                    <p className="text-sm text-gray-600">
+                      Planned: {isTime ? `${set.time} ${timeUnit}` : `${set.reps} Reps`}
+                      {set.weight ? ` / ${set.weight} ${weightUnit}` : ""}
+                      {set.laps ? ` / ${set.laps} Laps` : ""}
+                    </p>
+                  </div>
 
-                <div className="flex gap-2 items-center">
-                  {isTime && (
+                  <div className="flex gap-2 items-center">
+                    {isTime && (
+                      <button
+                        onClick={() => handleSelectTimer(eIdx, setNumber)}
+                        className="bg-[#4B9CD3] text-white px-2 py-1 rounded hover:bg-blue-500"
+                      >
+                        Timer
+                      </button>
+                    )}
                     <button
-                      onClick={() => handleSelectTimer(eIdx, setNumber)}
-                      className="bg-[#4B9CD3] text-white px-2 py-1 rounded hover:bg-blue-500"
-                    >
-                      Timer
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleSetCheck(eIdx, setNumber)}
-                    className={`px-3 py-1 rounded-full text-sm ${
-                      isChecked
+                      onClick={() => handleSetCheck(eIdx, setNumber)}
+                      className={`px-3 py-1 rounded-full text-sm ${isChecked
                         ? "bg-green-500 text-white"
                         : "bg-gray-200 text-black hover:bg-gray-300"
-                    }`}
-                  >
-                    Done
-                  </button>
+                        }`}
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+
+                <div className="border-t pt-2 mt-2">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Actual Performance:</p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {"reps" in actualSet && (
+                      <div>
+                        <label className="block text-xs text-gray-500">Reps</label>
+                        <input
+                          type="number"
+                          value={actualSet.reps}
+                          onChange={(e) => handleActualSetChange(eIdx, setNumber, "reps", e.target.value)}
+                          className="border p-1 rounded w-full"
+                          min="0"
+                        />
+                      </div>
+                    )}
+                    {"weight" in actualSet && (
+                      <div>
+                        <label className="block text-xs text-gray-500">Weight ({weightUnit})</label>
+                        <input
+                          type="number"
+                          value={actualSet.weight}
+                          onChange={(e) => handleActualSetChange(eIdx, setNumber, "weight", e.target.value)}
+                          className="border p-1 rounded w-full"
+                          min="0"
+                          step="0.1"
+                        />
+                      </div>
+                    )}
+                    {"time" in actualSet && (
+                      <div>
+                        <label className="block text-xs text-gray-500">Time ({timeUnit})</label>
+                        <input
+                          type="number"
+                          value={actualSet.time}
+                          onChange={(e) => handleActualSetChange(eIdx, setNumber, "time", e.target.value)}
+                          className="border p-1 rounded w-full"
+                          min="0"
+                        />
+                      </div>
+                    )}
+                    {"laps" in actualSet && (
+                      <div>
+                        <label className="block text-xs text-gray-500">Laps</label>
+                        <input
+                          type="number"
+                          value={actualSet.laps}
+                          onChange={(e) => handleActualSetChange(eIdx, setNumber, "laps", e.target.value)}
+                          className="border p-1 rounded w-full"
+                          min="0"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
+            );
+          })}
+        </div>
+      ))}
 
-              <div className="border-t pt-2 mt-2">
-                <p className="text-sm font-medium text-gray-700 mb-2">Actual Performance:</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {"reps" in actualSet && (
-                    <div>
-                      <label className="block text-xs text-gray-500">Reps</label>
-                      <input
-                        type="number"
-                        value={actualSet.reps}
-                        onChange={(e) => handleActualSetChange(eIdx, setNumber, "reps", e.target.value)}
-                        className="border p-1 rounded w-full"
-                        min="0"
-                      />
-                    </div>
-                  )}
-                  {"weight" in actualSet && (
-                    <div>
-                      <label className="block text-xs text-gray-500">Weight ({weightUnit})</label>
-                      <input
-                        type="number"
-                        value={actualSet.weight}
-                        onChange={(e) => handleActualSetChange(eIdx, setNumber, "weight", e.target.value)}
-                        className="border p-1 rounded w-full"
-                        min="0"
-                        step="0.1"
-                      />
-                    </div>
-                  )}
-                  {"time" in actualSet && (
-                    <div>
-                      <label className="block text-xs text-gray-500">Time ({timeUnit})</label>
-                      <input
-                        type="number"
-                        value={actualSet.time}
-                        onChange={(e) => handleActualSetChange(eIdx, setNumber, "time", e.target.value)}
-                        className="border p-1 rounded w-full"
-                        min="0"
-                      />
-                    </div>
-                  )}
-                  {"laps" in actualSet && (
-                    <div>
-                      <label className="block text-xs text-gray-500">Laps</label>
-                      <input
-                        type="number"
-                        value={actualSet.laps}
-                        onChange={(e) => handleActualSetChange(eIdx, setNumber, "laps", e.target.value)}
-                        className="border p-1 rounded w-full"
-                        min="0"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    ))}
-
-    {selectedTimer && <TimerComponent />}
-  </div>
-);
+      {selectedTimer && <TimerComponent />}
+    </div>
+  );
 };
 
 export default StartWorkout;

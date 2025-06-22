@@ -1,0 +1,181 @@
+
+updated
+
+CREATE TABLE exercises (    
+  exercise_id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  muscle_group TEXT,
+  units TEXT[] CHECK (
+    units IS NULL OR
+    (
+      array_length(units, 1) > 0 AND
+      units <@ ARRAY['reps', 'weight', 'time']
+    )
+  ),
+  created_by INT REFERENCES users(user_id) ON DELETE SET NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+// example 
+
+ INSERT INTO exercises (name, muscle_group, units)
+VALUES ('Push Ups', 'Chest', ARRAY['reps', 'time']);
+
+
+.>>>
+
+CREATE TABLE workouts (
+  workout_id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  created_by INT REFERENCES users(user_id) ON DELETE CASCADE,
+  description TEXT,
+  structure JSONB NOT NULL,
+  score NUMERIC,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  CHECK (
+    jsonb_typeof(structure) = 'array' AND
+    (
+      SELECT bool_and(
+        item ? 'exercise_id' AND
+        item ? 'sets' AND
+        jsonb_typeof(item->'sets') = 'object' AND
+        (
+          SELECT bool_and(
+            jsonb_typeof(value) = 'object' AND
+            (
+              value ? 'reps' OR value ? 'weight' OR value ? 'time'
+            ) AND
+            (
+              NOT (value ? 'actual') OR (
+                jsonb_typeof(value->'actual') = 'object' AND
+                (
+                  value->'actual' ? 'reps' OR
+                  value->'actual' ? 'weight' OR
+                  value->'actual' ? 'time'
+                )
+              )
+            )
+          )
+          FROM jsonb_each(item->'sets')
+        )
+      )
+      FROM jsonb_array_elements(structure) AS item
+    )
+  )
+);
+
+// example 
+
+[
+  {
+    "exercise_id": 1,
+    "sets": {
+      "set1": {
+        "reps": 12,
+        "weight": 40,
+        "actual": { "reps": 12, "weight": 38 }
+      },
+      "set2": {
+        "reps": 10,
+        "weight": 45
+      }
+    }
+  },
+  {
+    "exercise_id": 2,
+    "sets": {
+      "set1": {
+        "time": "00:01:00",
+        "actual": { "time": "00:00:50" }
+      }
+    }
+  }
+]
+
+.>>
+
+
+CREATE TABLE regiments (
+  regiment_id SERIAL PRIMARY KEY,
+  created_by INT REFERENCES users(user_id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  workout_structure JSONB NOT NULL, -- Array of day-wise entries like [{ name, workout_id }]
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  CHECK (
+    jsonb_typeof(workout_structure) = 'array' AND
+    (
+      SELECT bool_and(
+        jsonb_typeof(day) = 'object' AND
+        day ? 'name' AND
+        day ? 'workout_id' AND
+        jsonb_typeof(day->'name') = 'string' AND
+        jsonb_typeof(day->'workout_id') = 'number'
+      )
+      FROM jsonb_array_elements(workout_structure) AS day
+    )
+  )
+);
+
+example
+[
+  { "name": "Day 1 - Upper Body", "workout_id": 1 },
+  { "name": "Day 2 - Lower Body", "workout_id": 2 },
+  { "name": "Day 3 - Cardio", "workout_id": 3 }
+]
+
+
+
+
+
+
+
+
+
+
+CREATE TABLE regiments ( //json
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL
+);
+
+CREATE TABLE workouts ( // json
+  id SERIAL PRIMARY KEY,
+  regiment_id INTEGER REFERENCES regiments(id),
+  name TEXT NOT NULL
+);
+
+CREATE TABLE exercises (
+  id SERIAL PRIMARY KEY,
+  workout_id INTEGER REFERENCES workouts(id),
+  name TEXT NOT NULL
+);
+
+CREATE TABLE sets (
+  id SERIAL PRIMARY KEY,
+  exercise_id INTEGER NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+  set_name TEXT,
+  reps INTEGER,
+  weight INTEGER,
+  weight_label TEXT,
+  time DOUBLE PRECISION,
+  time_label TEXT
+
+);
+
+CREATE TABLE set_logs ( //json
+  id SERIAL PRIMARY KEY,;
+  set_id INTEGER REFERENCES sets(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL, 
+  actual_reps INTEGER,
+  actual_weight INTEGER,
+  actual_weight_label TEXT,
+  actual_time DOUBLE PRECISION,
+  actual_time_label TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+

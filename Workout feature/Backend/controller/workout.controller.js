@@ -19,7 +19,7 @@ import {
   fetchRegimentById,
   updateRegimentById,
   deleteRegimentById,
-} from "../model/workout.model.js"
+} from "../models/workout.model.js"
 
 const recordExerciseEntry = async (req, res) => {
   try {
@@ -155,7 +155,7 @@ const validateWorkoutStructure = (structure) => {
 
 const recordWorkoutEntry = async (req, res) => {
   try {
-    const { name, created_by, description, structure } = req.body;
+    const { name, created_by, description, structure, score } = req.body;
 
     if (!validateWorkoutStructure(structure)) {
       return res.status(400).json({
@@ -170,12 +170,14 @@ const recordWorkoutEntry = async (req, res) => {
       created_by,
       description,
       structure,
+      score,
     });
 
-    const exerciseIds = structure.map(item => item.exercise_id);
+    const exerciseIds = structure.map((item) => item.exercise_id);
 
     res.status(201).json({
       item: workout,
+      intensity: workout.intensity,
       exercise_ids: exerciseIds,
       message: 'Workout recorded successfully',
     });
@@ -194,13 +196,7 @@ const recordWorkoutEntry = async (req, res) => {
 const fetchAllWorkoutsList = async (req, res) => {
   try {
     const workouts = await fetchAllWorkouts();
-    res.json({
-      items: workouts.map(workout => ({
-        ...workout,
-        intensity: undefined  // explicitly remove intensity if still present
-      })),
-      count: workouts.length
-    });
+    res.json({ items: workouts, count: workouts.length });
   } catch (err) {
     console.error("❌ Fetch Workouts Error:", err.stack);
     res.status(500).json({ error: { message: "Failed to fetch workouts" } });
@@ -210,36 +206,27 @@ const fetchAllWorkoutsList = async (req, res) => {
 const fetchWorkoutByIdEntry = async (req, res) => {
   try {
     const workout = await fetchWorkoutById(req.params.id);
-    if (!workout) {
+    if (!workout)
       return res.status(404).json({ error: { message: "Workout not found" } });
-    }
-    // remove intensity if present
-    delete workout.intensity;
-
     res.json({ item: workout });
   } catch (err) {
     console.error("❌ Fetch Workout Error:", err.stack);
     res.status(500).json({ error: { message: "Failed to fetch workout" } });
   }
 };
-// ✅ Update Workout By ID
+
 const updateWorkoutByIdEntry = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, description, structure, score } = req.body;
-
     const workout = await updateWorkoutById(id, {
       name,
       description,
       structure,
-      score,  // score is fully calculated already before calling update
+      score,
     });
-
-    if (!workout) {
+    if (!workout)
       return res.status(404).json({ error: { message: "Workout not found" } });
-    }
-
-    delete workout.intensity;
     res.json({ item: workout, message: "Workout updated successfully" });
   } catch (err) {
     console.error("❌ Update Workout Error:", err.stack);
@@ -253,9 +240,8 @@ const updateWorkoutByIdEntry = async (req, res) => {
 const deleteWorkoutByIdEntry = async (req, res) => {
   try {
     const workout = await deleteWorkoutById(req.params.id);
-    if (!workout) {
+    if (!workout)
       return res.status(404).json({ error: { message: "Workout not found" } });
-    }
     res.json({ message: "Workout deleted successfully", item: workout });
   } catch (err) {
     console.error("❌ Delete Workout Error:", err.stack);
@@ -307,32 +293,30 @@ const recordWorkoutLogEntry = async (req, res) => {
       regiment_day_index,
       log_date,
       planned_workout_id,
-      actual_workout
+      actual_workout,
+      score,
     } = req.body;
 
-    // Validate structure
     if (!validateActualWorkout(actual_workout)) {
       return res.status(400).json({ error: { message: "Invalid actual_workout structure" } });
     }
 
-    // Call backend function that will handle score calculation internally
     const log = await recordWorkoutLog({
       user_id,
       regiment_id,
       regiment_day_index,
       log_date,
       planned_workout_id,
-      actual_workout
+      actual_workout,
+      score,
     });
 
     res.status(201).json({ item: log, message: "Workout log recorded successfully" });
-
   } catch (err) {
     console.error("❌ Record Workout Log Error:", err.stack);
-    res.status(500).json({ error: { message: err.message || "Failed to record workout log" } });
+    res.status(500).json({ error: { message: "Failed to record workout log" } });
   }
 };
-
 
 const fetchUserWorkoutLogsList = async (req, res) => {
   try {
@@ -388,13 +372,6 @@ const recordRegimentEntry = async (req, res) => {
   try {
     const { created_by, name, description, workout_structure } = req.body;
 
-    // Basic validation
-    if (!created_by || !name || !workout_structure || !Array.isArray(workout_structure)) {
-      return res.status(400).json({
-        error: { message: "Missing required fields or invalid workout_structure format." }
-      });
-    }
-
     const regiment = await recordRegiment({
       created_by,
       name,
@@ -406,26 +383,14 @@ const recordRegimentEntry = async (req, res) => {
       item: regiment,
       message: "Regiment recorded successfully",
     });
-
   } catch (err) {
     console.error("❌ Record Regiment Error:", err.stack);
-    
     if (err.message.includes("already present")) {
       return res.status(400).json({ error: { message: err.message } });
     }
-
-    if (err.message.startsWith("Workout ID(s) not found")) {
-      return res.status(400).json({ error: { message: err.message } });
-    }
-
-    if (err.message.startsWith("User with id")) {
-      return res.status(400).json({ error: { message: err.message } });
-    }
-
     res.status(500).json({ error: { message: "Failed to record regiment" } });
   }
 };
-
 
 const fetchAllRegimentsList = async (req, res) => {
   try {
