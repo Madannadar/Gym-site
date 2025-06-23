@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../../AuthProvider";
 
+const API_URL = import.meta.env.VITE_BACKEND_URL;
+
 const unitOptions = ["reps", "time", "weight", "laps"];
 
 const CreateExercise = () => {
@@ -50,7 +52,7 @@ const CreateExercise = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:3000/api/workouts/exercises",
+        `${API_URL}/workouts/exercises`,
         formData
       );
 
@@ -60,7 +62,7 @@ const CreateExercise = () => {
         description: "",
         muscle_group: "",
         units: [],
-        created_by: uid,  // keep uid here after reset
+        created_by: uid,  // keep uid after reset
       });
     } catch (err) {
       const msg = err?.response?.data?.error?.message || "Something went wrong";

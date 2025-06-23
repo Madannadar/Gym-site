@@ -3,6 +3,8 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../AuthProvider";
 
+const API_URL = import.meta.env.API_URL;
+
 const CreateRegiment = () => {
   const { uid } = useAuth();
   const [formData, setFormData] = useState({
@@ -25,7 +27,7 @@ const CreateRegiment = () => {
 
   useEffect(() => {
     axios
-      .get("http://localhost:3000/api/workouts")
+      .get(`${API_URL}/workouts`)
       .then((res) => setAvailableWorkouts(res.data.items || []))
       .catch((err) => {
         console.error("Error loading workouts", err);
@@ -80,7 +82,7 @@ const CreateRegiment = () => {
     }
 
     try {
-      await axios.post("http://localhost:3000/api/workouts/regiments", {
+      await axios.post(`${API_URL}/workouts/regiments`, {
         created_by,
         name,
         description,

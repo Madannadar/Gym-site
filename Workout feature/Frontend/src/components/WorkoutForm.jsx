@@ -20,7 +20,7 @@ const CreateWorkout = () => {
 
   useEffect(() => {
     axios
-      .get("http://localhost:3000/api/workouts/exercises")
+      .get(`{VITE_BACKEND_URL}/workouts/exercises`)
       .then((res) => setExercises(res.data.items))
       .catch((err) => {
         console.error("Failed to fetch exercises", err);
@@ -94,7 +94,7 @@ const CreateWorkout = () => {
           setMessage("");
           setError("");
           try {
-            const response = await axios.post("http://localhost:3000/api/workouts", {
+            const response = await axios.post(`${VITE_BACKEND_URL}/workouts`, {
               ...formData,
               score: Number(formData.score),
               structure: formData.structure.map(({ units, ...rest }) => rest),

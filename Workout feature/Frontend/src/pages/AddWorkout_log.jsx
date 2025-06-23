@@ -20,9 +20,9 @@ const RecordWorkoutForm = () => {
     const fetchData = async () => {
       try {
         const [regimentRes, exerciseRes, workoutRes] = await Promise.all([
-          axios.get("http://localhost:3000/api/workouts/regiments"),
-          axios.get("http://localhost:3000/api/workouts/exercises"),
-          axios.get("http://localhost:3000/api/workouts"),
+          axios.get(`${VITE_BACKEND_URL}/workouts/regiments`),
+          axios.get(`${VITE_BACKEND_URL}/workouts/exercises`),
+          axios.get(`${VITE_BACKEND_URL}/workouts`),
         ]);
         setRegiments(regimentRes.data.items || []);
         setExercises(exerciseRes.data.items || []);
@@ -38,7 +38,7 @@ const RecordWorkoutForm = () => {
     const fetchWorkoutDetails = async () => {
       if (!formData.workout_id) return;
       try {
-        const res = await axios.get(`http://localhost:3000/api/workouts/${formData.workout_id}`);
+        const res = await axios.get(`${VITE_BACKEND_URL}/workouts/${formData.workout_id}`);
         const structure = res.data?.item?.structure;
 
         if (!structure) return;
@@ -113,7 +113,7 @@ const RecordWorkoutForm = () => {
     e.preventDefault();
     try {
       const payload = cleanFormData();
-      await axios.post("http://localhost:3000/api/workouts/logs", payload);
+      await axios.post(`${VITE_BACKEND_URL}/workouts/logs`, payload);
       alert("Workout log recorded successfully!");
     } catch (err) {
       console.error("Log submission failed:", err);

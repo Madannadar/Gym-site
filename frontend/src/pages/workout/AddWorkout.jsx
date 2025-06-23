@@ -4,6 +4,9 @@ import ExerciseDropdown from "../../components/workout/ExerciseDropdown.jsx";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../AuthProvider.jsx";
 
+const API_URL = import.meta.env.API_URL;
+
+
 const CreateWorkout = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -26,7 +29,7 @@ const CreateWorkout = () => {
 
   useEffect(() => {
     axios
-      .get("http://localhost:3000/api/workouts/exercises")
+      .get(`${API_URL}/workouts/exercises`)
       .then((res) => setExercises(res.data.items))
       .catch((err) => {
         console.error("Failed to fetch exercises", err);
@@ -96,7 +99,7 @@ const CreateWorkout = () => {
     setError("");
 
     try {
-      const response = await axios.post("http://localhost:3000/api/workouts", {
+      const response = await axios.post(`${API_URL}/workouts`, {
         ...formData,
       });
       setMessage("Workout created successfully");

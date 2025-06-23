@@ -3,6 +3,8 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../AuthProvider";
 
+const API_URL = import.meta.env.VITE_BACKEND_URL;
+
 const Workout_Management = () => {
   const [regiments, setRegiments] = useState([]);
   const [workoutLogs, setWorkoutLogs] = useState([]);
@@ -18,22 +20,30 @@ const Workout_Management = () => {
   const { uid } = useAuth();
   const userId = Number(uid);
 
-  const formatDate = (isoDateStr) => {
+  const formatDateTime = (isoDateStr) => {
     if (!isoDateStr) return "N/A";
     const dateObj = new Date(isoDateStr);
-    return dateObj.toLocaleDateString('en-IN', {
+    const date = dateObj.toLocaleDateString('en-IN', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     });
+    const time = dateObj.toLocaleTimeString('en-IN', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+    return `${date} at ${time}`;
   };
 
   useEffect(() => {
-    axios.get("http://localhost:3000/api/workouts/regiments")
-      .then(async (res) => {
-        const regimentsData = res.data.items || [];
+    const fetchData = async () => {
+      try {
+        const regRes = await axios.get(`${API_URL}/workouts/regiments`);
+        const regimentsData = regRes.data.items || [];
         setRegiments(regimentsData);
 
+        // collect all workout ids
         const workoutIds = new Set();
         regimentsData.forEach(reg => {
           reg.workout_structure.forEach(day => {
@@ -43,32 +53,29 @@ const Workout_Management = () => {
 
         const nameMap = {};
         await Promise.all([...workoutIds].map(async (id) => {
-          const res = await axios.get(`http://localhost:3000/api/workouts/${id}`);
+          const res = await axios.get(`${API_URL}/workouts/${id}`);
           nameMap[id] = res.data?.item?.name || `Workout ${id}`;
         }));
         setWorkoutNames(nameMap);
-      })
-      .catch(err => {
-        console.error(err);
-        setError("Failed to load regiments.");
-      });
 
-    axios.get(`http://localhost:3000/api/workouts/logs/user/${userId}`)
-      .then(res => {
-        const logs = res.data.items || [];
+        const logRes = await axios.get(`${API_URL}/workouts/logs/user/${userId}`);
+        const logs = logRes.data.items || [];
         setWorkoutLogs(logs);
+
         const counts = {};
         logs.forEach(log => {
           counts[log.regiment_id] = (counts[log.regiment_id] || 0) + 1;
         });
         setLogCounts(counts);
-      })
-      .catch(err => {
-        console.error(err);
-        setError("Failed to load workout logs.");
-      });
 
-  }, []);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load data.");
+      }
+    };
+
+    fetchData();
+  }, [API_URL, userId]);
 
   const toggleRegiment = (id) => {
     setExpandedRegimentId(prev => (prev === id ? null : id));
@@ -82,7 +89,7 @@ const Workout_Management = () => {
     }
     if (!workoutDetails[id]) {
       try {
-        const res = await axios.get(`http://localhost:3000/api/workouts/${id}`);
+        const res = await axios.get(`${API_URL}/workouts/${id}`);
         setWorkoutDetails(prev => ({ ...prev, [id]: res.data.item }));
       } catch (err) {
         console.error(err);
@@ -112,7 +119,6 @@ const Workout_Management = () => {
       <p className="mt-1 text-sm text-gray-600">
         <strong>Intensity:</strong> {regiment.intensity != null ? regiment.intensity : "N/A"}/10
       </p>
-
 
       {expandedRegimentId === regiment.regiment_id && (
         <div className="mt-3 space-y-2 ml-4">
@@ -153,11 +159,10 @@ const Workout_Management = () => {
 
       {expandedRegimentId === regiment.regiment_id && (
         <div className="mt-3 space-y-4 ml-4">
-          {logs
-            .sort((a, b) => new Date(b.log_date) - new Date(a.log_date))
+          {logs.sort((a, b) => new Date(b.log_date) - new Date(a.log_date))
             .map(log => (
               <div key={log.workout_log_id} className="p-3 border rounded-md bg-gray-50">
-                <p><strong>Date:</strong> {formatDate(log.log_date)}</p>
+                <p><strong>Date:</strong> {formatDateTime(log.log_date)}</p>
                 <p><strong>Workout:</strong> {log.planned_workout_name}</p>
                 <p><strong>Score:</strong> {log.score}</p>
 
@@ -168,20 +173,18 @@ const Workout_Management = () => {
                       <div key={index} className="mb-2 ml-2">
                         <p className="font-semibold text-[#4B9CD3]">Exercise ID: {exercise.exercise_id}</p>
                         <div className="ml-4">
-                          {Object.entries(exercise.sets).map(([setName, setData]) => (
-                            <div key={setName} className="text-sm text-gray-700">
-                              <strong>{setName}:</strong>
-                              <span>
-                                {[
-                                  (setData.reps != null && setData.reps !== "") ? `${setData.reps} reps` : null,
-                                  (setData.weight != null && setData.weight !== "") ? `${setData.weight}${setData.weight_unit || ""}` : null,
-                                  (setData.time != null && setData.time !== "") ? `${setData.time} sec` : null,
-                                  (setData.laps != null && setData.laps !== "") ? `${setData.laps} laps` : null,
-                                ].filter(Boolean).join(", ")}
-                              </span>
-                            </div>
-                          ))}
-
+                          {Object.entries(exercise.sets).map(([setName, setData]) => {
+                            const parts = [];
+                            if (setData.reps != null && setData.reps !== "") parts.push(`${setData.reps} reps`);
+                            if (setData.weight != null && setData.weight !== "") parts.push(`${setData.weight}${setData.weight_unit || ""}`);
+                            if (setData.time != null && setData.time !== "") parts.push(`${setData.time} sec`);
+                            if (setData.laps != null && setData.laps !== "") parts.push(`${setData.laps} laps`);
+                            return (
+                              <div key={setName} className="text-sm text-gray-700">
+                                <strong>{setName}:</strong> {parts.join(", ") || "No data"}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     ))}
@@ -225,7 +228,7 @@ const Workout_Management = () => {
         className="mb-4 p-2 border border-gray-300 rounded w-full"
       />
 
-      {!showLogs && (
+      {!showLogs ? (
         <>
           <h2 className="text-2xl font-bold mb-2 text-purple-600">System Regiments</h2>
           {systemRegiments
@@ -238,9 +241,7 @@ const Workout_Management = () => {
             .filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()))
             .map(regiment => renderRegimentCard(regiment, false))}
         </>
-      )}
-
-      {showLogs && (
+      ) : (
         <>
           <h2 className="text-2xl font-bold mb-4 text-purple-600">Workout Logs</h2>
           {[...systemRegiments, ...userRegiments]

@@ -46,7 +46,7 @@ const ExerciseForm = () => {
 
   try {
     const response = await axios.post(
-      "http://localhost:3000/api/workouts/exercises",
+      `${VITE_BACKEND_URL}/workouts/exercises`,
       formData
     );
 

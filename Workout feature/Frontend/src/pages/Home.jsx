@@ -11,7 +11,7 @@ const Home = () => {
   // Fetch all regiments
   useEffect(() => {
     axios
-      .get("http://localhost:3000/api/workouts/regiments")
+      .get(`${VITE_BACKEND_URL}/workouts/regiments`)
       .then((res) => setRegiments(res.data.items || []))
       .catch((err) => {
         console.error("Error fetching regiments:", err);
@@ -35,7 +35,7 @@ const Home = () => {
     if (!workoutDetails[workout_id]) {
       try {
         const res = await axios.get(
-          `http://localhost:3000/api/workouts/${workout_id}`
+          `${VITE_BACKEND_URL}/workouts/${workout_id}`
         );
         setWorkoutDetails((prev) => ({
           ...prev,

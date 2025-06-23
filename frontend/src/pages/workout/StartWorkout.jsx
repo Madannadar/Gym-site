@@ -3,6 +3,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../../AuthProvider";
 
+const API_URL = import.meta.env.API_URL;
+
+
 const StartWorkout = () => {
   const { regimenId, workoutId } = useParams();
   const { uid } = useAuth();
@@ -37,8 +40,8 @@ const StartWorkout = () => {
     const fetchData = async () => {
       try {
         const [workoutRes, regimentsRes] = await Promise.all([
-          axios.get(`http://localhost:3000/api/workouts/${workoutId}`),
-          axios.get("http://localhost:3000/api/workouts/regiments")
+          axios.get(`${API_URL}/workouts/${workoutId}`),
+          axios.get(`${API_URL}/workouts/regiments`)
         ]);
 
         const workoutData = workoutRes.data.item;
@@ -46,7 +49,7 @@ const StartWorkout = () => {
         setRegiments(regimentsRes.data.items || []);
 
         if (workoutData.status !== "in_progress") {
-          await axios.put(`http://localhost:3000/api/workouts/${workoutId}`, {
+          await axios.put(`${API_URL}/workouts/${workoutId}`, {
             current_user_id: uid,
             status: "in_progress",
           });
@@ -233,7 +236,7 @@ const StartWorkout = () => {
     }
 
     try {
-      await axios.put(`http://localhost:3000/api/workouts/${workoutId}`, {
+      await axios.put(`${API_URL}/workouts/${workoutId}`, {
         current_user_id: uid,
         status: "completed",
       });
@@ -277,7 +280,7 @@ const StartWorkout = () => {
       };
 
 
-      await axios.post("http://localhost:3000/api/workouts/logs", payload);
+      await axios.post(`${API_URL}/workouts/logs`, payload);
       alert("Workout completed and logged successfully!");
       navigate("/Workout_Management");
     } catch (err) {

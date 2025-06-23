@@ -17,7 +17,7 @@ const CreateRegiment = () => {
 
     useEffect(() => {
         axios
-            .get("http://localhost:3000/api/workouts")
+            .get(`${VITE_BACKEND_URL}/workouts`)
             .then((res) => setAvailableWorkouts(res.data.items || []))
             .catch((err) => {
                 console.error("Error loading workouts", err);
@@ -75,7 +75,7 @@ const CreateRegiment = () => {
         }
 
         try {
-            const res = await axios.post("http://localhost:3000/api/workouts/regiments", {
+            const res = await axios.post(`${VITE_BACKEND_URL}/workouts/regiments`, {
                 created_by: 1,
                 name,
                 description,

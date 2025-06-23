@@ -20,6 +20,7 @@ import {
   updateRegimentById,
   deleteRegimentById,
 } from "../model/workout.model.js"
+import logger from "../utils/logger.js"
 
 const recordExerciseEntry = async (req, res) => {
   try {
@@ -49,12 +50,25 @@ const recordExerciseEntry = async (req, res) => {
       intensity,
     });
 
+    logger.info("Exercise recorded successfully", {
+      exerciseId: exercise.id,
+      name,
+      createdBy: created_by,
+      operation: "recordExercise"
+    });
+
     res.status(201).json({
       item: exercise,
       message: "Exercise recorded successfully",
     });
   } catch (err) {
-    console.error("❌ Record Exercise Error:", err.stack);
+    logger.error("Record Exercise Error", {
+      error: err.message,
+      stack: err.stack,
+      operation: "recordExercise",
+      requestBody: req.body
+    });
+    
     if (err.message.includes("already present")) {
       return res.status(400).json({ error: { message: err.message } });
     }
@@ -65,9 +79,19 @@ const recordExerciseEntry = async (req, res) => {
 const fetchAllExercisesList = async (req, res) => {
   try {
     const exercises = await fetchAllExercises();
+    
+    logger.info("Exercises fetched successfully", {
+      count: exercises.length,
+      operation: "fetchAllExercises"
+    });
+    
     res.json({ items: exercises, count: exercises.length });
   } catch (err) {
-    console.error("❌ Fetch Exercises Error:", err.stack);
+    logger.error("Fetch Exercises Error", {
+      error: err.message,
+      stack: err.stack,
+      operation: "fetchAllExercises"
+    });
     res.status(500).json({ error: { message: "Failed to fetch exercises" } });
   }
 };
@@ -75,11 +99,27 @@ const fetchAllExercisesList = async (req, res) => {
 const fetchExerciseByIdEntry = async (req, res) => {
   try {
     const exercise = await fetchExerciseById(req.params.id);
-    if (!exercise)
+    if (!exercise) {
+      logger.warn("Exercise not found", {
+        exerciseId: req.params.id,
+        operation: "fetchExerciseById"
+      });
       return res.status(404).json({ error: { message: "Exercise not found" } });
+    }
+    
+    logger.info("Exercise fetched successfully", {
+      exerciseId: req.params.id,
+      operation: "fetchExerciseById"
+    });
+    
     res.json({ item: exercise });
   } catch (err) {
-    console.error("❌ Fetch Exercise Error:", err.stack);
+    logger.error("Fetch Exercise Error", {
+      error: err.message,
+      stack: err.stack,
+      exerciseId: req.params.id,
+      operation: "fetchExerciseById"
+    });
     res.status(500).json({ error: { message: "Failed to fetch exercise" } });
   }
 };
@@ -94,11 +134,30 @@ const updateExerciseByIdEntry = async (req, res) => {
       muscle_group,
       units,
     });
-    if (!exercise)
+    if (!exercise) {
+      logger.warn("Exercise not found for update", {
+        exerciseId: id,
+        operation: "updateExerciseById"
+      });
       return res.status(404).json({ error: { message: "Exercise not found" } });
+    }
+    
+    logger.info("Exercise updated successfully", {
+      exerciseId: id,
+      updatedFields: { name, description, muscle_group, units },
+      operation: "updateExerciseById"
+    });
+    
     res.json({ item: exercise, message: "Exercise updated successfully" });
   } catch (err) {
-    console.error("❌ Update Exercise Error:", err.stack);
+    logger.error("Update Exercise Error", {
+      error: err.message,
+      stack: err.stack,
+      exerciseId: req.params.id,
+      requestBody: req.body,
+      operation: "updateExerciseById"
+    });
+    
     if (err.message.includes("already present")) {
       return res.status(400).json({ error: { message: err.message } });
     }
@@ -109,11 +168,28 @@ const updateExerciseByIdEntry = async (req, res) => {
 const deleteExerciseByIdEntry = async (req, res) => {
   try {
     const exercise = await deleteExerciseById(req.params.id);
-    if (!exercise)
+    if (!exercise) {
+      logger.warn("Exercise not found for deletion", {
+        exerciseId: req.params.id,
+        operation: "deleteExerciseById"
+      });
       return res.status(404).json({ error: { message: "Exercise not found" } });
+    }
+    
+    logger.info("Exercise deleted successfully", {
+      exerciseId: req.params.id,
+      deletedExercise: exercise.name,
+      operation: "deleteExerciseById"
+    });
+    
     res.json({ message: "Exercise deleted successfully", item: exercise });
   } catch (err) {
-    console.error("❌ Delete Exercise Error:", err.stack);
+    logger.error("Delete Exercise Error", {
+      error: err.message,
+      stack: err.stack,
+      exerciseId: req.params.id,
+      operation: "deleteExerciseById"
+    });
     res.status(500).json({ error: { message: "Failed to delete exercise" } });
   }
 };
@@ -158,6 +234,10 @@ const recordWorkoutEntry = async (req, res) => {
     const { name, created_by, description, structure } = req.body;
 
     if (!validateWorkoutStructure(structure)) {
+      logger.warn("Invalid workout structure provided", {
+        structure,
+        operation: "recordWorkout"
+      });
       return res.status(400).json({
         error: {
           message: 'Invalid structure format. Please ensure it follows the schema rules.',
@@ -174,13 +254,27 @@ const recordWorkoutEntry = async (req, res) => {
 
     const exerciseIds = structure.map(item => item.exercise_id);
 
+    logger.info("Workout recorded successfully", {
+      workoutId: workout.id,
+      name,
+      createdBy: created_by,
+      exerciseIds,
+      operation: "recordWorkout"
+    });
+
     res.status(201).json({
       item: workout,
       exercise_ids: exerciseIds,
       message: 'Workout recorded successfully',
     });
   } catch (err) {
-    console.error('❌ Record Workout Error:', err.stack);
+    logger.error("Record Workout Error", {
+      error: err.message,
+      stack: err.stack,
+      requestBody: req.body,
+      operation: "recordWorkout"
+    });
+    
     if (err.message.includes("already present")) {
       return res.status(400).json({ error: { message: err.message } });
     }
@@ -194,6 +288,12 @@ const recordWorkoutEntry = async (req, res) => {
 const fetchAllWorkoutsList = async (req, res) => {
   try {
     const workouts = await fetchAllWorkouts();
+    
+    logger.info("Workouts fetched successfully", {
+      count: workouts.length,
+      operation: "fetchAllWorkouts"
+    });
+    
     res.json({
       items: workouts.map(workout => ({
         ...workout,
@@ -202,7 +302,11 @@ const fetchAllWorkoutsList = async (req, res) => {
       count: workouts.length
     });
   } catch (err) {
-    console.error("❌ Fetch Workouts Error:", err.stack);
+    logger.error("Fetch Workouts Error", {
+      error: err.message,
+      stack: err.stack,
+      operation: "fetchAllWorkouts"
+    });
     res.status(500).json({ error: { message: "Failed to fetch workouts" } });
   }
 };
@@ -211,18 +315,32 @@ const fetchWorkoutByIdEntry = async (req, res) => {
   try {
     const workout = await fetchWorkoutById(req.params.id);
     if (!workout) {
+      logger.warn("Workout not found", {
+        workoutId: req.params.id,
+        operation: "fetchWorkoutById"
+      });
       return res.status(404).json({ error: { message: "Workout not found" } });
     }
     // remove intensity if present
     delete workout.intensity;
 
+    logger.info("Workout fetched successfully", {
+      workoutId: req.params.id,
+      operation: "fetchWorkoutById"
+    });
+
     res.json({ item: workout });
   } catch (err) {
-    console.error("❌ Fetch Workout Error:", err.stack);
+    logger.error("Fetch Workout Error", {
+      error: err.message,
+      stack: err.stack,
+      workoutId: req.params.id,
+      operation: "fetchWorkoutById"
+    });
     res.status(500).json({ error: { message: "Failed to fetch workout" } });
   }
 };
-// ✅ Update Workout By ID
+
 const updateWorkoutByIdEntry = async (req, res) => {
   try {
     const { id } = req.params;
@@ -236,13 +354,31 @@ const updateWorkoutByIdEntry = async (req, res) => {
     });
 
     if (!workout) {
+      logger.warn("Workout not found for update", {
+        workoutId: id,
+        operation: "updateWorkoutById"
+      });
       return res.status(404).json({ error: { message: "Workout not found" } });
     }
 
     delete workout.intensity;
+    
+    logger.info("Workout updated successfully", {
+      workoutId: id,
+      updatedFields: { name, description, score },
+      operation: "updateWorkoutById"
+    });
+    
     res.json({ item: workout, message: "Workout updated successfully" });
   } catch (err) {
-    console.error("❌ Update Workout Error:", err.stack);
+    logger.error("Update Workout Error", {
+      error: err.message,
+      stack: err.stack,
+      workoutId: req.params.id,
+      requestBody: req.body,
+      operation: "updateWorkoutById"
+    });
+    
     if (err.message.includes("already present")) {
       return res.status(400).json({ error: { message: err.message } });
     }
@@ -254,11 +390,27 @@ const deleteWorkoutByIdEntry = async (req, res) => {
   try {
     const workout = await deleteWorkoutById(req.params.id);
     if (!workout) {
+      logger.warn("Workout not found for deletion", {
+        workoutId: req.params.id,
+        operation: "deleteWorkoutById"
+      });
       return res.status(404).json({ error: { message: "Workout not found" } });
     }
+    
+    logger.info("Workout deleted successfully", {
+      workoutId: req.params.id,
+      deletedWorkout: workout.name,
+      operation: "deleteWorkoutById"
+    });
+    
     res.json({ message: "Workout deleted successfully", item: workout });
   } catch (err) {
-    console.error("❌ Delete Workout Error:", err.stack);
+    logger.error("Delete Workout Error", {
+      error: err.message,
+      stack: err.stack,
+      workoutId: req.params.id,
+      operation: "deleteWorkoutById"
+    });
     res.status(500).json({ error: { message: "Failed to delete workout" } });
   }
 };
@@ -312,6 +464,11 @@ const recordWorkoutLogEntry = async (req, res) => {
 
     // Validate structure
     if (!validateActualWorkout(actual_workout)) {
+      logger.warn("Invalid actual workout structure provided", {
+        userId: user_id,
+        regimentId: regiment_id,
+        operation: "recordWorkoutLog"
+      });
       return res.status(400).json({ error: { message: "Invalid actual_workout structure" } });
     }
 
@@ -325,23 +482,50 @@ const recordWorkoutLogEntry = async (req, res) => {
       actual_workout
     });
 
+    logger.info("Workout log recorded successfully", {
+      logId: log.id,
+      userId: user_id,
+      regimentId: regiment_id,
+      plannedWorkoutId: planned_workout_id,
+      operation: "recordWorkoutLog"
+    });
+
     res.status(201).json({ item: log, message: "Workout log recorded successfully" });
 
   } catch (err) {
-    console.error("❌ Record Workout Log Error:", err.stack);
+    logger.error("Record Workout Log Error", {
+      error: err.message,
+      stack: err.stack,
+      requestBody: req.body,
+      operation: "recordWorkoutLog"
+    });
     res.status(500).json({ error: { message: err.message || "Failed to record workout log" } });
   }
 };
-
 
 const fetchUserWorkoutLogsList = async (req, res) => {
   try {
     const { userId } = req.params;
     const { limit = 50, offset = 0 } = req.query;
     const logs = await fetchUserWorkoutLogs(userId, limit, offset);
+    
+    logger.info("User workout logs fetched successfully", {
+      userId,
+      count: logs.length,
+      limit,
+      offset,
+      operation: "fetchUserWorkoutLogs"
+    });
+    
     res.json({ items: logs, count: logs.length });
   } catch (err) {
-    console.error("❌ Fetch Workout Logs Error:", err.stack);
+    logger.error("Fetch Workout Logs Error", {
+      error: err.message,
+      stack: err.stack,
+      userId: req.params.userId,
+      query: req.query,
+      operation: "fetchUserWorkoutLogs"
+    });
     res.status(500).json({ error: { message: "Failed to fetch workout logs" } });
   }
 };
@@ -349,11 +533,27 @@ const fetchUserWorkoutLogsList = async (req, res) => {
 const fetchWorkoutLogByIdEntry = async (req, res) => {
   try {
     const log = await fetchWorkoutLogById(req.params.id);
-    if (!log)
+    if (!log) {
+      logger.warn("Workout log not found", {
+        logId: req.params.id,
+        operation: "fetchWorkoutLogById"
+      });
       return res.status(404).json({ error: { message: "Workout log not found" } });
+    }
+    
+    logger.info("Workout log fetched successfully", {
+      logId: req.params.id,
+      operation: "fetchWorkoutLogById"
+    });
+    
     res.json({ item: log });
   } catch (err) {
-    console.error("❌ Fetch Workout Log Error:", err.stack);
+    logger.error("Fetch Workout Log Error", {
+      error: err.message,
+      stack: err.stack,
+      logId: req.params.id,
+      operation: "fetchWorkoutLogById"
+    });
     res.status(500).json({ error: { message: "Failed to fetch workout log" } });
   }
 };
@@ -363,11 +563,28 @@ const updateWorkoutLogByIdEntry = async (req, res) => {
     const { id } = req.params;
     const { actual_workout, score } = req.body;
     const log = await updateWorkoutLogById(id, { actual_workout, score });
-    if (!log)
+    if (!log) {
+      logger.warn("Workout log not found for update", {
+        logId: id,
+        operation: "updateWorkoutLogById"
+      });
       return res.status(404).json({ error: { message: "Workout log not found" } });
+    }
+    
+    logger.info("Workout log updated successfully", {
+      logId: id,
+      operation: "updateWorkoutLogById"
+    });
+    
     res.json({ item: log, message: "Workout log updated successfully" });
   } catch (err) {
-    console.error("❌ Update Workout Log Error:", err.stack);
+    logger.error("Update Workout Log Error", {
+      error: err.message,
+      stack: err.stack,
+      logId: req.params.id,
+      requestBody: req.body,
+      operation: "updateWorkoutLogById"
+    });
     res.status(500).json({ error: { message: "Failed to update workout log" } });
   }
 };
@@ -375,11 +592,27 @@ const updateWorkoutLogByIdEntry = async (req, res) => {
 const deleteWorkoutLogByIdEntry = async (req, res) => {
   try {
     const log = await deleteWorkoutLogById(req.params.id);
-    if (!log)
+    if (!log) {
+      logger.warn("Workout log not found for deletion", {
+        logId: req.params.id,
+        operation: "deleteWorkoutLogById"
+      });
       return res.status(404).json({ error: { message: "Workout log not found" } });
+    }
+    
+    logger.info("Workout log deleted successfully", {
+      logId: req.params.id,
+      operation: "deleteWorkoutLogById"
+    });
+    
     res.json({ message: "Workout log deleted successfully", item: log });
   } catch (err) {
-    console.error("❌ Delete Workout Log Error:", err.stack);
+    logger.error("Delete Workout Log Error", {
+      error: err.message,
+      stack: err.stack,
+      logId: req.params.id,
+      operation: "deleteWorkoutLogById"
+    });
     res.status(500).json({ error: { message: "Failed to delete workout log" } });
   }
 };
@@ -390,6 +623,13 @@ const recordRegimentEntry = async (req, res) => {
 
     // Basic validation
     if (!created_by || !name || !workout_structure || !Array.isArray(workout_structure)) {
+      logger.warn("Invalid regiment data provided", {
+        createdBy: created_by,
+        name,
+        hasWorkoutStructure: !!workout_structure,
+        isWorkoutStructureArray: Array.isArray(workout_structure),
+        operation: "recordRegiment"
+      });
       return res.status(400).json({
         error: { message: "Missing required fields or invalid workout_structure format." }
       });
@@ -402,13 +642,26 @@ const recordRegimentEntry = async (req, res) => {
       workout_structure,
     });
 
+    logger.info("Regiment recorded successfully", {
+      regimentId: regiment.id,
+      name,
+      createdBy: created_by,
+      workoutCount: workout_structure.length,
+      operation: "recordRegiment"
+    });
+
     res.status(201).json({
       item: regiment,
       message: "Regiment recorded successfully",
     });
 
   } catch (err) {
-    console.error("❌ Record Regiment Error:", err.stack);
+    logger.error("Record Regiment Error", {
+      error: err.message,
+      stack: err.stack,
+      requestBody: req.body,
+      operation: "recordRegiment"
+    });
     
     if (err.message.includes("already present")) {
       return res.status(400).json({ error: { message: err.message } });
@@ -426,13 +679,22 @@ const recordRegimentEntry = async (req, res) => {
   }
 };
 
-
 const fetchAllRegimentsList = async (req, res) => {
   try {
     const regiments = await fetchAllRegiments();
+    
+    logger.info("Regiments fetched successfully", {
+      count: regiments.length,
+      operation: "fetchAllRegiments"
+    });
+    
     res.status(200).json({ items: regiments, count: regiments.length });
   } catch (err) {
-    console.error("❌ Fetch Regiments Error:", err.stack);
+    logger.error("Fetch Regiments Error", {
+      error: err.message,
+      stack: err.stack,
+      operation: "fetchAllRegiments"
+    });
     res.status(500).json({ error: { message: "Failed to fetch regiments" } });
   }
 };
@@ -440,11 +702,27 @@ const fetchAllRegimentsList = async (req, res) => {
 const fetchRegimentByIdEntry = async (req, res) => {
   try {
     const regiment = await fetchRegimentById(req.params.id);
-    if (!regiment)
+    if (!regiment) {
+      logger.warn("Regiment not found", {
+        regimentId: req.params.id,
+        operation: "fetchRegimentById"
+      });
       return res.status(404).json({ error: { message: "Regiment not found" } });
+    }
+    
+    logger.info("Regiment fetched successfully", {
+      regimentId: req.params.id,
+      operation: "fetchRegimentById"
+    });
+    
     res.json({ item: regiment });
   } catch (err) {
-    console.error("❌ Fetch Regiment Error:", err.stack);
+    logger.error("Fetch Regiment Error", {
+      error: err.message,
+      stack: err.stack,
+      regimentId: req.params.id,
+      operation: "fetchRegimentById"
+    });
     res.status(500).json({ error: { message: "Failed to fetch regiment" } });
   }
 };
@@ -458,11 +736,31 @@ const updateRegimentByIdEntry = async (req, res) => {
       description,
       workout_structure,
     });
-    if (!regiment)
+    if (!regiment) {
+      logger.warn("Regiment not found for update", {
+        regimentId: id,
+        operation: "updateRegimentById"
+      });
       return res.status(404).json({ error: { message: "Regiment not found" } });
+    }
+    
+    logger.info("Regiment updated successfully", {
+      regimentId: id,
+      updatedFields: { name, description },
+      workoutCount: workout_structure?.length,
+      operation: "updateRegimentById"
+    });
+    
     res.json({ item: regiment, message: "Regiment updated successfully" });
   } catch (err) {
-    console.error("❌ Update Regiment Error:", err.stack);
+    logger.error("Update Regiment Error", {
+      error: err.message,
+      stack: err.stack,
+      regimentId: req.params.id,
+      requestBody: req.body,
+      operation: "updateRegimentById"
+    });
+    
     if (err.message.includes("already present")) {
       return res.status(400).json({ error: { message: err.message } });
     }
@@ -473,11 +771,28 @@ const updateRegimentByIdEntry = async (req, res) => {
 const deleteRegimentByIdEntry = async (req, res) => {
   try {
     const regiment = await deleteRegimentById(req.params.id);
-    if (!regiment)
+    if (!regiment) {
+      logger.warn("Regiment not found for deletion", {
+        regimentId: req.params.id,
+        operation: "deleteRegimentById"
+      });
       return res.status(404).json({ error: { message: "Regiment not found" } });
+    }
+    
+    logger.info("Regiment deleted successfully", {
+      regimentId: req.params.id,
+      deletedRegiment: regiment.name,
+      operation: "deleteRegimentById"
+    });
+    
     res.json({ message: "Regiment deleted successfully", item: regiment });
   } catch (err) {
-    console.error("❌ Delete Regiment Error:", err.stack);
+    logger.error("Delete Regiment Error", {
+      error: err.message,
+      stack: err.stack,
+      regimentId: req.params.id,
+      operation: "deleteRegimentById"
+    });
     res.status(500).json({ error: { message: "Failed to delete regiment" } });
   }
 };
