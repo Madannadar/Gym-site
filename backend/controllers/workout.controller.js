@@ -57,7 +57,7 @@ const recordExerciseEntry = async (req, res) => {
       operation: "recordExercise"
     });
 
-    res.status(402).json({
+    res.status(200).json({
       item: exercise,
       message: "Exercise recorded successfully",
     });
@@ -66,7 +66,8 @@ const recordExerciseEntry = async (req, res) => {
       error: err.message,
       stack: err.stack,
       operation: "recordExercise",
-      requestBody: req.body
+      requestBody: req.body,
+      timestamp_unix: Date.now(),
     });
     
     if (err.message.includes("already present")) {
