@@ -57,7 +57,7 @@ const recordExerciseEntry = async (req, res) => {
       operation: "recordExercise"
     });
 
-    res.status(201).json({
+    res.status(402).json({
       item: exercise,
       message: "Exercise recorded successfully",
     });
