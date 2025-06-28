@@ -23,9 +23,6 @@ const StartWorkout = () => {
     regiment_id: regimenId ? Number(regimenId) : null,
     actual_workout: [],
   });
-
-
-  // Timer state
   const [timer, setTimer] = useState({
     hours: 0,
     minutes: 0,
@@ -33,6 +30,7 @@ const StartWorkout = () => {
     isRunning: false,
     intervalId: null
   });
+
 
   useEffect(() => {
     if (!uid) return;
@@ -111,6 +109,176 @@ const StartWorkout = () => {
     fetchData();
   }, [workoutId, uid]);
 
+
+  const handleSetCheck = (eIdx, setNumber) => {
+    setCheckedSets(prev => ({
+      ...prev,
+      [eIdx]: {
+        ...prev[eIdx],
+        [setNumber]: true,
+      },
+    }));
+  };
+
+  const allExercisesComplete = () => {
+    return workout?.structure.every((exercise, eIdx) =>
+      Object.keys(exercise.sets).every(
+        (setKey) => checkedSets?.[eIdx]?.[setKey]
+      )
+    );
+  };
+
+  useEffect(() => {
+    if (!workout || !uid) return;
+
+    if (allExercisesComplete()) {
+      const markWorkoutComplete = async () => {
+        try {
+          await axios.put(`${API_URL}/workouts/${workoutId}`, {
+            current_user_id: uid,
+            status: "completed",
+          });
+          console.log("Workout marked as completed ✅");
+
+          if (regimenId) {
+            const regimentRes = await axios.get(`${API_URL}/workouts/regiments/${regimenId}`);
+            const regiment = regimentRes.data.item;
+            const updatedStructure = regiment.workout_structure.map(({ name, status, workout_id }) =>
+              workout_id === Number(workoutId)
+                ? { name, status: "completed", workout_id }
+                : { name, status, workout_id }
+            );
+
+
+            await axios.put(`${API_URL}/workouts/regiments/${regimenId}`, {
+              workout_structure: updatedStructure
+            });
+            console.log("🔁 Updating Regiment Structure:", updatedStructure);
+          }
+
+        } catch (err) {
+          console.error("Error marking workout or regiment complete:", err);
+        }
+      };
+
+      markWorkoutComplete();
+    }
+  }, [checkedSets]);
+
+
+  const handleLogFieldChange = (field, value) => {
+    setLogData(prev => ({
+      ...prev,
+      [field]: field === 'regiment_id' ? (value === "" ? null : Number(value)) : value
+    }));
+  };
+
+  const handleActualSetChange = (exerciseIdx, setKey, field, value) => {
+    const updated = [...logData.actual_workout];
+    updated[exerciseIdx].sets[setKey][field] = value;
+    setLogData(prev => ({ ...prev, actual_workout: updated }));
+  };
+  const handleFinish = async () => {
+    if (!uid) {
+      alert("User not authenticated. Please log in.");
+      return;
+    }
+
+    // if (!allExercisesComplete()) {
+    //   alert("Please complete all exercises before finishing the workout.");
+    //   return;
+    // }
+
+    try {
+      await axios.put(`${API_URL}/workouts/${workoutId}`, {
+        current_user_id: uid,
+        status: "completed",
+      });
+
+      const actualWorkoutWithUnits = workout.structure.map((exercise, eIdx) => {
+        const exerciseLog = {
+          exercise_id: exercise.exercise_id,
+          sets: {}
+        };
+
+        Object.entries(exercise.sets).forEach(([setKey, setVal]) => {
+          const actualSet = logData.actual_workout[eIdx]?.sets[setKey] || {};
+          const plannedSet = exercise.sets[setKey];
+
+          exerciseLog.sets[setKey] = {
+            reps: actualSet.reps ?? plannedSet.reps,
+            weight: actualSet.weight ?? plannedSet.weight,
+            time: actualSet.time ?? plannedSet.time,
+            laps: actualSet.laps ?? plannedSet.laps,
+            weight_unit: plannedSet.weight_unit || "kg",
+            time_unit: plannedSet.time_unit || "seconds"
+          };
+
+          Object.keys(exerciseLog.sets[setKey]).forEach(key => {
+            if (exerciseLog.sets[setKey][key] === undefined) {
+              delete exerciseLog.sets[setKey][key];
+            }
+          });
+        });
+
+        return exerciseLog;
+      });
+
+      const payload = {
+        user_id: Number(uid),
+        regiment_id: logData.regiment_id ? Number(logData.regiment_id) : null,
+        regiment_day_index: 1, // hardcoded default (or you can remove if backend handles it)
+        log_date: new Date().toISOString().split('T')[0],  // auto-generate current date
+        planned_workout_id: Number(workoutId),  // from useParams directly
+        actual_workout: actualWorkoutWithUnits
+      };
+
+
+      await axios.post(`${API_URL}/workouts/logs`, payload);
+
+      if (regimenId) {
+        try {
+          const regimentRes = await axios.get(`${API_URL}/workouts/regiments/${regimenId}`);
+          const regiment = regimentRes.data.item;
+
+          const cleanedStructure = regiment.workout_structure.map((day) => ({
+            name: day.name,
+            workout_id: day.workout_id,
+            status: day.workout_id === Number(workoutId) ? "completed" : day.status
+          }));
+
+          await axios.put(`${API_URL}/workouts/regiments/${regimenId}`, {
+            workout_structure: cleanedStructure
+          });
+
+          console.log("✅ Regiment structure status updated.");
+        } catch (err) {
+          console.error("❌ Failed to update regiment structure:", err);
+        }
+      }
+
+      alert("Workout completed and logged successfully!");
+      navigate("/Workout_Management");
+
+    } catch (err) {
+      console.error("Error finishing workout:", err);
+      let errorMessage = err.response?.data?.error?.message || err.message;
+      if (err.response?.status === 404) {
+        errorMessage = "The planned workout could not be found.";
+      } else if (err.message.includes("foreign key constraint")) {
+        errorMessage = "Invalid workout reference. The planned workout no longer exists.";
+      }
+      alert(`Error completing workout: ${errorMessage}`);
+    }
+  };
+
+
+  if (error) return <p className="text-red-600 p-4">{error}</p>;
+  if (!workout) return <p className="p-4">Loading workout...</p>;
+
+
+  // Timer state
+
   const startTimer = () => {
     if (timer.isRunning) return;
 
@@ -180,16 +348,6 @@ const StartWorkout = () => {
     });
   };
 
-  const handleSetCheck = (eIdx, setNumber) => {
-    setCheckedSets(prev => ({
-      ...prev,
-      [eIdx]: {
-        ...prev[eIdx],
-        [setNumber]: true,
-      },
-    }));
-  };
-
   const handleSelectTimer = (eIdx, setNumber) => {
     const exercise = workout.structure[eIdx];
     const set = exercise.sets[setNumber];
@@ -203,101 +361,6 @@ const StartWorkout = () => {
       setSelectedTimer({ eIdx, setNumber });
     }
   };
-
-  const allExercisesComplete = () => {
-    return workout?.structure.every((exercise, eIdx) =>
-      Object.keys(exercise.sets).every(
-        (setKey) => checkedSets?.[eIdx]?.[setKey]
-      )
-    );
-  };
-
-  const handleLogFieldChange = (field, value) => {
-    setLogData(prev => ({
-      ...prev,
-      [field]: field === 'regiment_id' ? (value === "" ? null : Number(value)) : value
-    }));
-  };
-
-  const handleActualSetChange = (exerciseIdx, setKey, field, value) => {
-    const updated = [...logData.actual_workout];
-    updated[exerciseIdx].sets[setKey][field] = value;
-    setLogData(prev => ({ ...prev, actual_workout: updated }));
-  };
-  const handleFinish = async () => {
-    if (!uid) {
-      alert("User not authenticated. Please log in.");
-      return;
-    }
-
-    if (!allExercisesComplete()) {
-      alert("Please complete all exercises before finishing the workout.");
-      return;
-    }
-
-    try {
-      await axios.put(`${API_URL}/workouts/${workoutId}`, {
-        current_user_id: uid,
-        status: "completed",
-      });
-
-      const actualWorkoutWithUnits = workout.structure.map((exercise, eIdx) => {
-        const exerciseLog = {
-          exercise_id: exercise.exercise_id,
-          sets: {}
-        };
-
-        Object.entries(exercise.sets).forEach(([setKey, setVal]) => {
-          const actualSet = logData.actual_workout[eIdx]?.sets[setKey] || {};
-          const plannedSet = exercise.sets[setKey];
-
-          exerciseLog.sets[setKey] = {
-            reps: actualSet.reps ?? plannedSet.reps,
-            weight: actualSet.weight ?? plannedSet.weight,
-            time: actualSet.time ?? plannedSet.time,
-            laps: actualSet.laps ?? plannedSet.laps,
-            weight_unit: plannedSet.weight_unit || "kg",
-            time_unit: plannedSet.time_unit || "seconds"
-          };
-
-          Object.keys(exerciseLog.sets[setKey]).forEach(key => {
-            if (exerciseLog.sets[setKey][key] === undefined) {
-              delete exerciseLog.sets[setKey][key];
-            }
-          });
-        });
-
-        return exerciseLog;
-      });
-
-      const payload = {
-        user_id: Number(uid),
-        regiment_id: logData.regiment_id ? Number(logData.regiment_id) : null,
-        regiment_day_index: 1, // hardcoded default (or you can remove if backend handles it)
-        log_date: new Date().toISOString().split('T')[0],  // auto-generate current date
-        planned_workout_id: Number(workoutId),  // from useParams directly
-        actual_workout: actualWorkoutWithUnits
-      };
-
-
-      await axios.post(`${API_URL}/workouts/logs`, payload);
-      alert("Workout completed and logged successfully!");
-      navigate("/Workout_Management");
-    } catch (err) {
-      console.error("Error finishing workout:", err);
-      let errorMessage = err.response?.data?.error?.message || err.message;
-      if (err.response?.status === 404) {
-        errorMessage = "The planned workout could not be found.";
-      } else if (err.message.includes("foreign key constraint")) {
-        errorMessage = "Invalid workout reference. The planned workout no longer exists.";
-      }
-      alert(`Error completing workout: ${errorMessage}`);
-    }
-  };
-
-
-  if (error) return <p className="text-red-600 p-4">{error}</p>;
-  if (!workout) return <p className="p-4">Loading workout...</p>;
 
   const TimerComponent = () => (
     <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 w-11/12 max-w-sm bg-white p-4 rounded shadow-lg border">
@@ -360,14 +423,18 @@ const StartWorkout = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-4 mt-6 bg-white min-h-screen font-sans">
+      <button onClick={() => navigate('/Workout_Management')}>
+        Back
+      </button>
       <div className="flex justify-between mb-6">
         <button
           onClick={handleFinish}
-          disabled={!allExercisesComplete()}
-          className={`px-6 py-2 rounded-full shadow ${allExercisesComplete()
-            ? "bg-green-600 text-white hover:bg-green-700"
-            : "bg-gray-100 text-gray-400 cursor-not-allowed"
-            }`}
+          // disabled={!allExercisesComplete()}
+          // className={`px-6 py-2 rounded-full shadow ${allExercisesComplete()
+          //   ? "bg-green-600 text-white hover:bg-green-700"
+          //   : "bg-gray-100 text-gray-400 cursor-not-allowed"
+          //   }`}
+          className={"px-6 py-2 rounded-full shadow bg-green-600 text-white hover:bg-green-700"}
         >
           Finish & Log Workout
         </button>

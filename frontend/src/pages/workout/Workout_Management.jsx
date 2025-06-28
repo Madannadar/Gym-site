@@ -1,3 +1,4 @@
+// ✅ UPDATED CODE: Workout_Management.jsx
 import React, { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -16,6 +17,7 @@ const Workout_Management = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showLogs, setShowLogs] = useState(false);
   const [error, setError] = useState("");
+  const [undoData, setUndoData] = useState(null);
   const navigate = useNavigate();
   const { uid } = useAuth();
   const userId = Number(uid);
@@ -23,17 +25,12 @@ const Workout_Management = () => {
   const formatDateTime = (isoDateStr) => {
     if (!isoDateStr) return "N/A";
     const dateObj = new Date(isoDateStr);
-    const date = dateObj.toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+    const date = dateObj.toLocaleDateString("en-IN", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
-    const time = dateObj.toLocaleTimeString('en-IN', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
-    return `${date} at ${time}`;
+    return `${date}`;
   };
 
   useEffect(() => {
@@ -43,19 +40,20 @@ const Workout_Management = () => {
         const regimentsData = regRes.data.items || [];
         setRegiments(regimentsData);
 
-        // collect all workout ids
         const workoutIds = new Set();
-        regimentsData.forEach(reg => {
-          reg.workout_structure.forEach(day => {
+        regimentsData.forEach((reg) => {
+          reg.workout_structure.forEach((day) => {
             if (day.workout_id) workoutIds.add(day.workout_id);
           });
         });
 
         const nameMap = {};
-        await Promise.all([...workoutIds].map(async (id) => {
-          const res = await axios.get(`${API_URL}/workouts/${id}`);
-          nameMap[id] = res.data?.item?.name || `Workout ${id}`;
-        }));
+        await Promise.all(
+          [...workoutIds].map(async (id) => {
+            const res = await axios.get(`${API_URL}/workouts/${id}`);
+            nameMap[id] = res.data?.item?.name || `Workout ${id}`;
+          })
+        );
         setWorkoutNames(nameMap);
 
         const logRes = await axios.get(`${API_URL}/workouts/logs/user/${userId}`);
@@ -63,11 +61,10 @@ const Workout_Management = () => {
         setWorkoutLogs(logs);
 
         const counts = {};
-        logs.forEach(log => {
+        logs.forEach((log) => {
           counts[log.regiment_id] = (counts[log.regiment_id] || 0) + 1;
         });
         setLogCounts(counts);
-
       } catch (err) {
         console.error(err);
         setError("Failed to load data.");
@@ -78,29 +75,99 @@ const Workout_Management = () => {
   }, [API_URL, userId]);
 
   const toggleRegiment = (id) => {
-    setExpandedRegimentId(prev => (prev === id ? null : id));
+    setExpandedRegimentId((prev) => (prev === id ? null : id));
     setExpandedWorkoutId(null);
   };
 
-  const toggleWorkout = useCallback(async (id) => {
-    if (expandedWorkoutId === id) {
-      setExpandedWorkoutId(null);
+  const toggleWorkout = useCallback(
+    async (id) => {
+      if (expandedWorkoutId === id) {
+        setExpandedWorkoutId(null);
+        return;
+      }
+      if (!workoutDetails[id]) {
+        try {
+          const res = await axios.get(`${API_URL}/workouts/${id}`);
+          setWorkoutDetails((prev) => ({ ...prev, [id]: res.data.item }));
+        } catch (err) {
+          console.error(err);
+          setError("Failed to load workout details.");
+        }
+      }
+      setExpandedWorkoutId(id);
+    },
+    [expandedWorkoutId, workoutDetails]
+  );
+
+  const onStart = async (regimenId, workoutId) => {
+    if (!regimenId || !workoutId) return;
+
+    try {
+      const regimentRes = await axios.get(`${API_URL}/workouts/regiments/${regimenId}`);
+      const regiment = regimentRes.data.item;
+
+      const cleanedStructure = regiment.workout_structure.map((day) => ({
+        name: day.name,
+        workout_id: day.workout_id,
+        status: day.workout_id === Number(workoutId) ? "in_progress" : day.status
+      }));
+
+      await axios.put(`${API_URL}/workouts/regiments/${regimenId}`, {
+        workout_structure: cleanedStructure
+      });
+
+      const updatedRegRes = await axios.get(`${API_URL}/workouts/regiments`);
+      setRegiments(updatedRegRes.data.items || []);
+
+      console.log("✅ Regiment structure status updated.");
+    } catch (err) {
+      console.error("❌ Failed to update regiment structure:", err);
+    }
+  };
+
+  const handleDeleteRegiment = async (regiment) => {
+    const logCount = logCounts[regiment.regiment_id] || 0;
+    if (logCount > 0) {
+      alert("⚠️ This regiment has workout logs and cannot be deleted.");
       return;
     }
-    if (!workoutDetails[id]) {
+
+    if (window.confirm("Are you sure you want to delete this regiment?")) {
       try {
-        const res = await axios.get(`${API_URL}/workouts/${id}`);
-        setWorkoutDetails(prev => ({ ...prev, [id]: res.data.item }));
+        await axios.delete(`${API_URL}/workouts/regiments/${regiment.regiment_id}`);
+        setRegiments((prev) => prev.filter((r) => r.regiment_id !== regiment.regiment_id));
+        setUndoData({ regiment });
+        console.log("🗑️ Regiment deleted.");
       } catch (err) {
-        console.error(err);
-        setError("Failed to load workout details.");
+        console.error("❌ Failed to delete regiment:", err);
+        alert("Failed to delete regiment.");
       }
     }
-    setExpandedWorkoutId(id);
-  }, [expandedWorkoutId, workoutDetails]);
+  };
 
-  const systemRegiments = regiments.filter(r => Number(r.created_by) !== userId);
-  const userRegiments = regiments.filter(r => Number(r.created_by) === userId);
+  const handleUndoDelete = async () => {
+    if (!undoData?.regiment) return;
+    try {
+      await axios.post(`${API_URL}/workouts/regiments`, undoData.regiment);
+      setRegiments((prev) => [...prev, undoData.regiment]);
+      setUndoData(null);
+      console.log("🔁 Regiment restored.");
+    } catch (err) {
+      console.error("❌ Failed to restore regiment:", err);
+      alert("Failed to restore regiment.");
+    }
+  };
+
+  const currentRegiments = regiments.filter((r) =>
+    r.workout_structure.some((d) => d.status === "in_progress")
+  );
+
+  const currentRegimentIds = new Set(currentRegiments.map((r) => r.regiment_id));
+
+  const remainingRegiments = regiments.filter((r) => !currentRegimentIds.has(r.regiment_id));
+
+  const systemRegiments = remainingRegiments.filter((r) => Number(r.created_by) !== userId);
+  const userRegiments = remainingRegiments.filter((r) => Number(r.created_by) === userId);
 
   const renderRegimentCard = (regiment, includeLogCount = true) => (
     <div key={regiment.regiment_id} className="bg-white shadow rounded-lg mb-4 p-4 border">
@@ -122,78 +189,84 @@ const Workout_Management = () => {
 
       {expandedRegimentId === regiment.regiment_id && (
         <div className="mt-3 space-y-2 ml-4">
-          {regiment.workout_structure.map(day => (
-            <div key={day.workout_id} className="flex items-center justify-between pr-4">
-              <p
-                className="text-[#4B9CD3] cursor-pointer hover:text-blue-500 underline"
-                onClick={() => toggleWorkout(day.workout_id)}
-              >
-                {day.name} - {workoutNames[day.workout_id] || "Loading..."}
-              </p>
+          {Number(regiment.created_by) === userId && (
+            <div className="flex gap-2 mb-2">
               <button
-                onClick={() => navigate(`/start-workout/${regiment.regiment_id}/${day.workout_id}`)}
-                className="bg-[#4B9CD3] text-white px-3 py-1 rounded hover:bg-blue-500"
+                onClick={() => navigate(`/workouts/regiments/${regiment.regiment_id}`)}
+                className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
               >
-                Start
+                Update
+              </button>
+              <button
+                onClick={() => handleDeleteRegiment(regiment)}
+                className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+              >
+                Delete
               </button>
             </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+          )}
 
-  const renderLogCard = (regiment, logs) => (
-    <div key={regiment.regiment_id} className="bg-white shadow rounded-lg mb-4 p-4 border">
-      <h2
-        className="text-xl font-semibold cursor-pointer text-[#4B9CD3] hover:text-blue-500"
-        onClick={() => toggleRegiment(regiment.regiment_id)}
-      >
-        {regiment.name}
-        <span className="text-sm text-gray-500 ml-2">({logs.length} logs)</span>
-      </h2>
+          {regiment.workout_structure.map((day, idx) => {
+            let icon = "⏳";
+            let textColor = "text-gray-600";
+            if (day.status === "completed") {
+              icon = "✅";
+              textColor = "text-green-700";
+            } else if (day.status === "in_progress") {
+              icon = "🔄";
+              textColor = "text-yellow-700 font-semibold";
+            }
 
-      <p className="mt-1 text-sm text-gray-600">
-        <strong>Intensity:</strong> {regiment.intensity ?? "N/A"}
-      </p>
+            return (
+              <div key={day.workout_id} className="flex flex-col gap-1">
+                <div className="flex items-center justify-between pr-4">
+                  <p
+                    className={`text-[#4B9CD3] cursor-pointer hover:text-blue-500 underline flex items-center gap-2 ${textColor}`}
+                    onClick={() => toggleWorkout(day.workout_id)}
+                  >
+                    <span>{icon}</span>
+                    <span>{day.name} - {workoutNames[day.workout_id] || "Loading..."}</span>
+                  </p>
+                  <button
+                    onClick={async () => {
+                      await onStart(regiment.regiment_id, day.workout_id);
+                      navigate(`/start-workout/${regiment.regiment_id}/${day.workout_id}`);
+                    }}
+                    className="bg-[#4B9CD3] text-white px-3 py-1 rounded hover:bg-blue-500"
+                  >
+                    Start
+                  </button>
+                </div>
 
-      {expandedRegimentId === regiment.regiment_id && (
-        <div className="mt-3 space-y-4 ml-4">
-          {logs.sort((a, b) => new Date(b.log_date) - new Date(a.log_date))
-            .map(log => (
-              <div key={log.workout_log_id} className="p-3 border rounded-md bg-gray-50">
-                <p><strong>Date:</strong> {formatDateTime(log.log_date)}</p>
-                <p><strong>Workout:</strong> {log.planned_workout_name}</p>
-                <p><strong>Score:</strong> {log.score}</p>
-
-                {log.actual_workout?.length > 0 ? (
-                  <div className="mt-2">
-                    <h4 className="font-semibold text-gray-700 mb-1">Exercises:</h4>
-                    {log.actual_workout.map((exercise, index) => (
-                      <div key={index} className="mb-2 ml-2">
-                        <p className="font-semibold text-[#4B9CD3]">Exercise ID: {exercise.exercise_id}</p>
-                        <div className="ml-4">
-                          {Object.entries(exercise.sets).map(([setName, setData]) => {
-                            const parts = [];
-                            if (setData.reps != null && setData.reps !== "") parts.push(`${setData.reps} reps`);
-                            if (setData.weight != null && setData.weight !== "") parts.push(`${setData.weight}${setData.weight_unit || ""}`);
-                            if (setData.time != null && setData.time !== "") parts.push(`${setData.time} sec`);
-                            if (setData.laps != null && setData.laps !== "") parts.push(`${setData.laps} laps`);
-                            return (
-                              <div key={setName} className="text-sm text-gray-700">
-                                <strong>{setName}:</strong> {parts.join(", ") || "No data"}
-                              </div>
-                            );
-                          })}
+                {expandedWorkoutId === day.workout_id &&
+                  workoutDetails[day.workout_id]?.structure && (
+                    <div className="ml-6 mt-2 space-y-2 text-sm text-gray-700">
+                      {workoutDetails[day.workout_id].structure.map((ex, idx) => (
+                        <div key={idx} className="border p-2 rounded bg-gray-50">
+                          <div className="font-semibold">Exercise Name: {ex.exercise_id}</div>
+                          <div className="ml-4">
+                            {Object.entries(ex.sets).map(([setKey, set]) => {
+                              const parts = [];
+                              if (set.reps != null) parts.push(`${set.reps} reps`);
+                              if (set.weight != null) parts.push(`${set.weight} ${ex.weight_unit || "kg"}`);
+                              if (set.time != null) parts.push(`${set.time} ${ex.time_unit || "sec"}`);
+                              if (set.laps != null) parts.push(`${set.laps} laps`);
+                              return (
+                                <div key={setKey}>
+                                  <strong>{setKey}:</strong> {parts.join(", ") || "No data"}
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-500 mt-2">No actual workout data recorded.</p>
-                )}
+                      ))}
+                    </div>
+                  )}
               </div>
-            ))}
+            );
+          })}
+
+
         </div>
       )}
     </div>
@@ -211,7 +284,7 @@ const Workout_Management = () => {
           Create Regiment
         </button>
         <button
-          onClick={() => setShowLogs(prev => !prev)}
+          onClick={() => setShowLogs((prev) => !prev)}
           className="bg-[#4B9CD3] text-white px-4 py-2 rounded hover:bg-blue-500"
         >
           {showLogs ? "View Regiments" : "View Workout Logs"}
@@ -228,31 +301,36 @@ const Workout_Management = () => {
         className="mb-4 p-2 border border-gray-300 rounded w-full"
       />
 
-      {!showLogs ? (
-        <>
-          <h2 className="text-2xl font-bold mb-2 text-purple-600">System Regiments</h2>
-          {systemRegiments
-            .filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()))
-            .sort((a, b) => (logCounts[b.regiment_id] || 0) - (logCounts[a.regiment_id] || 0))
-            .map(regiment => renderRegimentCard(regiment, true))}
+      {undoData && (
+        <div className="fixed bottom-4 right-4 bg-yellow-100 border border-yellow-500 text-yellow-800 px-4 py-3 rounded shadow">
+          Regiment deleted.
+          <button
+            onClick={handleUndoDelete}
+            className="ml-4 underline font-semibold text-yellow-900 hover:text-yellow-700"
+          >
+            Undo
+          </button>
+        </div>
+      )}
 
-          <h2 className="text-2xl font-bold mb-2 text-green-600">Your Regiments</h2>
-          {userRegiments
-            .filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()))
-            .map(regiment => renderRegimentCard(regiment, false))}
-        </>
-      ) : (
+      {currentRegiments.length > 0 && (
         <>
-          <h2 className="text-2xl font-bold mb-4 text-purple-600">Workout Logs</h2>
-          {[...systemRegiments, ...userRegiments]
-            .filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()))
-            .map(regiment => {
-              const logs = workoutLogs.filter(log => log.regiment_id === regiment.regiment_id);
-              if (logs.length === 0) return null;
-              return renderLogCard(regiment, logs);
-            })}
+          <h2 className="text-2xl font-bold mb-2 text-red-600">Current Regiment In Progress</h2>
+          {currentRegiments.map((regiment) => renderRegimentCard(regiment, false))}
         </>
       )}
+
+
+      <h2 className="text-2xl font-bold mb-2 text-purple-600">System Regiments</h2>
+      {systemRegiments
+        .filter((r) => r.name.toLowerCase().includes(searchQuery.toLowerCase()))
+        .sort((a, b) => (logCounts[b.regiment_id] || 0) - (logCounts[a.regiment_id] || 0))
+        .map((regiment) => renderRegimentCard(regiment, true))}
+
+      <h2 className="text-2xl font-bold mb-2 text-green-600">Your Regiments</h2>
+      {userRegiments
+        .filter((r) => r.name.toLowerCase().includes(searchQuery.toLowerCase()))
+        .map((regiment) => renderRegimentCard(regiment, false))}
     </div>
   );
 };

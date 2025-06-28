@@ -489,6 +489,12 @@ const recordRegiment = async ({
 
   console.log(`Average Score: ${averageScore}, Regiment Intensity: ${regimentIntensity}`);
 
+  // ✅ Add default status to each workout day
+  const structuredWithStatus = workout_structure.map(day => ({
+    ...day,
+    status: "not started"
+  }));
+
   const insertQuery = `
     INSERT INTO regiments (
       created_by, name, description, workout_structure, intensity
@@ -499,7 +505,7 @@ const recordRegiment = async ({
     created_by,
     name,
     description,
-    JSON.stringify(workout_structure),
+    JSON.stringify(structuredWithStatus),
     regimentIntensity,
   ];
 
@@ -540,31 +546,58 @@ const fetchAllRegiments = async () => {
 
 const fetchRegimentById = async (id) => {
   const regimentQuery = `
-    SELECT r.*, u.first_name AS created_by_name
+    SELECT 
+      r.regiment_id,
+      r.name,
+      r.description,
+      r.workout_structure,
+      r.intensity,
+      r.created_by,
+      r.created_at,
+      u.first_name AS created_by_name
     FROM regiments r
     LEFT JOIN users u ON r.created_by = u.id
     WHERE r.regiment_id = $1;
   `;
+
   const regimentResult = await db.query(regimentQuery, [id]);
+
   if (regimentResult.rows.length === 0) return null;
 
   const regiment = regimentResult.rows[0];
-  const workoutIds = regiment.workout_structure
-    .map((day) => day.workout_id)
-    .filter((id) => id);
 
-  if (workoutIds.length > 0) {
+  console.log("✅ Regiment result:", regiment);
+
+  // 🛠️ Parse workout_structure if it's a string (e.g. from raw SQL)
+  if (typeof regiment.workout_structure === 'string') {
+    try {
+      regiment.workout_structure = JSON.parse(regiment.workout_structure);
+    } catch (err) {
+      console.error("❌ Invalid JSON in workout_structure:", err);
+      throw new Error("Invalid workout_structure format in DB");
+    }
+  }
+
+  // 🧠 Extract all workout_ids used in structure
+  const workoutIds = regiment.workout_structure
+    ?.map((day) => day.workout_id)
+    .filter((wid) => typeof wid === 'number');
+
+  if (workoutIds?.length > 0) {
     const workoutsQuery = `
-      SELECT workout_id, name, description, structure, score, intensity
+      SELECT workout_id, name, description, structure, score
       FROM workouts
       WHERE workout_id = ANY($1);
     `;
+
     const workoutsResult = await db.query(workoutsQuery, [workoutIds]);
+
     const workoutsMap = workoutsResult.rows.reduce((acc, workout) => {
       acc[workout.workout_id] = workout;
       return acc;
     }, {});
 
+    // 🧩 Attach workout_details to each day
     regiment.workout_structure = regiment.workout_structure.map((day) => ({
       ...day,
       workout_details: workoutsMap[day.workout_id] || null,
@@ -573,6 +606,7 @@ const fetchRegimentById = async (id) => {
 
   return regiment;
 };
+
 
 const updateRegimentById = async (id, { name, description, workout_structure }) => {
   // Check for duplicate name if updated
@@ -586,9 +620,7 @@ const updateRegimentById = async (id, { name, description, workout_structure }) 
     }
   }
 
-  const intensity = workout_structure
-    ? await calculateAverageIntensity(workout_structure)
-    : null;
+  const intensity = 1;
 
   const query = `
     UPDATE regiments
