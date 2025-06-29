@@ -311,7 +311,8 @@ const recordWorkoutLog = async ({
   regiment_day_index,
   log_date,
   planned_workout_id,
-  actual_workout
+  actual_workout,
+  status = "not started"
 }) => {
   // Validate references
   if (!(await checkExists('regiments', 'regiment_id', regiment_id))) {
@@ -351,26 +352,29 @@ const recordWorkoutLog = async ({
   console.log(`Calculated Score for Workout Log: ${calculatedScore}`);
 
   const query = `
-    INSERT INTO workout_logs (
-      user_id,
-      regiment_id,
-      regiment_day_index,
-      log_date,
-      planned_workout_id,
-      actual_workout,
-      score
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-    RETURNING *;
-  `;
-  const values = [
+  INSERT INTO workout_logs (
     user_id,
     regiment_id,
     regiment_day_index,
     log_date,
     planned_workout_id,
-    JSON.stringify(actual_workout),
-    calculatedScore
-  ];
+    actual_workout,
+    score,
+    status
+  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+  RETURNING *;
+`;
+const values = [
+  user_id,
+  regiment_id,
+  regiment_day_index,
+  log_date,
+  planned_workout_id,
+  JSON.stringify(actual_workout),
+  calculatedScore,
+  status
+];
+
 
   const { rows } = await db.query(query, values);
   return rows[0];
@@ -492,7 +496,6 @@ const recordRegiment = async ({
   // ✅ Add default status to each workout day
   const structuredWithStatus = workout_structure.map(day => ({
     ...day,
-    status: "not started"
   }));
 
   const insertQuery = `
@@ -654,6 +657,58 @@ const deleteRegimentById = async (id) => {
   return rows[0];
 };
 
+
+// const user_regiment_progress = async (req, res) => {
+//   const { regiment_id, user_id } = req.body;
+
+//   try {
+//     // 1. Fetch the original regiment
+//     const regimentResult = await db.query(
+//       "SELECT workout_structure FROM regiments WHERE regiment_id = $1",
+//       [regiment_id]
+//     );
+
+//     if (regimentResult.rowCount === 0) {
+//       return res.status(404).json({ error: "Regiment not found" });
+//     }
+
+//     const baseStructure = regimentResult.rows[0].workout_structure;
+
+//     // 2. Prepare structure with status = "not_started"
+//     const structureWithStatus = baseStructure.map((entry) => ({
+//       ...entry,
+//       status: "not_started",
+//     }));
+
+//     // 3. Check if user_regiment_progress already exists
+//     const existing = await db.query(
+//       "SELECT * FROM user_regiment_progress WHERE user_id = $1 AND regiment_id = $2",
+//       [user_id, regiment_id]
+//     );
+
+//     if (existing.rowCount > 0) {
+//       // 4. Update existing progress
+//       await db.query(
+//         "UPDATE user_regiment_progress SET workout_structure = $1, updated_at = NOW() WHERE user_id = $2 AND regiment_id = $3",
+//         [structureWithStatus, user_id, regiment_id]
+//       );
+//       return res.status(200).json({ message: "Progress updated successfully" });
+//     } else {
+//       // 5. Create new progress record
+//       await db.query(
+//         "INSERT INTO user_regiment_progress (user_id, regiment_id, workout_structure) VALUES ($1, $2, $3)",
+//         [user_id, regiment_id, structureWithStatus]
+//       );
+//       return res.status(201).json({ message: "Progress created successfully" });
+//     }
+
+//   } catch (error) {
+//     console.error("Error in user_regiment_progress:", error);
+//     return res.status(500).json({ error: "Internal server error" });
+//   }
+// };
+
+
 export {
   recordExercise,
   fetchAllExercises,
@@ -675,4 +730,5 @@ export {
   fetchRegimentById,
   updateRegimentById,
   deleteRegimentById,
+  // user_regiment_progress
 };
