@@ -112,6 +112,9 @@ const CreateWorkout = () => {
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
       <div className="w-full max-w-3xl bg-white p-8 rounded-xl shadow-lg">
+        <button onClick={() => navigate("/create-regiment")}>
+          Back to regiment
+        </button>
         <h2 className="text-3xl font-bold mb-6 text-center text-[#4B9CD3]">Create Workout</h2>
         <form onSubmit={handleSubmit} className="space-y-8">
 
@@ -190,6 +193,9 @@ const CreateWorkout = () => {
 
                 <div className="mt-6">
                   <label className="block font-semibold mb-3 text-[#4B9CD3]">Sets</label>
+                  <button type="button" onClick={() => addSet(idx)} className="mt-2 text-[#4B9CD3] font-semibold hover:underline">
+                    + Add Set
+                  </button>
                   {Object.entries(exercise.sets).length === 0 && (
                     <p className="text-gray-400 italic">No sets added yet.</p>
                   )}
@@ -242,9 +248,9 @@ const CreateWorkout = () => {
                       </button>
                     </div>
                   ))}
-                  <button type="button" onClick={() => addSet(idx)} className="mt-2 text-[#4B9CD3] font-semibold hover:underline">
+                  {/* <button type="button" onClick={() => addSet(idx)} className="mt-2 text-[#4B9CD3] font-semibold hover:underline">
                     + Add Set
-                  </button>
+                  </button> */}
                 </div>
 
                 <button type="button" onClick={() => removeExercise(idx)} className="mt-5 bg-red-600 text-white py-2 px-4 rounded-lg font-semibold">

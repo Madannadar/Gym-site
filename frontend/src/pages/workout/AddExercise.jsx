@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../../AuthProvider";
+import { useNavigate } from "react-router-dom";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL;
 
 const unitOptions = ["reps", "time", "weight", "laps"];
+
+
 
 const CreateExercise = () => {
   const [formData, setFormData] = useState({
@@ -14,7 +17,7 @@ const CreateExercise = () => {
     units: [],
     created_by: null,
   });
-
+  const navigate = useNavigate()
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const { uid } = useAuth();
@@ -73,6 +76,9 @@ const CreateExercise = () => {
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
       <div className="w-full max-w-xl bg-white p-6 rounded-2xl shadow-lg">
+        <button onClick={() => navigate('/create-workout')}>
+          Back to workout
+        </button>
         <h2 className="text-2xl font-bold mb-4 text-center text-[#4B9CD3]">Create Exercise</h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -121,11 +127,10 @@ const CreateExercise = () => {
                   key={unit}
                   type="button"
                   onClick={() => toggleUnit(unit)}
-                  className={`px-4 py-2 rounded-full border font-semibold transition duration-200 ${
-                    formData.units.includes(unit)
+                  className={`px-4 py-2 rounded-full border font-semibold transition duration-200 ${formData.units.includes(unit)
                       ? "bg-[#4B9CD3] text-white border-[#4B9CD3]"
                       : "bg-white text-gray-700 border-gray-300"
-                  }`}
+                    }`}
                 >
                   {unit}
                 </button>

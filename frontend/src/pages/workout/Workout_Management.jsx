@@ -177,16 +177,20 @@ const Workout_Management = () => {
       className="bg-white shadow rounded-lg mb-4 p-4 border"
     >
       <h2
-        className="text-xl font-semibold cursor-pointer text-[#4B9CD3] hover:text-blue-500"
+        className="text-xl font-semibold cursor-pointer text-[#4B9CD3] hover:text-blue-500 flex flex-col sm:flex-row sm:items-center sm:justify-between"
         onClick={() => toggleRegiment(regiment.regiment_id)}
       >
-        {regiment.name}
-        {includeLogCount && (
-          <span className="text-sm text-gray-500 ml-2">
-            (Logged {logCounts[regiment.regiment_id] || 0} times)
-          </span>
-        )}
+        <span>{regiment.name}</span>
+        <div className="text-sm text-gray-500 mt-1 sm:mt-0 sm:ml-4 italic">
+          {Number(regiment.created_by) === userId
+            ? "Created by you"
+            : `Created by ${regiment.created_by_name || "someone"}`}
+          {includeLogCount && (
+            <span className="ml-2 not-italic">(Logged {logCounts[regiment.regiment_id] || 0} times)</span>
+          )}
+        </div>
       </h2>
+
 
       {expandedRegimentId === regiment.regiment_id && (
         <div className="mt-3 space-y-2 ml-4">
@@ -397,9 +401,7 @@ const Workout_Management = () => {
             )
             .map((regiment) => renderRegimentCard(regiment, true, workoutDetails))}
 
-          <h2 className="text-2xl font-bold mb-2 text-green-600">
-            Your Regiments
-          </h2>
+
           {userRegiments
             .filter((r) =>
               r.name.toLowerCase().includes(searchQuery.toLowerCase())
