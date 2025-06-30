@@ -141,20 +141,35 @@ const StartWorkout = () => {
           console.log("Workout marked as completed ✅");
 
           if (regimenId) {
-            const regimentRes = await axios.get(`${API_URL}/workouts/regiments/${regimenId}`);
-            const regiment = regimentRes.data.item;
-            const updatedStructure = regiment.workout_structure.map(({ name, status, workout_id }) =>
-              workout_id === Number(workoutId)
-                ? { name, status: "completed", workout_id }
-                : { name, status, workout_id }
-            );
+            try {
+              const regimentRes = await axios.get(`${API_URL}/workouts/regiments/${regimenId}`);
+              const regiment = regimentRes.data.item;
 
+              // Update workout_structure (optional visual feedback)
+              const cleanedStructure = regiment.workout_structure.map((day) => ({
+                name: day.name,
+                workout_id: day.workout_id,
+                status: day.workout_id === Number(workoutId) ? "completed" : day.status
+              }));
 
-            await axios.put(`${API_URL}/workouts/regiments/${regimenId}`, {
-              workout_structure: updatedStructure
-            });
-            console.log("🔁 Updating Regiment Structure:", updatedStructure);
+              await axios.put(`${API_URL}/workouts/regiments/${regimenId}`, {
+                workout_structure: cleanedStructure
+              });
+
+              // ✅ Insert or update progress
+              await axios.post(`${API_URL}/workouts/progress`, {
+                user_id: Number(uid),
+                regiment_id: Number(regimenId),
+                workout_id: Number(workoutId),
+                status: "completed"
+              });
+
+              console.log("✅ Regiment structure and progress updated.");
+            } catch (err) {
+              console.error("❌ Failed to update regiment structure or progress:", err);
+            }
           }
+
 
         } catch (err) {
           console.error("Error marking workout or regiment complete:", err);
@@ -227,11 +242,15 @@ const StartWorkout = () => {
       const payload = {
         user_id: Number(uid),
         regiment_id: logData.regiment_id ? Number(logData.regiment_id) : null,
-        regiment_day_index: 1, // hardcoded default (or you can remove if backend handles it)
-        log_date: new Date().toISOString().split('T')[0],  // auto-generate current date
-        planned_workout_id: Number(workoutId),  // from useParams directly
-        actual_workout: actualWorkoutWithUnits
+        regiment_day_index: 1,
+        log_date: new Date().toISOString().split('T')[0],
+        planned_workout_id: Number(workoutId),
+        actual_workout: actualWorkoutWithUnits,
+        status: "completed"  // ✅ added status field
       };
+
+      console.log("🚀 Logging payload:", payload);
+
 
 
       await axios.post(`${API_URL}/workouts/logs`, payload);

@@ -28,6 +28,7 @@ import AddRegiment from "./pages/workout/AddRegiment.jsx";
 import Workout_Management from "./pages/workout/Workout_Management.jsx";
 import StartWorkout from "./pages/workout/StartWorkout.jsx";
 import UpdateRegiment from "./pages/workout/UpdateRegiment.jsx";
+// import Testing from "./pages/workout/testing.jsx";
 
 import Login from "./pages/LoginPage.jsx";
 import Signup from "./pages/SignUpPage.jsx";
@@ -70,6 +71,7 @@ const App = () => {
           {/* <Route path='/create-workout_logs' element={<WorkoutLogForm />} />/ */}
           <Route path="/start-workout/:regimenId/:workoutId" element={<StartWorkout />} />
           <Route path="/workouts/regiments/:regimentId" element={<UpdateRegiment />} />
+          {/* <Route path="/testing" element={<Testing />} /> */}
 
           {/* Protected Routes */}
           <Route

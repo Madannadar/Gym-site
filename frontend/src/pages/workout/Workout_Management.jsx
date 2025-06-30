@@ -15,13 +15,38 @@ const Workout_Management = () => {
   const [expandedWorkoutId, setExpandedWorkoutId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showLogs, setShowLogs] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState("");  //--
   const [recentRegiments, setRecentRegiments] = useState([]);
-  const [exerciseNames, setExerciseNames] = useState({});
+  // const [exerciseNames, setExerciseNames] = useState({});
+  const [currentPlannedRegiments, setCurrentPlannedRegiments] = useState([]);
+
 
   const navigate = useNavigate();
   const { uid } = useAuth();
   const userId = Number(uid);
+
+  const getCurrentPlannedRegiments = (regiments, logs) => {
+    const completedMap = {};
+
+    logs.forEach((log) => {
+      if (!completedMap[log.regiment_id]) {
+        completedMap[log.regiment_id] = new Set();
+      }
+      completedMap[log.regiment_id].add(log.planned_workout_id);
+    });
+
+    return regiments.filter((reg) => {
+      const completedWorkouts = completedMap[reg.regiment_id];
+      if (!completedWorkouts) return false; // ✅ skip if user has never logged any workout from this regiment
+
+      const allWorkouts = reg.workout_structure.map((w) => w.workout_id);
+
+      // ✅ include only if some workouts are *not* completed
+      return allWorkouts.some((id) => !completedWorkouts.has(id));
+    });
+  };
+
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -36,6 +61,7 @@ const Workout_Management = () => {
           .slice(0, 5);
         setRecentRegiments(recentSystemRegiments);
 
+        // 🧠 Collect workout IDs
         const workoutIds = new Set();
         regimentsData.forEach((reg) => {
           reg.workout_structure.forEach((day) => {
@@ -43,44 +69,51 @@ const Workout_Management = () => {
           });
         });
 
-        const nameMap = {};
+        // 🔁 Fetch all workouts and their exercise names
+        const workoutDetailsMap = {};
         await Promise.all(
           [...workoutIds].map(async (id) => {
             const res = await axios.get(`${API_URL}/workouts/${id}`);
-            nameMap[id] = res.data?.item?.name || `Workout ${id}`;
+            const workout = res.data.item;
+
+            const detailedExercises = await Promise.all(
+              workout.structure.map(async (ex) => {
+                const exerciseRes = await axios.get(`${API_URL}/workouts/exercises/${ex.exercise_id}`);
+                return {
+                  ...ex,
+                  name: exerciseRes.data?.item?.name || `Exercise ${ex.exercise_id}`,
+                };
+              })
+            );
+
+            workoutDetailsMap[id] = { ...workout, structure: detailedExercises };
           })
         );
-        setWorkoutNames(nameMap);
+        setWorkoutDetails(workoutDetailsMap);
 
+        // 📝 Workout names for UI
+        const workoutNameMap = {};
+        Object.entries(workoutDetailsMap).forEach(([id, workout]) => {
+          workoutNameMap[id] = workout.name;
+        });
+        setWorkoutNames(workoutNameMap);
+
+        // 📚 Workout logs
         const logRes = await axios.get(`${API_URL}/workouts/logs/user/${userId}`);
         const logs = logRes.data.items || [];
         setWorkoutLogs(logs);
 
-        const exerciseIdsFromLogs = new Set();
-        logs.forEach(log => {
-          log.actual_workout?.forEach(ex => {
-            if (ex.exercise_id) exerciseIdsFromLogs.add(ex.exercise_id);
-          });
-        });
-
-        // Fetch names for all those exercise IDs
-        const namesMap = {};
-        await Promise.all([...exerciseIdsFromLogs].map(async (id) => {
-          try {
-            const res = await axios.get(`${API_URL}/workouts/exercises/${id}`);
-            namesMap[id] = res.data?.item?.name || `Exercise ${id}`;
-          } catch (err) {
-            namesMap[id] = `Exercise ${id}`;
-          }
-        }));
-        setExerciseNames(namesMap);
-
-
+        // 📊 Log counts
         const counts = {};
         logs.forEach((log) => {
           counts[log.regiment_id] = (counts[log.regiment_id] || 0) + 1;
         });
         setLogCounts(counts);
+
+        const inProgress = getCurrentPlannedRegiments(regimentsData, logs);
+        setCurrentPlannedRegiments(inProgress);
+
+
       } catch (err) {
         console.error(err);
         setError("Failed to load data.");
@@ -89,6 +122,7 @@ const Workout_Management = () => {
 
     fetchData();
   }, [API_URL, userId]);
+
 
   const toggleRegiment = (id) => {
     setExpandedRegimentId((prev) => (prev === id ? null : id));
@@ -137,7 +171,7 @@ const Workout_Management = () => {
   const systemRegiments = regiments.filter((r) => Number(r.created_by) !== userId);
   const userRegiments = regiments.filter((r) => Number(r.created_by) === userId);
 
-  const renderRegimentCard = (regiment, includeLogCount = true) => (
+  const renderRegimentCard = (regiment, includeLogCount = true, workoutDetails) => (
     <div
       key={regiment.regiment_id}
       className="bg-white shadow rounded-lg mb-4 p-4 border"
@@ -214,7 +248,7 @@ const Workout_Management = () => {
     </div>
   );
 
-  const renderLogCard = (regiment, logs) => (
+  const renderLogCard = (regiment, logs, workoutDetails) => (
     <div
       key={regiment.regiment_id}
       className="bg-white shadow rounded-lg mb-4 p-4 border"
@@ -247,40 +281,62 @@ const Workout_Management = () => {
 
                 {log.actual_workout?.length > 0 ? (
                   <div className="mt-2">
-                    <h4 className="font-semibold text-gray-700 mb-1">
-                      Exercises:
-                    </h4>
-                    {log.actual_workout.map((exercise, index) => (
-                      <div key={index} className="mb-2 ml-2">
-                        <p className="font-semibold text-[#4B9CD3]">
-                          {exerciseNames[exercise.exercise_id] || `Exercise ${exercise.exercise_id}`}
-                        </p>
-                        <div className="ml-4">
-                          {Object.entries(exercise.sets).map(
-                            ([setName, setData]) => (
-                              <div
-                                key={setName}
-                                className="text-sm text-gray-700"
-                              >
-                                <strong>{setName}:</strong>
-                                {setData.reps !== undefined &&
-                                  ` ${setData.reps} reps`}
-                                {setData.weight !== undefined &&
-                                  `, ${setData.weight}${setData.weight_unit || ""}`}
-                                {setData.time !== undefined &&
-                                  `, ${setData.time} sec`}
+                    <h4 className="font-semibold text-gray-700 mb-1">Exercises:</h4>
+                    {log.actual_workout.map((actualExercise, index) => {
+                      const plannedWorkout = workoutDetails[log.planned_workout_id];
+                      const plannedExercise = plannedWorkout?.structure?.find(
+                        (ex) => ex.exercise_id === actualExercise.exercise_id
+                      );
+
+
+                      return (
+                        <div key={index} className="mb-4 ml-2">
+                          <p className="font-semibold text-[#4B9CD3] mb-1">
+                            {plannedExercise?.name || `Exercise ${actualExercise.exercise_id}`}
+                          </p>
+
+
+                          {(plannedExercise?.sets || actualExercise.sets) ? (
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <p className="font-semibold text-green-600 mb-1">Planned</p>
+                                <ul className="list-disc ml-4">
+                                  {Object.entries(plannedExercise?.sets || {}).map(([setKey, set]) => (
+                                    <li key={setKey}>
+                                      {set.reps && `${set.reps} reps`}
+                                      {set.weight && `, ${set.weight}${set.weight_unit || ""}`}
+                                      {set.time && `, ${set.time} sec`}
+                                    </li>
+                                  ))}
+                                </ul>
                               </div>
-                            )
+
+                              <div>
+                                <p className="font-semibold text-blue-600 mb-1">Actual</p>
+                                <ul className="list-disc ml-4">
+                                  {Object.entries(actualExercise.sets || {}).map(([setKey, set]) => (
+                                    <li key={setKey}>
+                                      {set.reps && `${set.reps} reps`}
+                                      {set.weight && `, ${set.weight}${set.weight_unit || ""}`}
+                                      {set.time && `, ${set.time} sec`}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-gray-500 ml-4">No set data available</p>
                           )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="text-sm text-gray-500 mt-2">
                     No actual workout data recorded.
                   </p>
                 )}
+
               </div>
             ))}
         </div>
@@ -319,6 +375,19 @@ const Workout_Management = () => {
 
       {!showLogs && (
         <>
+          {!showLogs && currentPlannedRegiments.length > 0 && (
+            <>
+              <h2 className="text-2xl font-bold mb-2 text-orange-600">
+                Current Planned Regiments
+              </h2>
+              {currentPlannedRegiments
+                .filter((r) =>
+                  r.name.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map((regiment) => renderRegimentCard(regiment, true, workoutDetails))}
+            </>
+          )}
+
           <h2 className="text-2xl font-bold mb-2 text-purple-600">
             Recent System Regiments
           </h2>
@@ -326,7 +395,7 @@ const Workout_Management = () => {
             .filter((r) =>
               r.name.toLowerCase().includes(searchQuery.toLowerCase())
             )
-            .map((regiment) => renderRegimentCard(regiment, true))}
+            .map((regiment) => renderRegimentCard(regiment, true, workoutDetails))}
 
           <h2 className="text-2xl font-bold mb-2 text-green-600">
             Your Regiments
@@ -335,7 +404,7 @@ const Workout_Management = () => {
             .filter((r) =>
               r.name.toLowerCase().includes(searchQuery.toLowerCase())
             )
-            .map((regiment) => renderRegimentCard(regiment, false))}
+            .map((regiment) => renderRegimentCard(regiment, false, workoutDetails))}
         </>
       )}
 
@@ -353,7 +422,7 @@ const Workout_Management = () => {
                 (log) => log.regiment_id === regiment.regiment_id
               );
               if (logs.length === 0) return null;
-              return renderLogCard(regiment, logs);
+              return renderLogCard(regiment, logs, workoutDetails);
             })}
         </>
       )}

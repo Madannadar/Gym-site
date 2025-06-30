@@ -364,16 +364,16 @@ const recordWorkoutLog = async ({
   ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
   RETURNING *;
 `;
-const values = [
-  user_id,
-  regiment_id,
-  regiment_day_index,
-  log_date,
-  planned_workout_id,
-  JSON.stringify(actual_workout),
-  calculatedScore,
-  status
-];
+  const values = [
+    user_id,
+    regiment_id,
+    regiment_day_index,
+    log_date,
+    planned_workout_id,
+    JSON.stringify(actual_workout),
+    calculatedScore,
+    status
+  ];
 
 
   const { rows } = await db.query(query, values);
@@ -546,7 +546,6 @@ const fetchAllRegiments = async () => {
 // const result = await db.query(testQuery);
 // console.log('Database structure:', result.rows);
 
-
 const fetchRegimentById = async (id) => {
   const regimentQuery = `
     SELECT 
@@ -571,7 +570,6 @@ const fetchRegimentById = async (id) => {
 
   console.log("✅ Regiment result:", regiment);
 
-  // 🛠️ Parse workout_structure if it's a string (e.g. from raw SQL)
   if (typeof regiment.workout_structure === 'string') {
     try {
       regiment.workout_structure = JSON.parse(regiment.workout_structure);
@@ -581,7 +579,6 @@ const fetchRegimentById = async (id) => {
     }
   }
 
-  // 🧠 Extract all workout_ids used in structure
   const workoutIds = regiment.workout_structure
     ?.map((day) => day.workout_id)
     .filter((wid) => typeof wid === 'number');
@@ -600,15 +597,54 @@ const fetchRegimentById = async (id) => {
       return acc;
     }, {});
 
-    // 🧩 Attach workout_details to each day
-    regiment.workout_structure = regiment.workout_structure.map((day) => ({
-      ...day,
-      workout_details: workoutsMap[day.workout_id] || null,
-    }));
-  }
+    // Extract unique exercise IDs from all workouts
+    const allExerciseIds = new Set();
+    workoutsResult.rows.forEach((workout) => {
+      try {
+        const structure = typeof workout.structure === 'string' ? JSON.parse(workout.structure) : workout.structure;
+        structure?.forEach((ex) => {
+          if (ex.exercise_id) allExerciseIds.add(ex.exercise_id);
+        });
+      } catch (err) {
+        console.error("❌ Error parsing workout structure:", err);
+      }
+    });
 
+    // Fetch exercise names
+    const exerciseQuery = `
+      SELECT exercise_id, name FROM exercises WHERE exercise_id = ANY($1);
+    `;
+    const exerciseResult = await db.query(exerciseQuery, [[...allExerciseIds]]);
+    const exerciseMap = exerciseResult.rows.reduce((acc, ex) => {
+      acc[ex.exercise_id] = ex.name;
+      return acc;
+    }, {});
+
+    // Attach workout_details and enrich structure with exercise name
+    regiment.workout_structure = regiment.workout_structure.map((day) => {
+      const workout = workoutsMap[day.workout_id] || null;
+      if (workout && workout.structure) {
+        try {
+          workout.structure = typeof workout.structure === 'string' ? JSON.parse(workout.structure) : workout.structure;
+          workout.structure = workout.structure.map((ex) => ({
+            ...ex,
+            exercise_details: {
+              name: exerciseMap[ex.exercise_id] || null,
+            },
+          }));
+        } catch (err) {
+          console.error("❌ Error parsing/enriching workout structure:", err);
+        }
+      }
+      return {
+        ...day,
+        workout_details: workout,
+      };
+    });
+  }
   return regiment;
 };
+
 
 
 const updateRegimentById = async (id, { name, description, workout_structure }) => {
@@ -709,6 +745,72 @@ const deleteRegimentById = async (id) => {
 // };
 
 
+// POST /workouts/progress
+const recordProgress = async (req, res) => {
+  const { user_id, regiment_id, workout_id, status } = req.body;
+  try {
+    const query = `
+      INSERT INTO user_regiment_progress (user_id, regiment_id, workout_id, status)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (user_id, regiment_id, workout_id)
+      DO UPDATE SET status = EXCLUDED.status;
+    `;
+    await db.query(query, [user_id, regiment_id, workout_id, status]);
+    res.status(200).json({ success: true });
+  } catch (err) {
+    console.error("Error recording progress:", err);
+    res.status(500).json({ error: "Failed to update progress" });
+  }
+};
+
+const getCurrentRegimentForUser = async (req, res) => {
+  const user_id = Number(req.params.user_id);
+
+  try {
+    // 1. Get all regiment IDs the user has progress on
+    const regimentIdsQuery = `
+      SELECT DISTINCT regiment_id
+      FROM user_regiment_progress
+      WHERE user_id = $1
+    `;
+    const regimentIdsRes = await db.query(regimentIdsQuery, [user_id]);
+    const regimentIds = regimentIdsRes.rows.map(r => r.regiment_id);
+
+    if (regimentIds.length === 0) {
+      return res.status(200).json({ regiment: null, message: "No active regiment" });
+    }
+
+    for (const regiment_id of regimentIds) {
+      const progressQuery = `
+        SELECT COUNT(*) FILTER (WHERE status = 'completed') AS completed,
+               COUNT(*) AS total
+        FROM user_regiment_progress
+        WHERE user_id = $1 AND regiment_id = $2
+      `;
+      const { rows } = await db.query(progressQuery, [user_id, regiment_id]);
+      const { completed, total } = rows[0];
+
+      if (Number(completed) < Number(total)) {
+        // Found the in-progress regiment
+        const regimentQuery = `
+          SELECT * FROM regiments WHERE regiment_id = $1;
+        `;
+        const regimentRes = await db.query(regimentQuery, [regiment_id]);
+        return res.status(200).json({ regiment: regimentRes.rows[0] });
+      }
+    }
+
+    // All regiments are completed
+    return res.status(200).json({ regiment: null, message: "All regiments completed" });
+
+  } catch (err) {
+    console.error("Error fetching current regiment:", err);
+    res.status(500).json({ error: "Failed to fetch current regiment" });
+  }
+};
+
+
+
 export {
   recordExercise,
   fetchAllExercises,
@@ -730,5 +832,7 @@ export {
   fetchRegimentById,
   updateRegimentById,
   deleteRegimentById,
-  // user_regiment_progress
+  // user_regiment_progress,
+  recordProgress,
+  getCurrentRegimentForUser
 };
