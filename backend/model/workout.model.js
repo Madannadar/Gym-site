@@ -312,7 +312,7 @@ const recordWorkoutLog = async ({
   log_date,
   planned_workout_id,
   actual_workout,
-  status = "not started"
+  // status = "not started"
 }) => {
   // Validate references
   if (!(await checkExists('regiments', 'regiment_id', regiment_id))) {
@@ -359,11 +359,11 @@ const recordWorkoutLog = async ({
     log_date,
     planned_workout_id,
     actual_workout,
-    score,
-    status
-  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    score
+  ) VALUES ($1, $2, $3, $4, $5, $6, $7)
   RETURNING *;
 `;
+
   const values = [
     user_id,
     regiment_id,
@@ -371,11 +371,9 @@ const recordWorkoutLog = async ({
     log_date,
     planned_workout_id,
     JSON.stringify(actual_workout),
-    calculatedScore,
-    status
+    calculatedScore
   ];
-
-
+  ;
   const { rows } = await db.query(query, values);
   return rows[0];
 };

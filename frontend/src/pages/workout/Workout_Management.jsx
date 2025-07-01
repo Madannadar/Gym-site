@@ -46,8 +46,6 @@ const Workout_Management = () => {
     });
   };
 
-
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -171,6 +169,25 @@ const Workout_Management = () => {
   const systemRegiments = regiments.filter((r) => Number(r.created_by) !== userId);
   const userRegiments = regiments.filter((r) => Number(r.created_by) === userId);
 
+
+  const handleDeleteRegiment = async (regimentId, created_by) => {
+
+    if (!window.confirm("Are you sure you want to delete this regiment?")) return;
+
+    try {
+      if (created_by === userId) {
+        await axios.delete(`${API_URL}/workouts/regiments/${regimentId}`);
+        alert("Regiment deleted successfully.");
+      }
+      // ⬇️ Refresh or refetch regiments here
+      // fetchRegiments(); // replace with your actual fetch function
+    } catch (err) {
+      console.error("Failed to delete regiment:", err);
+      alert("Failed to delete regiment. Please try again.");
+    }
+  };
+
+
   const renderRegimentCard = (regiment, includeLogCount = true, workoutDetails) => (
     <div
       key={regiment.regiment_id}
@@ -191,6 +208,24 @@ const Workout_Management = () => {
         </div>
       </h2>
 
+      {/* 💡 Action buttons */}
+      {Number(regiment.created_by) === userId && (
+        <div className="mt-2 flex gap-3 justify-end">
+          <button
+
+            onClick={() => navigate(`/update-regiment/`)}
+            className="text-sm px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+          >
+            ✏️ Update
+          </button>
+          <button
+            onClick={() => handleDeleteRegiment(regiment.regiment_id, regiment.created_by)}
+            className="text-sm px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+          >
+            🗑️ Delete
+          </button>
+        </div>
+      )}
 
       {expandedRegimentId === regiment.regiment_id && (
         <div className="mt-3 space-y-2 ml-4">
@@ -205,13 +240,11 @@ const Workout_Management = () => {
                 </p>
                 <button
                   onClick={() =>
-                    navigate(
-                      `/start-workout/${regiment.regiment_id}/${day.workout_id}`
-                    )
+                    navigate(`/start-workout/${regiment.regiment_id}/${day.workout_id}`)
                   }
                   className="bg-[#4B9CD3] text-white px-3 py-1 rounded hover:bg-blue-500"
                 >
-                  Start
+                  ▶ Start
                 </button>
               </div>
 
@@ -230,7 +263,7 @@ const Workout_Management = () => {
                               <li key={i}>
                                 {set.reps !== undefined && `${set.reps} reps`}
                                 {set.weight !== undefined &&
-                                  `, ${set.weight}${set.weight_unit || ""}`}
+                                  `, ${set.weight}${exercise.weight_unit || ""}`}
                                 {set.time !== undefined && `, ${set.time} sec`}
                               </li>
                             ))}
@@ -251,6 +284,7 @@ const Workout_Management = () => {
       )}
     </div>
   );
+
 
   const renderLogCard = (regiment, logs, workoutDetails) => (
     <div

@@ -771,29 +771,30 @@ const updateRegimentByIdEntry = async (req, res) => {
 
 const deleteRegimentByIdEntry = async (req, res) => {
   try {
+    // console.log("req.params.id", req.params.id)
     const regiment = await deleteRegimentById(req.params.id);
     if (!regiment) {
-      logger.warn("Regiment not found for deletion", {
-        regimentId: req.params.id,
-        operation: "deleteRegimentById"
-      });
+      // logger.warn("Regiment not found for deletion", {
+      //   regimentId: req.params.id,
+      //   operation: "deleteRegimentById"
+      // });
       return res.status(404).json({ error: { message: "Regiment not found" } });
     }
     
-    logger.info("Regiment deleted successfully", {
-      regimentId: req.params.id,
-      deletedRegiment: regiment.name,
-      operation: "deleteRegimentById"
-    });
+    // logger.info("Regiment deleted successfully", {
+    //   regimentId: req.params.id,
+    //   deletedRegiment: regiment.name,
+    //   operation: "deleteRegimentById"
+    // });
     
     res.json({ message: "Regiment deleted successfully", item: regiment });
   } catch (err) {
-    logger.error("Delete Regiment Error", {
-      error: err.message,
-      stack: err.stack,
-      regimentId: req.params.id,
-      operation: "deleteRegimentById"
-    });
+    // logger.error("Delete Regiment Error", {
+    //   error: err.message,
+    //   stack: err.stack,
+    //   regimentId: req.params.id,
+    //   operation: "deleteRegimentById"
+    // });
     res.status(500).json({ error: { message: "Failed to delete regiment" } });
   }
 };

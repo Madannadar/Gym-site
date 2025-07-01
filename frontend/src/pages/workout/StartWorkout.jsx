@@ -5,7 +5,6 @@ import { useAuth } from "../../AuthProvider";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL;
 
-
 const StartWorkout = () => {
   const { regimenId, workoutId } = useParams();
   const { uid } = useAuth();
@@ -23,14 +22,14 @@ const StartWorkout = () => {
     regiment_id: regimenId ? Number(regimenId) : null,
     actual_workout: [],
   });
+
   const [timer, setTimer] = useState({
     hours: 0,
     minutes: 0,
     seconds: 0,
     isRunning: false,
-    intervalId: null
+    intervalId: null,
   });
-
 
   useEffect(() => {
     if (!uid) return;
@@ -39,7 +38,7 @@ const StartWorkout = () => {
       try {
         const [workoutRes, regimentsRes] = await Promise.all([
           axios.get(`${API_URL}/workouts/${workoutId}`),
-          axios.get(`${API_URL}/workouts/regiments`)
+          axios.get(`${API_URL}/workouts/regiments`),
         ]);
 
         const workoutData = workoutRes.data.item;
@@ -53,7 +52,6 @@ const StartWorkout = () => {
           });
         }
 
-        // Initialize state for sets and timers
         const initChecked = {};
         const initTimers = {};
         const initActualWorkout = [];
@@ -64,7 +62,7 @@ const StartWorkout = () => {
 
           const actualExercise = {
             exercise_id: exercise.exercise_id,
-            sets: {}
+            sets: {},
           };
 
           Object.entries(exercise.sets).forEach(([setKey, setVal]) => {
@@ -95,11 +93,10 @@ const StartWorkout = () => {
 
         setCheckedSets(initChecked);
         setTimers(initTimers);
-        setLogData(prev => ({
+        setLogData((prev) => ({
           ...prev,
-          actual_workout: initActualWorkout
+          actual_workout: initActualWorkout,
         }));
-
       } catch (err) {
         console.error("Error loading data:", err);
         setError("Failed to load workout data.");
@@ -109,9 +106,8 @@ const StartWorkout = () => {
     fetchData();
   }, [workoutId, uid]);
 
-
   const handleSetCheck = (eIdx, setNumber) => {
-    setCheckedSets(prev => ({
+    setCheckedSets((prev) => ({
       ...prev,
       [eIdx]: {
         ...prev[eIdx],
@@ -122,9 +118,7 @@ const StartWorkout = () => {
 
   const allExercisesComplete = () => {
     return workout?.structure.every((exercise, eIdx) =>
-      Object.keys(exercise.sets).every(
-        (setKey) => checkedSets?.[eIdx]?.[setKey]
-      )
+      Object.keys(exercise.sets).every((setKey) => checkedSets?.[eIdx]?.[setKey])
     );
   };
 
@@ -145,34 +139,23 @@ const StartWorkout = () => {
               const regimentRes = await axios.get(`${API_URL}/workouts/regiments/${regimenId}`);
               const regiment = regimentRes.data.item;
 
-              // Update workout_structure (optional visual feedback)
               const cleanedStructure = regiment.workout_structure.map((day) => ({
                 name: day.name,
                 workout_id: day.workout_id,
-                status: day.workout_id === Number(workoutId) ? "completed" : day.status
+                status: day.workout_id === Number(workoutId) ? "completed" : day.status,
               }));
 
               await axios.put(`${API_URL}/workouts/regiments/${regimenId}`, {
-                workout_structure: cleanedStructure
+                workout_structure: cleanedStructure,
               });
 
-              // ✅ Insert or update progress
-              await axios.post(`${API_URL}/workouts/progress`, {
-                user_id: Number(uid),
-                regiment_id: Number(regimenId),
-                workout_id: Number(workoutId),
-                status: "completed"
-              });
-
-              console.log("✅ Regiment structure and progress updated.");
+              console.log("✅ Regiment structure updated.");
             } catch (err) {
-              console.error("❌ Failed to update regiment structure or progress:", err);
+              console.error("❌ Failed to update regiment structure:", err);
             }
           }
-
-
         } catch (err) {
-          console.error("Error marking workout or regiment complete:", err);
+          console.error("Error marking workout complete:", err);
         }
       };
 
@@ -180,29 +163,54 @@ const StartWorkout = () => {
     }
   }, [checkedSets]);
 
-
   const handleLogFieldChange = (field, value) => {
-    setLogData(prev => ({
+    setLogData((prev) => ({
       ...prev,
-      [field]: field === 'regiment_id' ? (value === "" ? null : Number(value)) : value
+      [field]: field === "regiment_id" ? (value === "" ? null : Number(value)) : value,
     }));
   };
 
   const handleActualSetChange = (exerciseIdx, setKey, field, value) => {
     const updated = [...logData.actual_workout];
     updated[exerciseIdx].sets[setKey][field] = value;
-    setLogData(prev => ({ ...prev, actual_workout: updated }));
+    setLogData((prev) => ({ ...prev, actual_workout: updated }));
   };
+
+  const buildActualWorkoutWithUnits = () => {
+    return workout.structure.map((exercise, eIdx) => {
+      const exerciseLog = {
+        exercise_id: exercise.exercise_id,
+        sets: {},
+      };
+
+      Object.entries(exercise.sets).forEach(([setKey, plannedSet]) => {
+        const actualSet = logData.actual_workout[eIdx]?.sets[setKey] || {};
+
+        exerciseLog.sets[setKey] = {
+          reps: actualSet.reps ?? plannedSet.reps,
+          weight: actualSet.weight ?? plannedSet.weight,
+          time: actualSet.time ?? plannedSet.time,
+          laps: actualSet.laps ?? plannedSet.laps,
+          weight_unit: exercise.weight_unit || "kg",
+          time_unit: plannedSet.time_unit || "seconds",
+        };
+
+        Object.keys(exerciseLog.sets[setKey]).forEach((key) => {
+          if (exerciseLog.sets[setKey][key] === undefined) {
+            delete exerciseLog.sets[setKey][key];
+          }
+        });
+      });
+
+      return exerciseLog;
+    });
+  };
+
   const handleFinish = async () => {
     if (!uid) {
       alert("User not authenticated. Please log in.");
       return;
     }
-
-    // if (!allExercisesComplete()) {
-    //   alert("Please complete all exercises before finishing the workout.");
-    //   return;
-    // }
 
     try {
       await axios.put(`${API_URL}/workouts/${workoutId}`, {
@@ -210,75 +218,39 @@ const StartWorkout = () => {
         status: "completed",
       });
 
-      const actualWorkoutWithUnits = workout.structure.map((exercise, eIdx) => {
-        const exerciseLog = {
-          exercise_id: exercise.exercise_id,
-          sets: {}
-        };
-
-        Object.entries(exercise.sets).forEach(([setKey, setVal]) => {
-          const actualSet = logData.actual_workout[eIdx]?.sets[setKey] || {};
-          const plannedSet = exercise.sets[setKey];
-
-          exerciseLog.sets[setKey] = {
-            reps: actualSet.reps ?? plannedSet.reps,
-            weight: actualSet.weight ?? plannedSet.weight,
-            time: actualSet.time ?? plannedSet.time,
-            laps: actualSet.laps ?? plannedSet.laps,
-            weight_unit: plannedSet.weight_unit || "kg",
-            time_unit: plannedSet.time_unit || "seconds"
-          };
-
-          Object.keys(exerciseLog.sets[setKey]).forEach(key => {
-            if (exerciseLog.sets[setKey][key] === undefined) {
-              delete exerciseLog.sets[setKey][key];
-            }
-          });
-        });
-
-        return exerciseLog;
-      });
+      const actualWorkoutWithUnits = buildActualWorkoutWithUnits();
 
       const payload = {
         user_id: Number(uid),
         regiment_id: logData.regiment_id ? Number(logData.regiment_id) : null,
         regiment_day_index: 1,
-        log_date: new Date().toISOString().split('T')[0],
+        log_date: new Date().toISOString().split("T")[0],
         planned_workout_id: Number(workoutId),
         actual_workout: actualWorkoutWithUnits,
-        status: "completed"  // ✅ added status field
       };
 
       console.log("🚀 Logging payload:", payload);
-
-
-
       await axios.post(`${API_URL}/workouts/logs`, payload);
 
       if (regimenId) {
-        try {
-          const regimentRes = await axios.get(`${API_URL}/workouts/regiments/${regimenId}`);
-          const regiment = regimentRes.data.item;
+        const regimentRes = await axios.get(`${API_URL}/workouts/regiments/${regimenId}`);
+        const regiment = regimentRes.data.item;
 
-          const cleanedStructure = regiment.workout_structure.map((day) => ({
-            name: day.name,
-            workout_id: day.workout_id,
-            status: day.workout_id === Number(workoutId) ? "completed" : day.status
-          }));
+        const cleanedStructure = regiment.workout_structure.map((day) => ({
+          name: day.name,
+          workout_id: day.workout_id,
+          status: day.workout_id === Number(workoutId) ? "completed" : day.status,
+        }));
 
-          await axios.put(`${API_URL}/workouts/regiments/${regimenId}`, {
-            workout_structure: cleanedStructure
-          });
+        await axios.put(`${API_URL}/workouts/regiments/${regimenId}`, {
+          workout_structure: cleanedStructure,
+        });
 
-          console.log("✅ Regiment structure status updated.");
-        } catch (err) {
-          console.error("❌ Failed to update regiment structure:", err);
-        }
+        console.log("✅ Regiment structure updated.");
       }
 
       alert("Workout completed and logged successfully!");
       navigate("/Workout_Management");
-
     } catch (err) {
       console.error("Error finishing workout:", err);
       let errorMessage = err.response?.data?.error?.message || err.message;
@@ -290,6 +262,7 @@ const StartWorkout = () => {
       alert(`Error completing workout: ${errorMessage}`);
     }
   };
+
 
 
   if (error) return <p className="text-red-600 p-4">{error}</p>;
@@ -474,7 +447,7 @@ const StartWorkout = () => {
             const isTime = !!set.time;
             const isChecked = checkedSets?.[eIdx]?.[setNumber];
             const actualSet = logData.actual_workout[eIdx]?.sets[setNumber] || {};
-            const weightUnit = set.weight_unit || "kg";
+            const weightUnit = exercise.weight_unit || "kg";
             const timeUnit = set.time_unit || "seconds";
 
             return (
