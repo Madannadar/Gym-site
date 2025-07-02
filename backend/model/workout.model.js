@@ -114,6 +114,27 @@ const intensityLookup = {
   "Bicep Curl": 3,
   "Lunges": 3,
   "Burpees": 5,
+
+  // From your image:
+  "Cable Rope Curls": 3,
+  "Seated Incline Curls": 3,
+  "Over Head Tricep Extension": 3,
+  "Tricep PushDowns": 3,
+  "Rear Deltoid Machine": 3,
+  "Shoulder Press machine": 4,
+  "Lateral Raises": 3,
+  "Shoulder Press": 4,
+  "Pec Deck": 4,
+  "Db Flat Press": 4,
+  "DB Incline Press": 4,
+  "Rear Delt Flys": 3,
+  "Smith machine row": 4,
+  "T bar row": 4,
+  "Pull Ups": 5,
+  "Fingures Push Ups": 5,
+  "Leg Press": 4,
+  "Calf Raise": 3,
+  "Hamstring Curls": 3
 };
 
 const calculateScoreFromStructure = (structure, intensityLookup, existingExercises) => {
@@ -128,17 +149,22 @@ const calculateScoreFromStructure = (structure, intensityLookup, existingExercis
 
     for (const key in (item.sets || {})) {
       const set = item.sets[key];
-      const reps = parseFloat(set.reps) || 1;
-      const weight = parseFloat(set.weight) || 1;
-      const time = set.time ? (parseFloat(set.time) * 1.5) : 1;
-      const laps = set.laps ? (parseFloat(set.laps) * 3) : 1;
 
-      const setScore = baseIntensity * reps * weight * time * laps;
+      const reps = item.units.includes("reps") ? parseFloat(set.reps) || 0 : 0;
+      const weight = item.units.includes("weight") ? parseFloat(set.weight) || 1 : 1;
+      const time = item.units.includes("time") ? (parseFloat(set.time) * 1.5 || 1) : 1;
+      const laps = item.units.includes("laps") ? (parseFloat(set.laps) * 3 || 1) : 1;
+
+      const setScore = baseIntensity * Math.max(reps, 1) * weight * time * laps;
       totalScore += setScore;
     }
   }
 
-  let normalizedScore = totalScore / 1000;
+  // Prevent division by 0
+  if (totalScore === 0) return 1;
+
+  // Better scaling (you can tune the divisor to scale more appropriately)
+  let normalizedScore = totalScore / 500; // instead of 1000
   normalizedScore = Math.min(10, Math.max(1, normalizedScore.toFixed(2)));
   return parseFloat(normalizedScore);
 };
@@ -184,7 +210,7 @@ const recordWorkout = async ({ name, created_by, description, structure }) => {
   const finalScore = calculateScoreFromStructure(structure, intensityLookup, existingExercises);
 
   console.log(`Normalized Score: ${finalScore}`);
-  
+
   structure.forEach(item => {
     if (item.units.includes("laps") && !item.laps_unit) {
       throw new Error(`Missing laps_unit for exercise_id ${item.exercise_id}`);
@@ -317,8 +343,7 @@ const recordWorkoutLog = async ({
   regiment_day_index,
   log_date,
   planned_workout_id,
-  actual_workout,
-  // status = "not started"
+  actual_workout
 }) => {
   // Validate references
   if (!(await checkExists('regiments', 'regiment_id', regiment_id))) {
@@ -342,33 +367,37 @@ const recordWorkoutLog = async ({
   `;
   const { rows: existingExercises } = await db.query(checkQuery, [exerciseIds]);
 
-  // ✅ Intensity lookup (should ideally be a centralized shared constant)
-  const intensityLookup = {
-    "Bench Press": 3,
-    "Squats": 4,
-    "Deadlift": 5,
-    "Pushups": 2,
-    "Pullups": 3.5,
-    // Add full list
-  };
+  // ✅ Add `units` array to each item in actual_workout based on set keys
+  const enrichedWorkout = actual_workout.map(item => {
+    const sets = item.sets || {};
+    const sampleSet = sets["1"] || sets[Object.keys(sets)[0]] || {};
 
-  // ✅ Calculate score based on actual workout using shared function
-  const calculatedScore = calculateScoreFromStructure(actual_workout, intensityLookup, existingExercises);
+    const possibleUnits = ["reps", "weight", "time", "laps"];
+    const detectedUnits = possibleUnits.filter(unit => sampleSet[unit] !== undefined && sampleSet[unit] !== "");
+
+    return {
+      ...item,
+      units: detectedUnits
+    };
+  });
+
+  // ✅ Calculate score using updated structure
+  const calculatedScore = calculateScoreFromStructure(enrichedWorkout, intensityLookup, existingExercises);
 
   console.log(`Calculated Score for Workout Log: ${calculatedScore}`);
 
   const query = `
-  INSERT INTO workout_logs (
-    user_id,
-    regiment_id,
-    regiment_day_index,
-    log_date,
-    planned_workout_id,
-    actual_workout,
-    score
-  ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-  RETURNING *;
-`;
+    INSERT INTO workout_logs (
+      user_id,
+      regiment_id,
+      regiment_day_index,
+      log_date,
+      planned_workout_id,
+      actual_workout,
+      score
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+    RETURNING *;
+  `;
 
   const values = [
     user_id,
@@ -376,10 +405,10 @@ const recordWorkoutLog = async ({
     regiment_day_index,
     log_date,
     planned_workout_id,
-    JSON.stringify(actual_workout),
+    JSON.stringify(enrichedWorkout),
     calculatedScore
   ];
-  ;
+
   const { rows } = await db.query(query, values);
   return rows[0];
 };
@@ -487,15 +516,14 @@ const recordRegiment = async ({
   if (missingWorkoutIds.length > 0) {
     throw new Error(`Workout ID(s) not found: ${missingWorkoutIds.join(", ")}`);
   }
-
-  // ✅ Compute intensity from scores (direct average on 1-10 scale)
+  // ✅ Compute total intensity from all workout scores (1-10 scale each)
   const scores = workouts.map((w) => Number(w.score) || 0);
-  const averageScore =
-    scores.reduce((acc, val) => acc + val, 0) / scores.length;
+  const totalScore = scores.reduce((acc, val) => acc + val, 0);
 
-  let regimentIntensity = Math.min(10, Math.max(1, averageScore.toFixed(2)));
+  // Optional normalization: If your regiments are very large, you can clamp it
+  let regimentIntensity = Math.min(10, Math.max(1, totalScore.toFixed(2)));
 
-  console.log(`Average Score: ${averageScore}, Regiment Intensity: ${regimentIntensity}`);
+  // console.log(`Average Score: ${averageScore}, Regiment Intensity: ${regimentIntensity}`);
 
   // ✅ Add default status to each workout day
   const structuredWithStatus = workout_structure.map(day => ({
@@ -648,11 +676,8 @@ const fetchRegimentById = async (id) => {
   }
   return regiment;
 };
-
-
-
 const updateRegimentById = async (id, { name, description, workout_structure }) => {
-  // Check for duplicate name if updated
+  // 🔍 Duplicate name check
   if (name) {
     const duplicateCheckQuery = `
       SELECT 1 FROM regiments WHERE name = $1 AND regiment_id != $2 LIMIT 1;
@@ -663,25 +688,46 @@ const updateRegimentById = async (id, { name, description, workout_structure }) 
     }
   }
 
-  const intensity = 1;
-
-  const query = `
-    UPDATE regiments
-    SET name = COALESCE($1, name),
-        description = COALESCE($2, description),
-        workout_structure = COALESCE($3, workout_structure),
-        intensity = COALESCE($4, intensity)
-    WHERE regiment_id = $5
-    RETURNING *;
+  // 🧠 Fetch workout IDs and their scores
+  const workoutIds = workout_structure.map(day => day.workout_id);
+  const scoreQuery = `
+    SELECT workout_id, score
+    FROM workouts
+    WHERE workout_id = ANY($1)
   `;
+  const { rows: workouts } = await db.query(scoreQuery, [workoutIds]);
+
+  // ✅ Validate workout IDs
+  const existingWorkoutIds = workouts.map(w => w.workout_id);
+  const missingWorkoutIds = workoutIds.filter(id => !existingWorkoutIds.includes(id));
+  if (missingWorkoutIds.length > 0) {
+    throw new Error(`Workout ID(s) not found: ${missingWorkoutIds.join(", ")}`);
+  }
+
+  // 📊 Compute total intensity from scores (scale 1–10)
+  const scores = workouts.map(w => Number(w.score) || 0);
+  const totalScore = scores.reduce((acc, val) => acc + val, 0);
+  const intensity = Math.min(10, Math.max(1, totalScore.toFixed(2))); // clamp 1–10
+
+  // 📝 Update query
+  const query = `
+  UPDATE regiments
+  SET name = COALESCE($1, name),
+      description = COALESCE($2, description),
+      workout_structure = COALESCE($3, workout_structure),
+      intensity = COALESCE($4, intensity)
+  WHERE regiment_id = $5
+  RETURNING *;
+`;
 
   const values = [
-    name,
-    description,
-    workout_structure ? JSON.stringify(workout_structure) : null,
-    intensity,
-    id,
-  ];
+  name,
+  description,
+  workout_structure ? JSON.stringify(workout_structure) : null,
+  intensity,
+  id
+];
+
 
   const { rows } = await db.query(query, values);
   return rows[0];
@@ -750,68 +796,68 @@ const deleteRegimentById = async (id) => {
 
 
 // POST /workouts/progress
-const recordProgress = async (req, res) => {
-  const { user_id, regiment_id, workout_id, status } = req.body;
-  try {
-    const query = `
-      INSERT INTO user_regiment_progress (user_id, regiment_id, workout_id, status)
-      VALUES ($1, $2, $3, $4)
-      ON CONFLICT (user_id, regiment_id, workout_id)
-      DO UPDATE SET status = EXCLUDED.status;
-    `;
-    await db.query(query, [user_id, regiment_id, workout_id, status]);
-    res.status(200).json({ success: true });
-  } catch (err) {
-    console.error("Error recording progress:", err);
-    res.status(500).json({ error: "Failed to update progress" });
-  }
-};
+// const recordProgress = async (req, res) => {
+//   const { user_id, regiment_id, workout_id, status } = req.body;
+//   try {
+//     const query = `
+//       INSERT INTO user_regiment_progress (user_id, regiment_id, workout_id, status)
+//       VALUES ($1, $2, $3, $4)
+//       ON CONFLICT (user_id, regiment_id, workout_id)
+//       DO UPDATE SET status = EXCLUDED.status;
+//     `;
+//     await db.query(query, [user_id, regiment_id, workout_id, status]);
+//     res.status(200).json({ success: true });
+//   } catch (err) {
+//     console.error("Error recording progress:", err);
+//     res.status(500).json({ error: "Failed to update progress" });
+//   }
+// };
 
-const getCurrentRegimentForUser = async (req, res) => {
-  const user_id = Number(req.params.user_id);
+// const getCurrentRegimentForUser = async (req, res) => {
+//   const user_id = Number(req.params.user_id);
 
-  try {
-    // 1. Get all regiment IDs the user has progress on
-    const regimentIdsQuery = `
-      SELECT DISTINCT regiment_id
-      FROM user_regiment_progress
-      WHERE user_id = $1
-    `;
-    const regimentIdsRes = await db.query(regimentIdsQuery, [user_id]);
-    const regimentIds = regimentIdsRes.rows.map(r => r.regiment_id);
+//   try {
+//     // 1. Get all regiment IDs the user has progress on
+//     const regimentIdsQuery = `
+//       SELECT DISTINCT regiment_id
+//       FROM user_regiment_progress
+//       WHERE user_id = $1
+//     `;
+//     const regimentIdsRes = await db.query(regimentIdsQuery, [user_id]);
+//     const regimentIds = regimentIdsRes.rows.map(r => r.regiment_id);
 
-    if (regimentIds.length === 0) {
-      return res.status(200).json({ regiment: null, message: "No active regiment" });
-    }
+//     if (regimentIds.length === 0) {
+//       return res.status(200).json({ regiment: null, message: "No active regiment" });
+//     }
 
-    for (const regiment_id of regimentIds) {
-      const progressQuery = `
-        SELECT COUNT(*) FILTER (WHERE status = 'completed') AS completed,
-               COUNT(*) AS total
-        FROM user_regiment_progress
-        WHERE user_id = $1 AND regiment_id = $2
-      `;
-      const { rows } = await db.query(progressQuery, [user_id, regiment_id]);
-      const { completed, total } = rows[0];
+//     for (const regiment_id of regimentIds) {
+//       const progressQuery = `
+//         SELECT COUNT(*) FILTER (WHERE status = 'completed') AS completed,
+//                COUNT(*) AS total
+//         FROM user_regiment_progress
+//         WHERE user_id = $1 AND regiment_id = $2
+//       `;
+//       const { rows } = await db.query(progressQuery, [user_id, regiment_id]);
+//       const { completed, total } = rows[0];
 
-      if (Number(completed) < Number(total)) {
-        // Found the in-progress regiment
-        const regimentQuery = `
-          SELECT * FROM regiments WHERE regiment_id = $1;
-        `;
-        const regimentRes = await db.query(regimentQuery, [regiment_id]);
-        return res.status(200).json({ regiment: regimentRes.rows[0] });
-      }
-    }
+//       if (Number(completed) < Number(total)) {
+//         // Found the in-progress regiment
+//         const regimentQuery = `
+//           SELECT * FROM regiments WHERE regiment_id = $1;
+//         `;
+//         const regimentRes = await db.query(regimentQuery, [regiment_id]);
+//         return res.status(200).json({ regiment: regimentRes.rows[0] });
+//       }
+//     }
 
-    // All regiments are completed
-    return res.status(200).json({ regiment: null, message: "All regiments completed" });
+//     // All regiments are completed
+//     return res.status(200).json({ regiment: null, message: "All regiments completed" });
 
-  } catch (err) {
-    console.error("Error fetching current regiment:", err);
-    res.status(500).json({ error: "Failed to fetch current regiment" });
-  }
-};
+//   } catch (err) {
+//     console.error("Error fetching current regiment:", err);
+//     res.status(500).json({ error: "Failed to fetch current regiment" });
+//   }
+// };
 
 
 
@@ -837,6 +883,6 @@ export {
   updateRegimentById,
   deleteRegimentById,
   // user_regiment_progress,
-  recordProgress,
-  getCurrentRegimentForUser
+  // recordProgress,
+  // getCurrentRegimentForUser
 };

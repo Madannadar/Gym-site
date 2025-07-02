@@ -21,7 +21,7 @@ import {
   updateRegimentByIdEntry,
   deleteRegimentByIdEntry,
 } from "../controllers/workout.controller.js"
-import { getCurrentRegimentForUser, recordProgress } from "../model/workout.model.js";
+// import { getCurrentRegimentForUser, recordProgress } from "../model/workout.model.js";
 
 const router = express.Router();
 
@@ -75,8 +75,8 @@ router.put("/logs/:id", updateWorkoutLogByIdEntry); // working
 // DELETE /api/workouts/logs/:id - delete a workout log
 router.delete("/logs/:id", deleteWorkoutLogByIdEntry); // working
 
-router.post("/progress",recordProgress)
+// router.post("/progress",recordProgress)
 
-router.get("/current-regiment/:user_id", getCurrentRegimentForUser);
+// router.get("/current-regiment/:user_id", getCurrentRegimentForUser);
 
 export default router;

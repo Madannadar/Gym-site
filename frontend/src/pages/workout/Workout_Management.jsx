@@ -231,6 +231,10 @@ const Workout_Management = () => {
           {Number(regiment.created_by) === userId
             ? "Created by you"
             : `Created by ${regiment.created_by_name || "someone"}`}
+          <span className="text-sm font-normal text-gray-600 ml-2">
+            (Intensity: {regiment.intensity || "N/A"})
+          </span>
+
           {includeLogCount && (
             <span className="ml-2 not-italic">(Logged {logCounts[regiment.regiment_id] || 0} times)</span>
           )}
@@ -266,7 +270,11 @@ const Workout_Management = () => {
                   onClick={() => toggleWorkout(day.workout_id)}
                 >
                   {day.name} - {workoutNames[day.workout_id] || "Loading..."}
+                  <span className="ml-2 text-sm text-gray-500 italic">
+                    (Score: {workoutDetails[day.workout_id]?.score || "N/A"})
+                  </span>
                 </p>
+
                 <button
                   onClick={() =>
                     navigate(`/start-workout/${regiment.regiment_id}/${day.workout_id}`)

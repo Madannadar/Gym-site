@@ -45,12 +45,12 @@ const StartWorkout = () => {
         setWorkout(workoutData);
         setRegiments(regimentsRes.data.items || []);
 
-        if (workoutData.status !== "in_progress") {
-          await axios.put(`${API_URL}/workouts/${workoutId}`, {
-            current_user_id: uid,
-            status: "in_progress",
-          });
-        }
+        // if (workoutData.status !== "in_progress") {
+        //   await axios.put(`${API_URL}/workouts/${workoutId}`, {
+        //     current_user_id: uid,
+        //     status: "in_progress",
+        //   });
+        // }
 
         const initChecked = {};
         const initTimers = {};
@@ -130,7 +130,7 @@ const StartWorkout = () => {
         try {
           await axios.put(`${API_URL}/workouts/${workoutId}`, {
             current_user_id: uid,
-            status: "completed",
+            // status: "completed",
           });
           console.log("Workout marked as completed ✅");
 
@@ -142,7 +142,7 @@ const StartWorkout = () => {
               const cleanedStructure = regiment.workout_structure.map((day) => ({
                 name: day.name,
                 workout_id: day.workout_id,
-                status: day.workout_id === Number(workoutId) ? "completed" : day.status,
+                // status: day.workout_id === Number(workoutId) ? "completed" : day.status,
               }));
 
               await axios.put(`${API_URL}/workouts/regiments/${regimenId}`, {
@@ -215,7 +215,7 @@ const StartWorkout = () => {
     try {
       await axios.put(`${API_URL}/workouts/${workoutId}`, {
         current_user_id: uid,
-        status: "completed",
+        // status: "completed",f
       });
 
       const actualWorkoutWithUnits = buildActualWorkoutWithUnits();
@@ -229,6 +229,7 @@ const StartWorkout = () => {
         actual_workout: actualWorkoutWithUnits,
       };
 
+
       console.log("🚀 Logging payload:", payload);
       await axios.post(`${API_URL}/workouts/logs`, payload);
 
@@ -239,7 +240,7 @@ const StartWorkout = () => {
         const cleanedStructure = regiment.workout_structure.map((day) => ({
           name: day.name,
           workout_id: day.workout_id,
-          status: day.workout_id === Number(workoutId) ? "completed" : day.status,
+          // status: day.workout_id === Number(workoutId) ? "completed" : day.status,
         }));
 
         await axios.put(`${API_URL}/workouts/regiments/${regimenId}`, {
@@ -254,11 +255,11 @@ const StartWorkout = () => {
     } catch (err) {
       console.error("Error finishing workout:", err);
       let errorMessage = err.response?.data?.error?.message || err.message;
-      if (err.response?.status === 404) {
-        errorMessage = "The planned workout could not be found.";
-      } else if (err.message.includes("foreign key constraint")) {
-        errorMessage = "Invalid workout reference. The planned workout no longer exists.";
-      }
+      // if (err.response?.status === 404) {
+      //   errorMessage = "The planned workout could not be found.";
+      // } else if (err.message.includes("foreign key constraint")) {
+      //   errorMessage = "Invalid workout reference. The planned workout no longer exists.";
+      // }
       alert(`Error completing workout: ${errorMessage}`);
     }
   };
