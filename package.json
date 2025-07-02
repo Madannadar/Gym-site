@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "lucide-react": "^0.525.0",
     "response-time": "^2.3.3"
   }
 }

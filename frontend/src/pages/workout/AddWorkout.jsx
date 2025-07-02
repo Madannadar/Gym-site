@@ -46,6 +46,7 @@ const CreateWorkout = () => {
           exercise_id: "",
           weight_unit: "",
           time_unit: "",
+          laps_unit: "",
           units: [],
           sets: {},
         },
@@ -145,6 +146,8 @@ const CreateWorkout = () => {
 
           <div>
             <label className="block font-semibold mb-4 text-[#4B9CD3]">Exercises</label>
+            <label className="block font-semibold mb-4 text-red-600">Note: The weights you put must be the Total weight and not of a single side</label>
+            <label className="block  mb-4 text-red-600 ">Eg: If you lift 20kg on bench press in a single hand while creating a workout we suggest you to put 40kg because that is the total weight, this ensures better intensity calculation </label>
             {formData.structure.map((exercise, idx) => (
               <div key={idx} className="border border-gray-300 rounded-lg p-6 mb-6 shadow-md bg-gray-50">
                 <ExerciseDropdown
@@ -189,6 +192,23 @@ const CreateWorkout = () => {
                       </select>
                     </div>
                   )}
+                  {exercise.units.includes("laps") && (
+                    <div className="flex flex-col w-48">
+                      <label className="text-gray-700 font-medium mb-1">Lap Unit (e.g., 100m, 1km)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 400m or 1km"
+                        value={exercise.laps_unit}
+                        onChange={(e) => {
+                          const updated = [...formData.structure];
+                          updated[idx].laps_unit = e.target.value;
+                          setFormData({ ...formData, structure: updated });
+                        }}
+                        className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4B9CD3] focus:outline-none"
+                      />
+                    </div>
+                  )}
+
                 </div>
 
                 <div className="mt-6">

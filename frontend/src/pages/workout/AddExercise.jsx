@@ -20,6 +20,9 @@ const CreateExercise = () => {
   const navigate = useNavigate()
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  // const [allExercises, setAllExercises] = useState([]);
+  // const [searchTerm, setSearchTerm] = useState("");
+
   const { uid } = useAuth();
 
   useEffect(() => {
@@ -32,6 +35,20 @@ const CreateExercise = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
+  //   useEffect(() => {
+  //   const fetchExercises = async () => {
+  //     try {
+  //       const res = await axios.get(`${API_URL}/workouts/exercises`);
+  //       setAllExercises(res.data.items || []);
+  //     } catch (err) {
+  //       console.error("Failed to fetch exercises");
+  //     }
+  //   };
+
+  //   fetchExercises();
+  // }, [API_URL]);
+
 
   const toggleUnit = (unit) => {
     setFormData((prev) => {
@@ -79,6 +96,18 @@ const CreateExercise = () => {
         <button onClick={() => navigate('/create-workout')}>
           Back to workout
         </button>
+        {/* {allExercises
+          .filter((ex) => ex.name.toLowerCase().includes(searchTerm.toLowerCase()))
+          .map((ex, idx) => (
+            <div key={idx} className="border-b last:border-b-0 py-2">
+              <span className="font-medium text-blue-600">{ex.name}</span>
+              {ex.muscle_group && <span className="ml-2 text-gray-500">({ex.muscle_group})</span>}
+              <div className="text-sm text-gray-600 mt-1">
+                Units: {ex.units?.length > 0 ? ex.units.join(", ") : "None"}
+              </div>
+            </div>
+          ))} */}
+
         <h2 className="text-2xl font-bold mb-4 text-center text-[#4B9CD3]">Create Exercise</h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -128,8 +157,8 @@ const CreateExercise = () => {
                   type="button"
                   onClick={() => toggleUnit(unit)}
                   className={`px-4 py-2 rounded-full border font-semibold transition duration-200 ${formData.units.includes(unit)
-                      ? "bg-[#4B9CD3] text-white border-[#4B9CD3]"
-                      : "bg-white text-gray-700 border-gray-300"
+                    ? "bg-[#4B9CD3] text-white border-[#4B9CD3]"
+                    : "bg-white text-gray-700 border-gray-300"
                     }`}
                 >
                   {unit}

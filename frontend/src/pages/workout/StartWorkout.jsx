@@ -449,6 +449,7 @@ const StartWorkout = () => {
             const actualSet = logData.actual_workout[eIdx]?.sets[setNumber] || {};
             const weightUnit = exercise.weight_unit || "kg";
             const timeUnit = set.time_unit || "seconds";
+            const lapUnit = exercise.laps_unit || "no units"
 
             return (
               <div key={setNumber} className="border rounded-lg p-3 mb-3 bg-gray-50">
@@ -458,7 +459,7 @@ const StartWorkout = () => {
                     <p className="text-sm text-gray-600">
                       Planned: {isTime ? `${set.time} ${timeUnit}` : `${set.reps} Reps`}
                       {set.weight ? ` / ${set.weight} ${weightUnit}` : ""}
-                      {set.laps ? ` / ${set.laps} Laps` : ""}
+                      {set.laps ? ` / ${set.laps} Laps(${lapUnit})` : ""}
                     </p>
                   </div>
 

@@ -184,6 +184,12 @@ const recordWorkout = async ({ name, created_by, description, structure }) => {
   const finalScore = calculateScoreFromStructure(structure, intensityLookup, existingExercises);
 
   console.log(`Normalized Score: ${finalScore}`);
+  
+  structure.forEach(item => {
+    if (item.units.includes("laps") && !item.laps_unit) {
+      throw new Error(`Missing laps_unit for exercise_id ${item.exercise_id}`);
+    }
+  });
 
   const insertQuery = `
     INSERT INTO workouts (name, created_by, description, structure, score)

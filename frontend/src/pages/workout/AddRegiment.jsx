@@ -138,6 +138,13 @@ const CreateRegiment = () => {
 
         <div>
           <label className="block font-medium mb-1 text-[#4B9CD3]">Workout Structure</label>
+          <button
+            type="button"
+            onClick={addDay}
+            className="text-[#4B9CD3] text-sm mt-2 hover:underline"
+          >
+            ➕ Add Day
+          </button>
           {formData.workout_structure.map((day, idx) => (
             <div key={idx} className="bg-gray-100 p-3 rounded mb-3 flex flex-col md:flex-row gap-3 items-center border">
               <input
@@ -170,13 +177,6 @@ const CreateRegiment = () => {
               </button>
             </div>
           ))}
-          <button
-            type="button"
-            onClick={addDay}
-            className="text-[#4B9CD3] text-sm mt-2 hover:underline"
-          >
-            ➕ Add Day
-          </button>
         </div>
 
         <button type="submit" className="bg-[#4B9CD3] text-white py-2 px-4 rounded w-full hover:bg-blue-500">

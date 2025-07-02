@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../AuthProvider";
+import { Trash2 } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -19,6 +21,7 @@ const Workout_Management = () => {
   const [recentRegiments, setRecentRegiments] = useState([]);
   // const [exerciseNames, setExerciseNames] = useState({});
   const [currentPlannedRegiments, setCurrentPlannedRegiments] = useState([]);
+  const [completedRegiments, setCompletedRegiments] = useState([]);
 
 
   const navigate = useNavigate();
@@ -43,6 +46,25 @@ const Workout_Management = () => {
 
       // ✅ include only if some workouts are *not* completed
       return allWorkouts.some((id) => !completedWorkouts.has(id));
+    });
+  };
+
+  const getCompletedRegiments = (regiments, logs) => {
+    const completedMap = {};
+
+    logs.forEach((log) => {
+      if (!completedMap[log.regiment_id]) {
+        completedMap[log.regiment_id] = new Set();
+      }
+      completedMap[log.regiment_id].add(log.planned_workout_id);
+    });
+
+    return regiments.filter((reg) => {
+      const completedWorkouts = completedMap[reg.regiment_id] || new Set();
+      const allWorkoutIds = reg.workout_structure.map((w) => w.workout_id);
+
+      // ✅ Regiment is completed if all its workouts have been logged
+      return allWorkoutIds.every((id) => completedWorkouts.has(id));
     });
   };
 
@@ -77,12 +99,17 @@ const Workout_Management = () => {
             const detailedExercises = await Promise.all(
               workout.structure.map(async (ex) => {
                 const exerciseRes = await axios.get(`${API_URL}/workouts/exercises/${ex.exercise_id}`);
+                const data = exerciseRes.data?.item || {};
                 return {
                   ...ex,
-                  name: exerciseRes.data?.item?.name || `Exercise ${ex.exercise_id}`,
+                  name: data.name || `Exercise ${ex.exercise_id}`,
+                  weight_unit: data.weight_unit || "",
+                  time_unit: data.time_unit || "sec",
+                  lap_unit: data.lap_unit || "",
                 };
               })
             );
+
 
             workoutDetailsMap[id] = { ...workout, structure: detailedExercises };
           })
@@ -111,6 +138,8 @@ const Workout_Management = () => {
         const inProgress = getCurrentPlannedRegiments(regimentsData, logs);
         setCurrentPlannedRegiments(inProgress);
 
+        const completed = getCompletedRegiments(regimentsData, logs);
+        setCompletedRegiments(completed);
 
       } catch (err) {
         console.error(err);
@@ -213,16 +242,16 @@ const Workout_Management = () => {
         <div className="mt-2 flex gap-3 justify-end">
           <button
 
-            onClick={() => navigate(`/update-regiment/`)}
+            onClick={() => navigate(`/workouts/regiments/${regiment.regiment_id}`)}
             className="text-sm px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
           >
-            ✏️ Update
+            <Pencil className="h-3 w-3" /> Update
           </button>
           <button
             onClick={() => handleDeleteRegiment(regiment.regiment_id, regiment.created_by)}
-            className="text-sm px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+            className="text-sm px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-end"
           >
-            🗑️ Delete
+            <Trash2 className="h-3 w-3" /> Delete
           </button>
         </div>
       )}
@@ -258,19 +287,33 @@ const Workout_Management = () => {
                           🔹 {exercise.name}
                         </p>
                         {exercise.sets && Object.keys(exercise.sets).length > 0 ? (
-                          <ul className="ml-6 text-sm text-gray-800 list-disc">
-                            {Object.values(exercise.sets).map((set, i) => (
-                              <li key={i}>
-                                {set.reps !== undefined && `${set.reps} reps`}
-                                {set.weight !== undefined &&
-                                  `, ${set.weight}${exercise.weight_unit || ""}`}
-                                {set.time !== undefined && `, ${set.time} sec`}
-                              </li>
-                            ))}
+                          <ul className="ml-6 text-sm text-gray-800 list-disc space-y-1">
+                            {Object.values(exercise.sets).map((set, i) => {
+                              const parts = [];
+
+                              if (set.reps !== undefined && set.reps !== "") {
+                                parts.push(`${set.reps} reps`);
+                              }
+
+                              if (set.weight !== undefined && set.weight !== "") {
+                                parts.push(`${set.weight}${exercise.weight_unit || ""}`);
+                              }
+
+                              if (set.time !== undefined && set.time !== "") {
+                                parts.push(`${set.time}${exercise.time_unit ? " " + exercise.time_unit : " sec"}`);
+                              }
+
+                              if (set.laps !== undefined && set.laps !== "") {
+                                parts.push(`${set.laps} lap${set.laps > 1 ? "s" : ""}${exercise.laps_unit ? ` of ${exercise.laps_unit}` : ""}`);
+                              }
+
+                              return <li key={i}>{parts.join(", ")}</li>;
+                            })}
                           </ul>
                         ) : (
                           <p className="ml-6 text-gray-500 text-sm">No sets defined</p>
                         )}
+
                       </div>
                     ))
                   ) : (
@@ -341,9 +384,10 @@ const Workout_Management = () => {
                                 <ul className="list-disc ml-4">
                                   {Object.entries(plannedExercise?.sets || {}).map(([setKey, set]) => (
                                     <li key={setKey}>
-                                      {set.reps && `${set.reps} reps`}
-                                      {set.weight && `, ${set.weight}${set.weight_unit || ""}`}
-                                      {set.time && `, ${set.time} sec`}
+                                      {set.reps ? `${set.reps} reps` : ""}
+                                      {set.weight ? `${set.weight}${plannedExercise.weight_unit || "kg "}` : ""}
+                                      {set.time ? `${set.time} sec` : ""}
+                                      {set.laps ? `${set.laps}lap${set.laps > 1 ? "s" : ""}${plannedExercise.laps_unit ? `(${plannedExercise.laps_unit})` : ""}` : ""}
                                     </li>
                                   ))}
                                 </ul>
@@ -354,9 +398,10 @@ const Workout_Management = () => {
                                 <ul className="list-disc ml-4">
                                   {Object.entries(actualExercise.sets || {}).map(([setKey, set]) => (
                                     <li key={setKey}>
-                                      {set.reps && `${set.reps} reps`}
-                                      {set.weight && `, ${set.weight}${set.weight_unit || ""}`}
-                                      {set.time && `, ${set.time} sec`}
+                                      {set.reps ? `${set.reps} reps` : ""}
+                                      {set.weight ? ` ${set.weight}${actualExercise.weight_unit || "kg"}` : ""}
+                                      {set.time ? ` ${set.time} sec` : ""}
+                                      {set.laps ? ` ${set.laps}lap${set.laps > 1 ? "s" : ""}${plannedExercise.laps_unit ? `(${plannedExercise.laps_unit})` : ""}` : ""}
                                     </li>
                                   ))}
                                 </ul>
@@ -422,6 +467,14 @@ const Workout_Management = () => {
                 .filter((r) =>
                   r.name.toLowerCase().includes(searchQuery.toLowerCase())
                 )
+                .map((regiment) => renderRegimentCard(regiment, true, workoutDetails))}
+            </>
+          )}
+          {!showLogs && completedRegiments.length > 0 && (
+            <>
+              <h2 className="text-2xl font-bold mb-2 text-green-600">Completed Regiments</h2>
+              {completedRegiments
+                .filter((r) => r.name.toLowerCase().includes(searchQuery.toLowerCase()))
                 .map((regiment) => renderRegimentCard(regiment, true, workoutDetails))}
             </>
           )}
