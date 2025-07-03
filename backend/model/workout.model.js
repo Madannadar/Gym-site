@@ -150,27 +150,37 @@ const calculateScoreFromStructure = (structure, intensityLookup, existingExercis
     for (const key in (item.sets || {})) {
       const set = item.sets[key];
 
+      // Extract values
       const reps = item.units.includes("reps") ? parseFloat(set.reps) || 0 : 0;
-      const weight = item.units.includes("weight") ? parseFloat(set.weight) || 1 : 1;
-      const time = item.units.includes("time") ? (parseFloat(set.time) * 1.5 || 1) : 1;
-      const laps = item.units.includes("laps") ? (parseFloat(set.laps) * 3 || 1) : 1;
+      let weight = item.units.includes("weight") ? parseFloat(set.weight) || 0 : 0;
+      const time = item.units.includes("time") ? parseFloat(set.time) || 0 : 0;
+      const laps = item.units.includes("laps") ? parseFloat(set.laps) || 0 : 0;
 
-      const setScore = baseIntensity * Math.max(reps, 1) * weight * time * laps;
+      // ✅ Convert weight to KG if it's in lbs
+      if (item.weight_unit === "lbs") {
+        weight = weight * 0.453592; // 1 lb = 0.453592 kg
+      }
+
+      // 🧠 Adjusted scoring weights:
+      const repFactor = Math.log10(reps + 1);         // log scale to reduce rep impact
+      const weightFactor = Math.log10(weight + 1);    // log scale to reduce weight impact
+      const timeFactor = time > 0 ? time * 0.1 : 1;    // minor bonus if time involved
+      const lapFactor = laps > 0 ? laps * 0.3 : 1;     // slight increase for laps-based
+
+      const setScore = baseIntensity * (1 + repFactor + weightFactor) * timeFactor * lapFactor;
       totalScore += setScore;
     }
   }
 
-  // Prevent division by 0
+  // Avoid division by 0
   if (totalScore === 0) return 1;
 
-  // Better scaling (you can tune the divisor to scale more appropriately)
-  let normalizedScore = totalScore / 500; // instead of 1000
-  normalizedScore = Math.min(10, Math.max(1, normalizedScore.toFixed(2)));
+  // 🎯 Normalize: average workout intensity should lie between 4–6
+  const normalizedScore = Math.min(10, Math.max(1, (totalScore / 15).toFixed(2)));
   return parseFloat(normalizedScore);
 };
 
-
-const recordWorkout = async ({ name, created_by, description, structure }) => {
+const recordWorkout = async ({ name, created_by, description, structure }) => { // the ({name..}) are coming from the frontend 
   // Duplicate check
   const duplicateCheckQuery = `
     SELECT 1 FROM workouts WHERE name = $1 AND created_by = $2 LIMIT 1;
@@ -469,7 +479,7 @@ const updateWorkoutLogById = async (workout_log_id, { actual_workout, score }) =
 };
 
 // Delete workout log
-const deleteWorkoutLogById = async (workout_log_id) => {
+const deleteWorkoutLogById = async (workout_log_id) => {  // not in use
   const query = `
     DELETE FROM workout_logs
     WHERE workout_log_id = $1
@@ -525,8 +535,7 @@ const recordRegiment = async ({
 
   // console.log(`Average Score: ${averageScore}, Regiment Intensity: ${regimentIntensity}`);
 
-  // ✅ Add default status to each workout day
-  const structuredWithStatus = workout_structure.map(day => ({
+  const structured = workout_structure.map(day => ({
     ...day,
   }));
 
@@ -540,7 +549,7 @@ const recordRegiment = async ({
     created_by,
     name,
     description,
-    JSON.stringify(structuredWithStatus),
+    JSON.stringify(structured),
     regimentIntensity,
   ];
 
@@ -676,6 +685,7 @@ const fetchRegimentById = async (id) => {
   }
   return regiment;
 };
+
 const updateRegimentById = async (id, { name, description, workout_structure }) => {
   // 🔍 Duplicate name check
   if (name) {

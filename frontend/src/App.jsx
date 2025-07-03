@@ -23,11 +23,11 @@ import EventLeaderboard from "./components/events/EventLeaderboard.jsx";
 
 import AddExercise from "./pages/workout/AddExercise.jsx";
 import AddWorkout from "./pages/workout/AddWorkout.jsx";
-import AddRegiment from "./pages/workout/AddRegiment.jsx";
+import RegimentForm from "./pages/workout/RegimentForm.jsx";
 // import WorkoutLogForm from "./pages/workout/AddWorkout_log.jsx";
 import Workout_Management from "./pages/workout/Workout_Management.jsx";
 import StartWorkout from "./pages/workout/StartWorkout.jsx";
-import UpdateRegiment from "./pages/workout/UpdateRegiment.jsx";
+// import UpdateRegiment from "./pages/workout/UpdateRegiment.jsx";
 // import Testing from "./pages/workout/testing.jsx";
 
 import Login from "./pages/LoginPage.jsx";
@@ -67,10 +67,11 @@ const App = () => {
           <Route path="/logout" element={<Logout />} />
           <Route path='/create-exercise' element={<AddExercise />} />
           <Route path='/create-workout' element={<AddWorkout />} />
-          <Route path='/create-regiment' element={<AddRegiment />} />
+          <Route path="/create-regiment" element={<RegimentForm />} />
+          <Route path="/workouts/regiments/:regimentId" element={<RegimentForm />} />
           {/* <Route path='/create-workout_logs' element={<WorkoutLogForm />} />/ */}
           <Route path="/start-workout/:regimenId/:workoutId" element={<StartWorkout />} />
-          <Route path="/workouts/regiments/:regimentId" element={<UpdateRegiment />} />
+          {/* <Route path="/workouts/regiments/:regimentId" element={<UpdateRegiment />} /> */}
           {/* <Route path="/testing" element={<Testing />} /> */}
 
           {/* Protected Routes */}
@@ -104,7 +105,7 @@ const App = () => {
               <ProtectedRoute>
                 <MealProvider>
                   <Home />
-                </MealProvider> 
+                </MealProvider>
               </ProtectedRoute>
             }
           />

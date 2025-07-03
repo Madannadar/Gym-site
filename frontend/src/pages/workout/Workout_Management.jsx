@@ -207,6 +207,7 @@ const Workout_Management = () => {
       if (created_by === userId) {
         await axios.delete(`${API_URL}/workouts/regiments/${regimentId}`);
         alert("Regiment deleted successfully.");
+        window.location.reload();
       }
       // ⬇️ Refresh or refetch regiments here
       // fetchRegiments(); // replace with your actual fetch function
@@ -288,6 +289,9 @@ const Workout_Management = () => {
               {expandedWorkoutId === day.workout_id && (
                 <div className="ml-4 mt-1 bg-gray-50 p-3 rounded border">
                   <h4 className="text-gray-700 font-semibold mb-2">Exercises:</h4>
+                  <button onClick={() => {UpdateWorkout(day.workout_id)}}>
+                    Update
+                  </button>
                   {workoutDetails[day.workout_id]?.structure?.length > 0 ? (
                     workoutDetails[day.workout_id].structure.map((exercise, idx) => (
                       <div key={idx} className="mb-4">
