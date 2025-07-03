@@ -143,7 +143,7 @@ const RegimentForm = () => {
   return (
     <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-md p-6 mt-6 font-sans">
       <h2 className="text-2xl font-bold mb-6 text-[#4B9CD3]">
-        {isUpdateMode ? "Update" : "Create"} Workout Regiment
+        {isUpdateMode ? "Update" : "Create"} Regiment
       </h2>
 
       {!isUpdateMode && (

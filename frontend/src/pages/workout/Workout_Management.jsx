@@ -96,21 +96,15 @@ const Workout_Management = () => {
             const res = await axios.get(`${API_URL}/workouts/${id}`);
             const workout = res.data.item;
 
-            const detailedExercises = await Promise.all(
-              workout.structure.map(async (ex) => {
-                const exerciseRes = await axios.get(`${API_URL}/workouts/exercises/${ex.exercise_id}`);
-                const data = exerciseRes.data?.item || {};
-                return {
-                  ...ex,
-                  name: data.name || `Exercise ${ex.exercise_id}`,
-                  weight_unit: data.weight_unit || "",
-                  time_unit: data.time_unit || "sec",
-                  lap_unit: data.lap_unit || "",
-                };
-              })
-            );
-
-
+            const detailedExercises = workout.structure.map((ex) => {
+              return {
+                ...ex,
+                name: ex.exercise_details?.name || `Exercise ${ex.exercise_id}`,
+                weight_unit: ex.weight_unit || "",
+                time_unit: ex.time_unit || "sec",
+                lap_unit: ex.lap_unit || "",
+              };
+            });
             workoutDetailsMap[id] = { ...workout, structure: detailedExercises };
           })
         );
@@ -157,36 +151,31 @@ const Workout_Management = () => {
   };
 
   const toggleWorkout = useCallback(
-    async (id) => {
+    (id) => {
       if (expandedWorkoutId === id) {
         setExpandedWorkoutId(null);
         return;
       }
 
+      // Log the workout details before expanding
+      console.log("Toggling Workout ID:", id);
+      console.log("WorkoutDetails for this ID:", workoutDetails[id]);
+
       if (!workoutDetails[id]) {
-        try {
-          const res = await axios.get(`${API_URL}/workouts/${id}`);
-          const workout = res.data.item;
-
-          // 🔁 Fetch all exercise names
-          const detailedExercises = await Promise.all(
-            workout.structure.map(async (ex) => {
-              const exerciseRes = await axios.get(`${API_URL}/workouts/exercises/${ex.exercise_id}`);
-              return {
-                ...ex,
-                name: exerciseRes.data?.item?.name || `Exercise ${ex.exercise_id}`,
-              };
-            })
+        console.warn(`Workout ID ${id} not found in workoutDetails!`);
+      } else {
+        workoutDetails[id].structure.forEach((exercise, i) => {
+          console.log(
+            `Exercise ${i + 1}:`,
+            exercise.name,
+            "| weight_unit:",
+            exercise.weight_unit,
+            "| time_unit:",
+            exercise.time_unit,
+            "| lap_unit:",
+            exercise.lap_unit
           );
-
-          setWorkoutDetails((prev) => ({
-            ...prev,
-            [id]: { ...workout, structure: detailedExercises },
-          }));
-        } catch (err) {
-          console.error(err);
-          setError("Failed to load workout details.");
-        }
+        });
       }
 
       setExpandedWorkoutId(id);
@@ -224,7 +213,7 @@ const Workout_Management = () => {
       className="bg-white shadow rounded-lg mb-4 p-4 border"
     >
       <h2
-        className="text-xl font-semibold cursor-pointer text-[#4B9CD3] hover:text-blue-500 flex flex-col sm:flex-row sm:items-center sm:justify-between"
+        className="text-xl font-semibold cursor-pointer text-[#4B9CD3] hover:text-blue-500 flex flex-col sm:flex-row sm:items-center sm:tustify-between"
         onClick={() => toggleRegiment(regiment.regiment_id)}
       >
         <span>{regiment.name}</span>
@@ -289,7 +278,7 @@ const Workout_Management = () => {
               {expandedWorkoutId === day.workout_id && (
                 <div className="ml-4 mt-1 bg-gray-50 p-3 rounded border">
                   <h4 className="text-gray-700 font-semibold mb-2">Exercises:</h4>
-                  <button onClick={() => {UpdateWorkout(day.workout_id)}}>
+                  <button onClick={() => { UpdateWorkout(day.workout_id) }}>
                     Update
                   </button>
                   {workoutDetails[day.workout_id]?.structure?.length > 0 ? (
@@ -396,7 +385,7 @@ const Workout_Management = () => {
                                 <ul className="list-disc ml-4">
                                   {Object.entries(plannedExercise?.sets || {}).map(([setKey, set]) => (
                                     <li key={setKey}>
-                                      {set.reps ? `${set.reps} reps` : ""}
+                                      {set.reps ? `${set.reps} reps ` : ""}
                                       {set.weight ? `${set.weight}${plannedExercise.weight_unit || "kg "}` : ""}
                                       {set.time ? `${set.time} sec` : ""}
                                       {set.laps ? `${set.laps}lap${set.laps > 1 ? "s" : ""}${plannedExercise.laps_unit ? `(${plannedExercise.laps_unit})` : ""}` : ""}
@@ -410,8 +399,8 @@ const Workout_Management = () => {
                                 <ul className="list-disc ml-4">
                                   {Object.entries(actualExercise.sets || {}).map(([setKey, set]) => (
                                     <li key={setKey}>
-                                      {set.reps ? `${set.reps} reps` : ""}
-                                      {set.weight ? ` ${set.weight}${actualExercise.weight_unit || "kg"}` : ""}
+                                      {set.reps ? `${set.reps} reps ` : ""}
+                                      {set.weight ? `${set.weight}${plannedExercise.weight_unit || "kg "}` : ""}
                                       {set.time ? ` ${set.time} sec` : ""}
                                       {set.laps ? ` ${set.laps}lap${set.laps > 1 ? "s" : ""}${plannedExercise.laps_unit ? `(${plannedExercise.laps_unit})` : ""}` : ""}
                                     </li>
