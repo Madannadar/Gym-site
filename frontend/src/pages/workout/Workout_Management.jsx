@@ -161,23 +161,23 @@ const Workout_Management = () => {
       }
 
       // Log the workout details before expanding
-      console.log("Toggling Workout ID:", id);
-      console.log("WorkoutDetails for this ID:", workoutDetails[id]);
+      // console.log("Toggling Workout ID:", id);
+      // console.log("WorkoutDetails for this ID:", workoutDetails[id]);
 
       if (!workoutDetails[id]) {
         console.warn(`Workout ID ${id} not found in workoutDetails!`);
       } else {
         workoutDetails[id].structure.forEach((exercise, i) => {
-          console.log(
-            `Exercise ${i + 1}:`,
-            exercise.name,
-            "| weight_unit:",
-            exercise.weight_unit,
-            "| time_unit:",
-            exercise.time_unit,
-            "| lap_unit:",
-            exercise.lap_unit
-          );
+          // console.log(
+          //   `Exercise ${i + 1}:`,
+          //   exercise.name,
+          //   "| weight_unit:",
+          //   exercise.weight_unit,
+          //   "| time_unit:",
+          //   exercise.time_unit,
+          //   "| lap_unit:",
+          //   exercise.lap_unit
+          // );
         });
       }
 

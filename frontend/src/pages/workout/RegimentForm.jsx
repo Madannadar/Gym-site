@@ -142,6 +142,9 @@ const RegimentForm = () => {
 
   return (
     <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-md p-6 mt-6 font-sans">
+      <button onClick={() => navigate("/Workout_Management")}>
+        Back
+      </button>
       <h2 className="text-2xl font-bold mb-6 text-[#4B9CD3]">
         {isUpdateMode ? "Update" : "Create"} Regiment
       </h2>
