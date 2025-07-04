@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../../AuthProvider";
+import { Check, Play, Pause, X, ArrowLeft, Timer } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -14,8 +15,7 @@ const StartWorkout = () => {
   const [regiments, setRegiments] = useState([]);
   const [error, setError] = useState("");
   const [checkedSets, setCheckedSets] = useState({});
-  const [timers, setTimers] = useState({});
-  const [selectedTimer, setSelectedTimer] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [logData, setLogData] = useState({
     user_id: uid,
@@ -31,11 +31,14 @@ const StartWorkout = () => {
     intervalId: null,
   });
 
+  const [selectedTimer, setSelectedTimer] = useState(null);
+
   useEffect(() => {
     if (!uid) return;
 
     const fetchData = async () => {
       try {
+        setIsLoading(true);
         const [workoutRes, regimentsRes] = await Promise.all([
           axios.get(`${API_URL}/workouts/${workoutId}`),
           axios.get(`${API_URL}/workouts/regiments`),
@@ -45,20 +48,11 @@ const StartWorkout = () => {
         setWorkout(workoutData);
         setRegiments(regimentsRes.data.items || []);
 
-        // if (workoutData.status !== "in_progress") {
-        //   await axios.put(`${API_URL}/workouts/${workoutId}`, {
-        //     current_user_id: uid,
-        //     status: "in_progress",
-        //   });
-        // }
-
         const initChecked = {};
-        const initTimers = {};
         const initActualWorkout = [];
 
         workoutData.structure.forEach((exercise, eIdx) => {
           initChecked[eIdx] = {};
-          initTimers[eIdx] = {};
 
           const actualExercise = {
             exercise_id: exercise.exercise_id,
@@ -67,17 +61,6 @@ const StartWorkout = () => {
 
           Object.entries(exercise.sets).forEach(([setKey, setVal]) => {
             initChecked[eIdx][setKey] = false;
-
-            const timeInSeconds = setVal.time_unit?.toLowerCase().includes("min")
-              ? (setVal.time || 0) * 60
-              : setVal.time || 0;
-
-            initTimers[eIdx][setKey] = {
-              timeLeft: timeInSeconds,
-              isRunning: false,
-              hasFinished: false,
-              intervalId: null,
-            };
 
             const actualSet = {};
             if (setVal.reps !== undefined) actualSet.reps = setVal.reps;
@@ -92,7 +75,6 @@ const StartWorkout = () => {
         });
 
         setCheckedSets(initChecked);
-        setTimers(initTimers);
         setLogData((prev) => ({
           ...prev,
           actual_workout: initActualWorkout,
@@ -100,6 +82,8 @@ const StartWorkout = () => {
       } catch (err) {
         console.error("Error loading data:", err);
         setError("Failed to load workout data.");
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -111,7 +95,7 @@ const StartWorkout = () => {
       ...prev,
       [eIdx]: {
         ...prev[eIdx],
-        [setNumber]: true,
+        [setNumber]: !prev[eIdx][setNumber],
       },
     }));
   };
@@ -121,156 +105,6 @@ const StartWorkout = () => {
       Object.keys(exercise.sets).every((setKey) => checkedSets?.[eIdx]?.[setKey])
     );
   };
-
-  useEffect(() => {
-    if (!workout || !uid) return;
-
-    if (allExercisesComplete()) {
-      const markWorkoutComplete = async () => {
-        try {
-          await axios.put(`${API_URL}/workouts/${workoutId}`, {
-            current_user_id: uid,
-            // status: "completed",
-          });
-          console.log("Workout marked as completed ✅");
-
-          if (regimenId) {
-            try {
-              const regimentRes = await axios.get(`${API_URL}/workouts/regiments/${regimenId}`);
-              const regiment = regimentRes.data.item;
-
-              const cleanedStructure = regiment.workout_structure.map((day) => ({
-                name: day.name,
-                workout_id: day.workout_id,
-                // status: day.workout_id === Number(workoutId) ? "completed" : day.status,
-              }));
-
-              await axios.put(`${API_URL}/workouts/regiments/${regimenId}`, {
-                workout_structure: cleanedStructure,
-              });
-
-              console.log("✅ Regiment structure updated.");
-            } catch (err) {
-              console.error("❌ Failed to update regiment structure:", err);
-            }
-          }
-        } catch (err) {
-          console.error("Error marking workout complete:", err);
-        }
-      };
-
-      markWorkoutComplete();
-    }
-  }, [checkedSets]);
-
-  const handleLogFieldChange = (field, value) => {
-    setLogData((prev) => ({
-      ...prev,
-      [field]: field === "regiment_id" ? (value === "" ? null : Number(value)) : value,
-    }));
-  };
-
-  const handleActualSetChange = (exerciseIdx, setKey, field, value) => {
-    const updated = [...logData.actual_workout];
-    updated[exerciseIdx].sets[setKey][field] = value;
-    setLogData((prev) => ({ ...prev, actual_workout: updated }));
-  };
-
-  const buildActualWorkoutWithUnits = () => {
-    return workout.structure.map((exercise, eIdx) => {
-      const exerciseLog = {
-        exercise_id: exercise.exercise_id,
-        sets: {},
-      };
-
-      Object.entries(exercise.sets).forEach(([setKey, plannedSet]) => {
-        const actualSet = logData.actual_workout[eIdx]?.sets[setKey] || {};
-
-        exerciseLog.sets[setKey] = {
-          reps: actualSet.reps ?? plannedSet.reps,
-          weight: actualSet.weight ?? plannedSet.weight,
-          time: actualSet.time ?? plannedSet.time,
-          laps: actualSet.laps ?? plannedSet.laps,
-          weight_unit: exercise.weight_unit || "kg",
-          time_unit: plannedSet.time_unit || "seconds",
-        };
-
-        Object.keys(exerciseLog.sets[setKey]).forEach((key) => {
-          if (exerciseLog.sets[setKey][key] === undefined) {
-            delete exerciseLog.sets[setKey][key];
-          }
-        });
-      });
-
-      return exerciseLog;
-    });
-  };
-
-  const handleFinish = async () => {
-    if (!uid) {
-      alert("User not authenticated. Please log in.");
-      return;
-    }
-
-    try {
-      await axios.put(`${API_URL}/workouts/${workoutId}`, {
-        current_user_id: uid,
-        // status: "completed",f
-      });
-
-      const actualWorkoutWithUnits = buildActualWorkoutWithUnits();
-
-      const payload = {
-        user_id: Number(uid),
-        regiment_id: logData.regiment_id ? Number(logData.regiment_id) : null,
-        regiment_day_index: 1,
-        log_date: new Date().toISOString().split("T")[0],
-        planned_workout_id: Number(workoutId),
-        actual_workout: actualWorkoutWithUnits,
-      };
-
-
-      console.log("🚀 Logging payload:", payload);
-      await axios.post(`${API_URL}/workouts/logs`, payload);
-
-      if (regimenId) {
-        const regimentRes = await axios.get(`${API_URL}/workouts/regiments/${regimenId}`);
-        const regiment = regimentRes.data.item;
-
-        const cleanedStructure = regiment.workout_structure.map((day) => ({
-          name: day.name,
-          workout_id: day.workout_id,
-          // status: day.workout_id === Number(workoutId) ? "completed" : day.status,
-        }));
-
-        await axios.put(`${API_URL}/workouts/regiments/${regimenId}`, {
-          workout_structure: cleanedStructure,
-        });
-
-        console.log("✅ Regiment structure updated.");
-      }
-
-      alert("Workout completed and logged successfully!");
-      navigate("/Workout_Management");
-    } catch (err) {
-      console.error("Error finishing workout:", err);
-      let errorMessage = err.response?.data?.error?.message || err.message;
-      // if (err.response?.status === 404) {
-      //   errorMessage = "The planned workout could not be found.";
-      // } else if (err.message.includes("foreign key constraint")) {
-      //   errorMessage = "Invalid workout reference. The planned workout no longer exists.";
-      // }
-      alert(`Error completing workout: ${errorMessage}`);
-    }
-  };
-
-
-
-  if (error) return <p className="text-red-600 p-4">{error}</p>;
-  if (!workout) return <p className="p-4">Loading workout...</p>;
-
-
-  // Timer state
 
   const startTimer = () => {
     if (timer.isRunning) return;
@@ -355,207 +189,311 @@ const StartWorkout = () => {
     }
   };
 
-  const TimerComponent = () => (
-    <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 w-11/12 max-w-sm bg-white p-4 rounded shadow-lg border">
-      <div className="flex justify-between items-center mb-2">
-        <h3 className="text-lg font-semibold">Timer</h3>
-        <button
-          onClick={() => {
-            stopTimer();
-            setSelectedTimer(null);
-          }}
-          className="text-red-500 text-xl font-bold"
-        >
-          ❌
-        </button>
-      </div>
-      <div className="flex justify-between mb-4">
-        <div className="bg-gray-100 text-center p-3 rounded-md w-1/3">
-          <p className="text-xl font-bold">
-            {String(timer.hours).padStart(2, '0')}
-          </p>
-          <p className="text-xs text-gray-500">Hours</p>
-        </div>
-        <div className="bg-gray-100 text-center p-3 rounded-md w-1/3 mx-1">
-          <p className="text-xl font-bold">
-            {String(timer.minutes).padStart(2, '0')}
-          </p>
-          <p className="text-xs text-gray-500">Minutes</p>
-        </div>
-        <div className="bg-gray-100 text-center p-3 rounded-md w-1/3">
-          <p className="text-xl font-bold">
-            {String(timer.seconds).padStart(2, '0')}
-          </p>
-          <p className="text-xs text-gray-500">Seconds</p>
-        </div>
-      </div>
-      <div className="flex gap-4">
-        <button
-          onClick={startTimer}
-          disabled={timer.isRunning}
-          className={`w-full py-2 rounded-full ${timer.isRunning
-            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            : 'bg-gray-200 text-black hover:bg-gray-300'
-            }`}
-        >
-          Start
-        </button>
-        <button
-          onClick={stopTimer}
-          disabled={!timer.isRunning}
-          className={`w-full py-2 rounded-full ${!timer.isRunning
-            ? 'bg-blue-300 text-white cursor-not-allowed'
-            : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
-        >
-          Stop
-        </button>
-      </div>
+  const handleActualSetChange = (exerciseIdx, setKey, field, value) => {
+    const updated = [...logData.actual_workout];
+    updated[exerciseIdx].sets[setKey][field] = value;
+    setLogData((prev) => ({ ...prev, actual_workout: updated }));
+  };
+
+  const buildActualWorkoutWithUnits = () => {
+    return workout.structure.map((exercise, eIdx) => {
+      const exerciseLog = {
+        exercise_id: exercise.exercise_id,
+        sets: {},
+      };
+
+      Object.entries(exercise.sets).forEach(([setKey, plannedSet]) => {
+        const actualSet = logData.actual_workout[eIdx]?.sets[setKey] || {};
+
+        exerciseLog.sets[setKey] = {
+          reps: actualSet.reps ?? plannedSet.reps,
+          weight: actualSet.weight ?? plannedSet.weight,
+          time: actualSet.time ?? plannedSet.time,
+          laps: actualSet.laps ?? plannedSet.laps,
+          weight_unit: exercise.weight_unit || "kg",
+          time_unit: plannedSet.time_unit || "seconds",
+        };
+
+        Object.keys(exerciseLog.sets[setKey]).forEach((key) => {
+          if (exerciseLog.sets[setKey][key] === undefined) {
+            delete exerciseLog.sets[setKey][key];
+          }
+        });
+      });
+
+      return exerciseLog;
+    });
+  };
+
+  const handleFinish = async () => {
+    if (!uid) {
+      alert("User not authenticated. Please log in.");
+      return;
+    }
+
+    try {
+      await axios.put(`${API_URL}/workouts/${workoutId}`, {
+        current_user_id: uid,
+      });
+
+      const actualWorkoutWithUnits = buildActualWorkoutWithUnits();
+
+      const payload = {
+        user_id: Number(uid),
+        regiment_id: logData.regiment_id ? Number(logData.regiment_id) : null,
+        regiment_day_index: 1,
+        log_date: new Date().toISOString().split("T")[0],
+        planned_workout_id: Number(workoutId),
+        actual_workout: actualWorkoutWithUnits,
+      };
+
+      await axios.post(`${API_URL}/workouts/logs`, payload);
+
+      if (regimenId) {
+        const regimentRes = await axios.get(`${API_URL}/workouts/regiments/${regimenId}`);
+        const regiment = regimentRes.data.item;
+
+        const cleanedStructure = regiment.workout_structure.map((day) => ({
+          name: day.name,
+          workout_id: day.workout_id,
+        }));
+
+        await axios.put(`${API_URL}/workouts/regiments/${regimenId}`, {
+          workout_structure: cleanedStructure,
+        });
+      }
+
+      alert("Workout completed and logged successfully!");
+      navigate("/Workout_Management");
+    } catch (err) {
+      console.error("Error finishing workout:", err);
+      let errorMessage = err.response?.data?.error?.message || err.message;
+      alert(`Error completing workout: ${errorMessage}`);
+    }
+  };
+
+  if (error) return <div className="text-red-600 p-4">{error}</div>;
+  if (isLoading) return (
+    <div className="flex justify-center items-center h-screen">
+      <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
     </div>
   );
+  if (!workout) return <div className="p-4">Loading workout...</div>;
 
   return (
-    <div className="max-w-4xl mx-auto p-4 mt-6 bg-white min-h-screen font-sans">
-      <button onClick={() => navigate('/Workout_Management')}>
-        Back
+    <div className="max-w-5xl mx-auto px-4 py-8 bg-white min-h-screen">
+      <button
+        onClick={() => navigate('/Workout_Management')}
+        className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors mb-6"
+      >
+        <ArrowLeft className="h-5 w-5" /> Back to Workouts
       </button>
-      <div className="flex justify-between mb-6">
+
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-[#4B9CD3]">
+          {workout.name || "Workout"}
+        </h1>
         <button
           onClick={handleFinish}
-          // disabled={!allExercisesComplete()}
-          // className={`px-6 py-2 rounded-full shadow ${allExercisesComplete()
-          //   ? "bg-green-600 text-white hover:bg-green-700"
-          //   : "bg-gray-100 text-gray-400 cursor-not-allowed"
-          //   }`}
-          className={"px-6 py-2 rounded-full shadow bg-green-600 text-white hover:bg-green-700"}
+          className={`flex items-center gap-2 px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ${allExercisesComplete()
+              ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+              : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+            } text-white font-medium`}
         >
-          Finish & Log Workout
+          <Check className="h-5 w-5" /> Finish & Log Workout
         </button>
       </div>
 
-      {/* <div className="bg-gray-50 p-4 rounded-lg mb-6 border">
-        <h3 className="text-lg font-semibold mb-4 text-[#4B9CD3]">Workout Log Details</h3>
+      <div className="space-y-6">
+        {workout.structure.map((exercise, eIdx) => (
+          <div
+            key={eIdx}
+            className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-xl"
+          >
+            <div className="p-6">
+              <h2 className="text-xl font-bold text-[#4B9CD3] mb-4">
+                {exercise.exercise_details?.name || `Exercise ${exercise.exercise_id}`}
+              </h2>
 
-      </div> */}
+              <div className="space-y-4">
+                {Object.entries(exercise.sets).map(([setNumber, set]) => {
+                  const isTime = !!set.time;
+                  const isChecked = checkedSets?.[eIdx]?.[setNumber];
+                  const actualSet = logData.actual_workout[eIdx]?.sets[setNumber] || {};
+                  const weightUnit = exercise.weight_unit || "kg";
+                  const timeUnit = set.time_unit || "seconds";
+                  const lapUnit = exercise.laps_unit || "no units";
 
-      {workout.structure.map((exercise, eIdx) => (
-        <div key={eIdx} className="mb-6 bg-white rounded-lg shadow p-4 border">
-          <h2 className="text-lg font-semibold mb-4 text-[#4B9CD3]">
-            {exercise.exercise_details?.name || `Exercise ${exercise.exercise_id}`}
-          </h2>
-
-          {Object.entries(exercise.sets).map(([setNumber, set]) => {
-            const isTime = !!set.time;
-            const isChecked = checkedSets?.[eIdx]?.[setNumber];
-            const actualSet = logData.actual_workout[eIdx]?.sets[setNumber] || {};
-            const weightUnit = exercise.weight_unit || "kg";
-            const timeUnit = set.time_unit || "seconds";
-            const lapUnit = exercise.laps_unit || "no units"
-
-            return (
-              <div key={setNumber} className="border rounded-lg p-3 mb-3 bg-gray-50">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <p className="font-medium text-[#4B9CD3]">Set {setNumber}</p>
-                    <p className="text-sm text-gray-600">
-                      Planned: {isTime ? `${set.time} ${timeUnit}` : `${set.reps} Reps`}
-                      {set.weight ? ` / ${set.weight} ${weightUnit}` : ""}
-                      {set.laps ? ` / ${set.laps} Laps(${lapUnit})` : ""}
-                    </p>
-                  </div>
-
-                  <div className="flex gap-2 items-center">
-                    {isTime && (
-                      <button
-                        onClick={() => handleSelectTimer(eIdx, setNumber)}
-                        className="bg-[#4B9CD3] text-white px-2 py-1 rounded hover:bg-blue-500"
-                      >
-                        Timer
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleSetCheck(eIdx, setNumber)}
-                      className={`px-3 py-1 rounded-full text-sm ${isChecked
-                        ? "bg-green-500 text-white"
-                        : "bg-gray-200 text-black hover:bg-gray-300"
+                  return (
+                    <div
+                      key={setNumber}
+                      className={`border rounded-lg p-4 transition-all duration-200 ${isChecked ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"
                         }`}
                     >
-                      Done
-                    </button>
-                  </div>
-                </div>
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <p className="font-medium text-[#4B9CD3]">Set {setNumber}</p>
+                          <p className="text-sm text-gray-600">
+                            Planned: {isTime ? `${set.time} ${timeUnit}` : `${set.reps} Reps`}
+                            {set.weight ? ` / ${set.weight} ${weightUnit}` : ""}
+                            {set.laps ? ` / ${set.laps} Laps (${lapUnit})` : ""}
+                          </p>
+                        </div>
 
-                <div className="border-t pt-2 mt-2">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Actual Performance:</p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {"reps" in actualSet && (
-                      <div>
-                        <label className="block text-xs text-gray-500">Reps</label>
-                        <input
-                          type="number"
-                          value={actualSet.reps}
-                          onChange={(e) => handleActualSetChange(eIdx, setNumber, "reps", e.target.value)}
-                          className="border p-1 rounded w-full"
-                          min="0"
-                        />
+                        <div className="flex gap-2 items-center">
+                          {isTime && (
+                            <button
+                              onClick={() => handleSelectTimer(eIdx, setNumber)}
+                              className="flex items-center gap-1 px-3 py-1 bg-[#4B9CD3] text-white rounded hover:bg-blue-600 transition-colors"
+                            >
+                              <Timer className="h-4 w-4" /> Timer
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleSetCheck(eIdx, setNumber)}
+                            className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm transition-colors ${isChecked
+                                ? "bg-green-500 text-white hover:bg-green-600"
+                                : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                              }`}
+                          >
+                            {isChecked && <Check className="h-4 w-4" />} Done
+                          </button>
+                        </div>
                       </div>
-                    )}
-                    {"weight" in actualSet && (
-                      <div>
-                        <label className="block text-xs text-gray-500">Weight ({weightUnit})</label>
-                        <input
-                          type="number"
-                          value={actualSet.weight}
-                          onChange={(e) => handleActualSetChange(eIdx, setNumber, "weight", e.target.value)}
-                          className="border p-1 rounded w-full"
-                          min="0"
-                          step="0.1"
-                        />
+
+                      <div className="border-t pt-3 mt-3">
+                        <p className="text-sm font-medium text-gray-700 mb-2">Actual Performance:</p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {"reps" in actualSet && (
+                            <div className="group">
+                              <label className="block text-xs text-gray-500 mb-1">Reps</label>
+                              <input
+                                type="number"
+                                value={actualSet.reps}
+                                onChange={(e) => handleActualSetChange(eIdx, setNumber, "reps", e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+                                min="0"
+                              />
+                            </div>
+                          )}
+                          {"weight" in actualSet && (
+                            <div className="group">
+                              <label className="block text-xs text-gray-500 mb-1">Weight ({weightUnit})</label>
+                              <input
+                                type="number"
+                                value={actualSet.weight}
+                                onChange={(e) => handleActualSetChange(eIdx, setNumber, "weight", e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+                                min="0"
+                                step="0.1"
+                              />
+                            </div>
+                          )}
+                          {"time" in actualSet && (
+                            <div className="group">
+                              <label className="block text-xs text-gray-500 mb-1">Time ({timeUnit})</label>
+                              <input
+                                type="number"
+                                value={actualSet.time}
+                                onChange={(e) => handleActualSetChange(eIdx, setNumber, "time", e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+                                min="0"
+                              />
+                            </div>
+                          )}
+                          {"laps" in actualSet && (
+                            <div className="group">
+                              <label className="block text-xs text-gray-500 mb-1">Laps</label>
+                              <input
+                                type="number"
+                                value={actualSet.laps}
+                                onChange={(e) => handleActualSetChange(eIdx, setNumber, "laps", e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+                                min="0"
+                              />
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    )}
-                    {"time" in actualSet && (
-                      <div>
-                        <label className="block text-xs text-gray-500">Time ({timeUnit})</label>
-                        <input
-                          type="number"
-                          value={actualSet.time}
-                          onChange={(e) => handleActualSetChange(eIdx, setNumber, "time", e.target.value)}
-                          className="border p-1 rounded w-full"
-                          min="0"
-                        />
-                      </div>
-                    )}
-                    {"laps" in actualSet && (
-                      <div>
-                        <label className="block text-xs text-gray-500">Laps</label>
-                        <input
-                          type="number"
-                          value={actualSet.laps}
-                          onChange={(e) => handleActualSetChange(eIdx, setNumber, "laps", e.target.value)}
-                          className="border p-1 rounded w-full"
-                          min="0"
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
+          </div>
+        ))}
+      </div>
+      {allExercisesComplete() && (
+        <div className="fixed bottom-6 left-0 right-0 flex justify-center">
+          <button
+            onClick={handleFinish}
+            className="flex items-center gap-2 px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium animate-bounce"
+          >
+            <Check className="h-5 w-5" /> Finish & Log Workout
+          </button>
         </div>
-      ))}
-      <button
-        onClick={handleFinish}
-        // disabled={!allExercisesComplete()}
-        // className={`px-6 py-2 rounded-full shadow ${allExercisesComplete()
-        //   ? "bg-green-600 text-white hover:bg-green-700"
-        //   : "bg-gray-100 text-gray-400 cursor-not-allowed"
-        //   }`}
-        className={"px-6 py-2 rounded-full shadow bg-green-600 text-white hover:bg-green-700"}
-      >
-        Finish & Log Workout
-      </button>
-      {selectedTimer && <TimerComponent />}
+      )}
+
+      {selectedTimer && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white p-6 rounded-xl shadow-2xl border border-gray-200 z-50 animate-fadeInUp">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">Timer</h3>
+            <button
+              onClick={() => {
+                stopTimer();
+                setSelectedTimer(null);
+              }}
+              className="text-red-500 hover:text-red-700 transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+
+          <div className="flex justify-between mb-6">
+            <div className="text-center bg-gray-100 p-4 rounded-lg w-1/3 mx-1">
+              <p className="text-2xl font-bold">
+                {String(timer.hours).padStart(2, '0')}
+              </p>
+              <p className="text-xs text-gray-500">Hours</p>
+            </div>
+            <div className="text-center bg-gray-100 p-4 rounded-lg w-1/3 mx-1">
+              <p className="text-2xl font-bold">
+                {String(timer.minutes).padStart(2, '0')}
+              </p>
+              <p className="text-xs text-gray-500">Minutes</p>
+            </div>
+            <div className="text-center bg-gray-100 p-4 rounded-lg w-1/3 mx-1">
+              <p className="text-2xl font-bold">
+                {String(timer.seconds).padStart(2, '0')}
+              </p>
+              <p className="text-xs text-gray-500">Seconds</p>
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <button
+              onClick={startTimer}
+              disabled={timer.isRunning}
+              className={`flex-1 py-3 rounded-lg flex items-center justify-center gap-2 ${timer.isRunning
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-blue-500 text-white hover:bg-blue-600 transition-colors'
+                }`}
+            >
+              <Play className="h-5 w-5" /> Start
+            </button>
+            <button
+              onClick={stopTimer}
+              disabled={!timer.isRunning}
+              className={`flex-1 py-3 rounded-lg flex items-center justify-center gap-2 ${!timer.isRunning
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-red-500 text-white hover:bg-red-600 transition-colors'
+                }`}
+            >
+              <Pause className="h-5 w-5" /> Stop
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
