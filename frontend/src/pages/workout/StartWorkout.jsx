@@ -433,10 +433,10 @@ const StartWorkout = () => {
         </button>
       </div>
 
-      <div className="bg-gray-50 p-4 rounded-lg mb-6 border">
+      {/* <div className="bg-gray-50 p-4 rounded-lg mb-6 border">
         <h3 className="text-lg font-semibold mb-4 text-[#4B9CD3]">Workout Log Details</h3>
 
-      </div>
+      </div> */}
 
       {workout.structure.map((exercise, eIdx) => (
         <div key={eIdx} className="mb-6 bg-white rounded-lg shadow p-4 border">
@@ -544,7 +544,17 @@ const StartWorkout = () => {
           })}
         </div>
       ))}
-
+      <button
+        onClick={handleFinish}
+        // disabled={!allExercisesComplete()}
+        // className={`px-6 py-2 rounded-full shadow ${allExercisesComplete()
+        //   ? "bg-green-600 text-white hover:bg-green-700"
+        //   : "bg-gray-100 text-gray-400 cursor-not-allowed"
+        //   }`}
+        className={"px-6 py-2 rounded-full shadow bg-green-600 text-white hover:bg-green-700"}
+      >
+        Finish & Log Workout
+      </button>
       {selectedTimer && <TimerComponent />}
     </div>
   );

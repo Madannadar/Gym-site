@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import session from "express-session";
 import "./cron.js";
 import passport from "./config/passport.js";
-import { loggerMiddleware } from "./middlewares/logger.js";
+// import { loggerMiddleware } from "./middlewares/logger.js";
 import dishRouter from "./routers/dish.router.js";
 import dietTempletRouter from "./routers/diet_template.router.js";
 import dietLogRouter from "./routers/diet_log.router.js";
@@ -62,7 +62,7 @@ app.use(
 
 app.use(express.json());
 
-app.use(loggerMiddleware);
+// app.use(loggerMiddleware);
 
 app.use(
   session({

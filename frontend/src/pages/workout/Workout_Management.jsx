@@ -1,10 +1,10 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../AuthProvider";
 import { Trash2 } from 'lucide-react';
 import { Pencil } from 'lucide-react';
-
+import { Play } from 'lucide-react';
 const API_URL = import.meta.env.VITE_BACKEND_URL;
 
 const Workout_Management = () => {
@@ -22,7 +22,7 @@ const Workout_Management = () => {
   // const [exerciseNames, setExerciseNames] = useState({});
   const [currentPlannedRegiments, setCurrentPlannedRegiments] = useState([]);
   const [completedRegiments, setCompletedRegiments] = useState([]);
-
+  const [completedWorkoutIds, setCompletedWorkoutIds] = useState(new Set());
 
   const navigate = useNavigate();
   const { uid } = useAuth();
@@ -122,6 +122,8 @@ const Workout_Management = () => {
         const logs = logRes.data.items || [];
         setWorkoutLogs(logs);
 
+        const completedWorkoutIds = new Set(logs.map(log => log.planned_workout_id));
+
         // 📊 Log counts
         const counts = {};
         logs.forEach((log) => {
@@ -134,7 +136,6 @@ const Workout_Management = () => {
 
         const completed = getCompletedRegiments(regimentsData, logs);
         setCompletedRegiments(completed);
-
       } catch (err) {
         console.error(err);
         setError("Failed to load data.");
@@ -144,6 +145,8 @@ const Workout_Management = () => {
     fetchData();
   }, [API_URL, userId]);
 
+  const currentPlannedIds = new Set(currentPlannedRegiments.map(r => r.regiment_id));
+  const completedIds = new Set(completedRegiments.map(r => r.regiment_id));
 
   const toggleRegiment = (id) => {
     setExpandedRegimentId((prev) => (prev === id ? null : id));
@@ -210,10 +213,10 @@ const Workout_Management = () => {
   const renderRegimentCard = (regiment, includeLogCount = true, workoutDetails) => (
     <div
       key={regiment.regiment_id}
-      className="bg-white shadow rounded-lg mb-4 p-4 border"
+      className="bg-white shadow rounded-lg mb-4 p-1 border"
     >
       <h2
-        className="text-xl font-semibold cursor-pointer text-[#4B9CD3] hover:text-blue-500 flex flex-col sm:flex-row sm:items-center sm:tustify-between"
+        className="text-xl font-semibold cursor-pointer text-[#4B9CD3] hover:text-blue-500 flex flex-col sm:flex-row sm:items-center sm:justify-between"
         onClick={() => toggleRegiment(regiment.regiment_id)}
       >
         <span>{regiment.name}</span>
@@ -232,94 +235,106 @@ const Workout_Management = () => {
       </h2>
 
       {/* 💡 Action buttons */}
-      {Number(regiment.created_by) === userId && (
-        <div className="mt-2 flex gap-3 justify-end">
+      {/* {Number(regiment.created_by) === userId && (
+        <div className="mt-2 flex flex-wrap gap-2 justify-end">
           <button
-
             onClick={() => navigate(`/workouts/regiments/${regiment.regiment_id}`)}
-            className="text-sm px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+            className="flex items-center gap-1 text-sm px-4 py-1.5 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition-all duration-200"
           >
-            <Pencil className="h-3 w-3" /> Update
+            <Pencil className="h-4 w-4" /> Update
           </button>
+
           <button
             onClick={() => handleDeleteRegiment(regiment.regiment_id, regiment.created_by)}
-            className="text-sm px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-end"
+            className="flex items-center gap-1 text-sm px-4 py-1.5 bg-red-500 text-white rounded-md hover:bg-red-600 transition-all duration-200"
           >
-            <Trash2 className="h-3 w-3" /> Delete
+            <Trash2 className="h-4 w-4" /> Delete
           </button>
         </div>
-      )}
 
+      )} */}
       {expandedRegimentId === regiment.regiment_id && (
-        <div className="mt-3 space-y-2 ml-4">
+        <div className="mt-3 space-y-2">
+          {Number(regiment.created_by) === userId && (
+            <div className="mb-2 flex flex-wrap gap-2 justify-end">
+              <button
+                onClick={() => navigate(`/workouts/regiments/${regiment.regiment_id}`)}
+                className="flex items-center gap-1 text-sm px-4 py-1.5 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition-all duration-200"
+              >
+                <Pencil className="h-4 w-4" /> Update
+              </button>
+
+              <button
+                onClick={() => handleDeleteRegiment(regiment.regiment_id, regiment.created_by)}
+                className="flex items-center gap-1 text-sm px-4 py-1.5 bg-red-500 text-white rounded-md hover:bg-red-600 transition-all duration-200"
+              >
+                <Trash2 className="h-4 w-4" /> Delete
+              </button>
+            </div>
+          )}
           {regiment.workout_structure.map((day) => (
             <div key={day.workout_id} className="space-y-1">
-              <div className="flex items-center justify-between pr-4">
-                <p
-                  className="text-[#4B9CD3] cursor-pointer hover:text-blue-500 underline"
+              <div className="flex items-start sm:items-center justify-between gap-2 flex-wrap">
+                <div
+                  className="flex-1 text-[#4B9CD3] cursor-pointer hover:text-blue-500 underline text-sm sm:text-base"
                   onClick={() => toggleWorkout(day.workout_id)}
                 >
-                  {day.name} - {workoutNames[day.workout_id] || "Loading..."}
-                  <span className="ml-2 text-sm text-gray-500 italic">
-                    (Score: {workoutDetails[day.workout_id]?.score || "N/A"})
-                  </span>
-                </p>
+                  <p className="font-medium">
+                    {day.name} - {workoutNames[day.workout_id] || "Loading..."}
+                    <span className="ml-2 text-sm text-gray-500 italic">
+                      (Score: {workoutDetails[day.workout_id]?.score || "N/A"})
+                    </span>
+                    {completedWorkoutIds.has(day.workout_id) && (
+                      <span className="ml-2 text-green-600 font-semibold">✅ Completed</span>
+                    )}
+                  </p>
+
+                </div>
 
                 <button
-                  onClick={() =>
-                    navigate(`/start-workout/${regiment.regiment_id}/${day.workout_id}`)
-                  }
-                  className="bg-[#4B9CD3] text-white px-3 py-1 rounded hover:bg-blue-500"
+                  onClick={() => navigate(`/start-workout/${regiment.regiment_id}/${day.workout_id}`)}
+                  className="flex-shrink-0 flex items-center gap-1 text-sm px-4 py-1.5 bg-[#4B9CD3] text-white rounded-md hover:bg-blue-600 transition-all duration-200"
                 >
-                  ▶ Start
+                  <Play className="h-4 w-4"/> Start
                 </button>
               </div>
-
               {expandedWorkoutId === day.workout_id && (
-                <div className="ml-4 mt-1 bg-gray-50 p-3 rounded border">
+                <div className="mt-2 bg-gray-50 p-3 rounded border">
                   <h4 className="text-gray-700 font-semibold mb-2">Exercises:</h4>
-                  <button onClick={() => { UpdateWorkout(day.workout_id) }}>
-                    Update
-                  </button>
-                  {workoutDetails[day.workout_id]?.structure?.length > 0 ? (
-                    workoutDetails[day.workout_id].structure.map((exercise, idx) => (
-                      <div key={idx} className="mb-4">
-                        <p className="text-blue-700 font-medium text-lg">
-                          🔹 {exercise.name}
-                        </p>
-                        {exercise.sets && Object.keys(exercise.sets).length > 0 ? (
-                          <ul className="ml-6 text-sm text-gray-800 list-disc space-y-1">
-                            {Object.values(exercise.sets).map((set, i) => {
-                              const parts = [];
 
-                              if (set.reps !== undefined && set.reps !== "") {
-                                parts.push(`${set.reps} reps`);
-                              }
+                  <div className="flex overflow-x-auto space-x-4 snap-x snap-mandatory scrollbar-hide py-2">
+                    {workoutDetails[day.workout_id]?.structure?.length > 0 ? (
+                      workoutDetails[day.workout_id].structure.map((exercise, idx) => (
+                        <div
+                          key={idx}
+                          className="min-w-full sm:min-w-[300px] p-3 border rounded bg-white shadow-sm flex-shrink-0 snap-center"
+                        >
+                          <p className="text-blue-700 font-medium text-lg mb-2">
+                            🔹 {exercise.name}
+                          </p>
 
-                              if (set.weight !== undefined && set.weight !== "") {
-                                parts.push(`${set.weight}${exercise.weight_unit || ""}`);
-                              }
+                          {exercise.sets && Object.keys(exercise.sets).length > 0 ? (
+                            <ul className="ml-2 text-sm text-gray-800 list-disc space-y-1">
+                              {Object.values(exercise.sets).map((set, i) => {
+                                const parts = [];
 
-                              if (set.time !== undefined && set.time !== "") {
-                                parts.push(`${set.time}${exercise.time_unit ? " " + exercise.time_unit : " sec"}`);
-                              }
+                                if (set.reps) parts.push(`${set.reps} reps`);
+                                if (set.weight) parts.push(`${set.weight}${exercise.weight_unit || "kg"}`);
+                                if (set.time) parts.push(`${set.time}${exercise.time_unit || " sec"}`);
+                                if (set.laps) parts.push(`${set.laps} lap${set.laps > 1 ? "s" : ""}${exercise.laps_unit ? ` of ${exercise.laps_unit}` : ""}`);
 
-                              if (set.laps !== undefined && set.laps !== "") {
-                                parts.push(`${set.laps} lap${set.laps > 1 ? "s" : ""}${exercise.laps_unit ? ` of ${exercise.laps_unit}` : ""}`);
-                              }
-
-                              return <li key={i}>{parts.join(", ")}</li>;
-                            })}
-                          </ul>
-                        ) : (
-                          <p className="ml-6 text-gray-500 text-sm">No sets defined</p>
-                        )}
-
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-gray-500">No exercises found.</p>
-                  )}
+                                return <li key={i}>{parts.join(", ")}</li>;
+                              })}
+                            </ul>
+                          ) : (
+                            <p className="text-gray-500 text-sm ml-2">No sets defined</p>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">No exercises found.</p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -329,21 +344,21 @@ const Workout_Management = () => {
     </div>
   );
 
-
   const renderLogCard = (regiment, logs, workoutDetails) => (
     <div
       key={regiment.regiment_id}
-      className="bg-white shadow rounded-lg mb-4 p-4 border"
+      className="bg-white shadow rounded-lg mb-4 p-1 border"
     >
       <h2
-        className="text-xl font-semibold cursor-pointer text-[#4B9CD3] hover:text-blue-500"
+        className="text-xl font-semibold cursor-pointer text-[#4B9CD3] hover:text-blue-500 "
         onClick={() => toggleRegiment(regiment.regiment_id)}
       >
         {regiment.name}
         <span className="text-sm text-gray-500 ml-2">({logs.length} logs)</span>
       </h2>
+
       {expandedRegimentId === regiment.regiment_id && (
-        <div className="mt-3 space-y-4 ml-4">
+        <div className="mt-3 space-y-4">
           {logs
             .sort((a, b) => new Date(b.log_date) - new Date(a.log_date))
             .map((log) => (
@@ -351,9 +366,12 @@ const Workout_Management = () => {
                 key={log.workout_log_id}
                 className="p-3 border rounded-md bg-gray-50"
               >
-                <p>
-                  <strong>Date:</strong> {log.log_date}
-                </p>
+                <p><strong>Date:</strong> {new Date(log.log_date).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric"
+                })}</p>
+
                 <p>
                   <strong>Workout:</strong> {log.planned_workout_name}
                 </p>
@@ -363,71 +381,74 @@ const Workout_Management = () => {
 
                 {log.actual_workout?.length > 0 ? (
                   <div className="mt-2">
-                    <h4 className="font-semibold text-gray-700 mb-1">Exercises:</h4>
-                    {log.actual_workout.map((actualExercise, index) => {
-                      const plannedWorkout = workoutDetails[log.planned_workout_id];
-                      const plannedExercise = plannedWorkout?.structure?.find(
-                        (ex) => ex.exercise_id === actualExercise.exercise_id
-                      );
+                    <h4 className="font-semibold text-gray-700 mb-2">Exercises:</h4>
 
+                    {/* 💡 Horizontal scrollable list of exercises */}
+                    <div className="flex overflow-x-auto space-x-4 pb-2 snap-x snap-mandatory">
+                      {log.actual_workout.map((actualExercise, index) => {
+                        const plannedWorkout = workoutDetails[log.planned_workout_id];
+                        const plannedExercise = plannedWorkout?.structure?.find(
+                          (ex) => ex.exercise_id === actualExercise.exercise_id
+                        );
 
-                      return (
-                        <div key={index} className="mb-4 ml-2">
-                          <p className="font-semibold text-[#4B9CD3] mb-1">
-                            {plannedExercise?.name || `Exercise ${actualExercise.exercise_id}`}
-                          </p>
+                        return (
+                          <div
+                            key={index}
+                            className="min-w-full sm:min-w-[250px] p-3 border rounded bg-white shadow-sm flex-shrink-0 snap-center"
+                          >
+                            <p className="font-semibold text-[#4B9CD3] mb-1 text-lg">
+                              {plannedExercise?.name || `Exercise ${actualExercise.exercise_id}`}
+                            </p>
 
+                            {(plannedExercise?.sets || actualExercise.sets) ? (
+                              <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                  <p className="font-semibold text-green-600 mb-1">Planned</p>
+                                  <ul className="list-disc ml-4">
+                                    {Object.entries(plannedExercise?.sets || {}).map(([setKey, set]) => (
+                                      <li key={setKey}>
+                                        {set.reps ? `${set.reps} reps ` : ""}
+                                        {set.weight ? `${set.weight}${plannedExercise.weight_unit || "kg"}` : ""}
+                                        {set.time ? `${set.time} sec ` : ""}
+                                        {set.laps ? `${set.laps} lap${set.laps > 1 ? "s" : ""}${plannedExercise.lap_unit ? ` (${plannedExercise.lap_unit})` : ""}` : ""}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
 
-                          {(plannedExercise?.sets || actualExercise.sets) ? (
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                              <div>
-                                <p className="font-semibold text-green-600 mb-1">Planned</p>
-                                <ul className="list-disc ml-4">
-                                  {Object.entries(plannedExercise?.sets || {}).map(([setKey, set]) => (
-                                    <li key={setKey}>
-                                      {set.reps ? `${set.reps} reps ` : ""}
-                                      {set.weight ? `${set.weight}${plannedExercise.weight_unit || "kg "}` : ""}
-                                      {set.time ? `${set.time} sec` : ""}
-                                      {set.laps ? `${set.laps}lap${set.laps > 1 ? "s" : ""}${plannedExercise.laps_unit ? `(${plannedExercise.laps_unit})` : ""}` : ""}
-                                    </li>
-                                  ))}
-                                </ul>
+                                <div>
+                                  <p className="font-semibold text-blue-600 mb-1">Actual</p>
+                                  <ul className="list-disc ml-4">
+                                    {Object.entries(actualExercise.sets || {}).map(([setKey, set]) => (
+                                      <li key={setKey}>
+                                        {set.reps ? `${set.reps} reps ` : ""}
+                                        {set.weight ? `${set.weight}${plannedExercise.weight_unit || "kg"}` : ""}
+                                        {set.time ? `${set.time} sec ` : ""}
+                                        {set.laps ? `${set.laps} lap${set.laps > 1 ? "s" : ""}${plannedExercise.lap_unit ? ` (${plannedExercise.lap_unit})` : ""}` : ""}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
                               </div>
-
-                              <div>
-                                <p className="font-semibold text-blue-600 mb-1">Actual</p>
-                                <ul className="list-disc ml-4">
-                                  {Object.entries(actualExercise.sets || {}).map(([setKey, set]) => (
-                                    <li key={setKey}>
-                                      {set.reps ? `${set.reps} reps ` : ""}
-                                      {set.weight ? `${set.weight}${plannedExercise.weight_unit || "kg "}` : ""}
-                                      {set.time ? ` ${set.time} sec` : ""}
-                                      {set.laps ? ` ${set.laps}lap${set.laps > 1 ? "s" : ""}${plannedExercise.laps_unit ? `(${plannedExercise.laps_unit})` : ""}` : ""}
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            </div>
-                          ) : (
-                            <p className="text-gray-500 ml-4">No set data available</p>
-                          )}
-                        </div>
-                      );
-                    })}
+                            ) : (
+                              <p className="text-gray-500 ml-4">No set data available</p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 ) : (
                   <p className="text-sm text-gray-500 mt-2">
                     No actual workout data recorded.
                   </p>
                 )}
-
               </div>
             ))}
         </div>
       )}
     </div>
   );
-
   return (
     <div className="max-w-5xl mx-auto mt-8 px-4 bg-white min-h-screen">
       <h1 className="text-3xl font-bold mb-4 text-[#4B9CD3]">Workout Manager</h1>
@@ -459,42 +480,70 @@ const Workout_Management = () => {
 
       {!showLogs && (
         <>
-          {!showLogs && currentPlannedRegiments.length > 0 && (
+          {!showLogs && (
             <>
               <h2 className="text-2xl font-bold mb-2 text-orange-600">
                 Current Planned Regiments
               </h2>
-              {currentPlannedRegiments
-                .filter((r) =>
-                  r.name.toLowerCase().includes(searchQuery.toLowerCase())
-                )
-                .map((regiment) => renderRegimentCard(regiment, true, workoutDetails))}
+              {currentPlannedRegiments.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {currentPlannedRegiments
+                    .filter((r) =>
+                      r.name.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .map((regiment) => renderRegimentCard(regiment, true, workoutDetails))}
+                </div>
+              ) : (
+                <p className="text-gray-500 italic mb-4">No regiments present here.</p>
+              )}
             </>
           )}
-          {!showLogs && completedRegiments.length > 0 && (
+          {!showLogs && (
             <>
-              <h2 className="text-2xl font-bold mb-2 text-green-600">Completed Regiments</h2>
-              {completedRegiments
-                .filter((r) => r.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                .map((regiment) => renderRegimentCard(regiment, true, workoutDetails))}
+              <h2 className="text-2xl font-bold mb-2 text-green-600">
+                Completed Regiments
+              </h2>
+              {completedRegiments.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {completedRegiments
+                    .filter((r) =>
+                      r.name.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .map((regiment) => renderRegimentCard(regiment, true, workoutDetails))}
+                </div>
+              ) : (
+                <p className="text-gray-500 italic mb-4">No regiments present here.</p>
+              )}
             </>
           )}
-
           <h2 className="text-2xl font-bold mb-2 text-purple-600">
-            Recent System Regiments
+            Recommended Regiments
           </h2>
-          {recentRegiments
-            .filter((r) =>
-              r.name.toLowerCase().includes(searchQuery.toLowerCase())
-            )
-            .map((regiment) => renderRegimentCard(regiment, true, workoutDetails))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {recentRegiments
+              .filter((r) =>
+                !currentPlannedIds.has(r.regiment_id) &&
+                !completedIds.has(r.regiment_id)
+              )
+              .filter((r) =>
+                r.name.toLowerCase().includes(searchQuery.toLowerCase())
+              )
+              .map((regiment) => renderRegimentCard(regiment, true, workoutDetails))}
 
+          </div>
 
-          {userRegiments
-            .filter((r) =>
-              r.name.toLowerCase().includes(searchQuery.toLowerCase())
-            )
-            .map((regiment) => renderRegimentCard(regiment, false, workoutDetails))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {userRegiments
+              .filter((r) =>
+                !currentPlannedIds.has(r.regiment_id) &&
+                !completedIds.has(r.regiment_id) &&
+                !recentRegiments.some(rr => rr.regiment_id === r.regiment_id)
+              )
+              .filter((r) =>
+                r.name.toLowerCase().includes(searchQuery.toLowerCase())
+              )
+              .map((regiment) => renderRegimentCard(regiment, false, workoutDetails))}
+          </div>
         </>
       )}
 

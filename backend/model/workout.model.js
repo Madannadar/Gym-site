@@ -295,8 +295,8 @@ const fetchWorkoutById = async (id) => {
   return workout;
 };
 
-const updateWorkoutById = async (id, { name, description, structure, score }) => {
-  // Duplicate name check if updating name
+const updateWorkoutById = async (id, { name, description, structure }) => {
+  // Check for duplicate name
   if (name) {
     const duplicateCheckQuery = `
       SELECT 1 FROM workouts WHERE name = $1 AND workout_id != $2 LIMIT 1;
@@ -307,6 +307,45 @@ const updateWorkoutById = async (id, { name, description, structure, score }) =>
     }
   }
 
+  let finalStructure = structure;
+  let finalScore = null;
+
+  // 🟡 If structure not provided, fetch from DB
+  if (!structure) {
+    const fetchQuery = `SELECT structure FROM workouts WHERE workout_id = $1`;
+    const { rows } = await db.query(fetchQuery, [id]);
+    if (rows.length === 0) {
+      throw new Error("Workout not found");
+    }
+    finalStructure = rows[0].structure;
+  }
+
+  // 🔵 Validate and recalculate score
+  const exerciseIds = finalStructure.map(item => item.exercise_id);
+  const checkQuery = `
+    SELECT exercise_id, name
+    FROM exercises
+    WHERE exercise_id = ANY($1)
+  `;
+  const { rows: existingExercises } = await db.query(checkQuery, [exerciseIds]);
+
+  const existingIds = existingExercises.map(e => e.exercise_id);
+  const missingIds = exerciseIds.filter(id => !existingIds.includes(id));
+  if (missingIds.length > 0) {
+    throw new Error(`Invalid exercise_id(s): ${missingIds.join(', ')}`);
+  }
+
+  // 🔴 Check for laps_unit
+  finalStructure.forEach(item => {
+    if (item.units.includes("laps") && !item.laps_unit) {
+      throw new Error(`Missing laps_unit for exercise_id ${item.exercise_id}`);
+    }
+  });
+
+  // ✅ Calculate score
+  finalScore = calculateScoreFromStructure(finalStructure, intensityLookup, existingExercises);
+
+  // Update query
   const query = `
     UPDATE workouts
     SET name = COALESCE($1, name),
@@ -321,7 +360,7 @@ const updateWorkoutById = async (id, { name, description, structure, score }) =>
     name,
     description,
     structure ? JSON.stringify(structure) : null,
-    score,
+    finalScore,
     id
   ];
 
@@ -338,8 +377,6 @@ const deleteWorkoutById = async (id) => {
   const { rows } = await db.query(query, [id]);
   return rows[0];
 };
-
-
 
 const checkExists = async (table, idName, id) => {
   const query = `SELECT 1 FROM ${table} WHERE ${idName} = $1 LIMIT 1`;
