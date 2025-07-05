@@ -244,8 +244,8 @@ const Workout_Management = () => {
         </div>
 
         <div className={`transition-all duration-500 ease-in-out ${expandedRegimentId === regiment.regiment_id
-            ? 'max-h-[2000px] opacity-100 mt-6'
-            : 'max-h-0 opacity-0 mt-0'
+          ? 'max-h-[2000px] opacity-100 mt-6'
+          : 'max-h-0 opacity-0 mt-0'
           } overflow-hidden`}>
           {Number(regiment.created_by) === userId && (
             <div className="mb-4 flex flex-wrap gap-3 justify-end animate-fadeIn">
@@ -320,8 +320,8 @@ const Workout_Management = () => {
                 </div>
 
                 <div className={`transition-all duration-500 ease-in-out ${expandedWorkoutId === day.workout_id
-                    ? 'max-h-[1000px] opacity-100 mt-4'
-                    : 'max-h-0 opacity-0 mt-0'
+                  ? 'max-h-[1000px] opacity-100 mt-4'
+                  : 'max-h-0 opacity-0 mt-0'
                   } overflow-hidden`}>
                   <div className="bg-white p-4 rounded-lg border-2 border-gray-100 shadow-inner">
                     <h4 className="text-gray-700 font-semibold mb-3 flex items-center">
@@ -412,12 +412,12 @@ const Workout_Management = () => {
         </div>
 
         <div className={`transition-all duration-500 ease-in-out ${expandedRegimentId === regiment.regiment_id
-            ? 'max-h-[2000px] opacity-100 mt-6'
-            : 'max-h-0 opacity-0 mt-0'
+          ? 'max-h-[2000px] opacity-100 mt-6'
+          : 'max-h-0 opacity-0 mt-0'
           } overflow-hidden`}>
           <div className="space-y-4">
             {logs
-              .sort((a, b) => new Date(b.log_date) - new Date(a.log_date))
+              .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
               .map((log, index) => (
                 <div
                   key={log.workout_log_id}
@@ -429,10 +429,13 @@ const Workout_Management = () => {
                       <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
                       <span className="font-semibold text-gray-700">Date:</span>
                       <span className="text-gray-600">
-                        {new Date(log.log_date).toLocaleDateString("en-GB", {
+                        {new Date(log.created_at).toLocaleString("en-GB", {
                           day: "2-digit",
                           month: "short",
-                          year: "numeric"
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true
                         })}
                       </span>
                     </div>

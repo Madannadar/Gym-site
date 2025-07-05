@@ -508,28 +508,16 @@ const fetchUserWorkoutLogsList = async (req, res) => {
   try {
     const { userId } = req.params;
     const { limit = 50, offset = 0 } = req.query;
+
     const logs = await fetchUserWorkoutLogs(userId, limit, offset);
-    
-    // logger.info("User workout logs fetched successfully", {
-    //   userId,
-    //   count: logs.length,
-    //   limit,
-    //   offset,
-    //   operation: "fetchUserWorkoutLogs"
-    // });
-    
     res.json({ items: logs, count: logs.length });
+
   } catch (err) {
-    // logger.error("Fetch Workout Logs Error", {
-    //   error: err.message,
-    //   stack: err.stack,
-    //   userId: req.params.userId,
-    //   query: req.query,
-    //   operation: "fetchUserWorkoutLogs"
-    // });
-    res.status(500).json({ error: { message: "Failed to fetch workout logs" } });
+    console.error("❌ Fetch Workout Logs Error:", err.stack);
+    res.status(500).json({ error: { message: err.message, stack: err.stack } }); // add `stack`
   }
 };
+
 
 const fetchWorkoutLogByIdEntry = async (req, res) => {
   try {

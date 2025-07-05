@@ -387,8 +387,6 @@ const checkExists = async (table, idName, id) => {
 const recordWorkoutLog = async ({
   user_id,
   regiment_id,
-  regiment_day_index,
-  log_date,
   planned_workout_id,
   actual_workout
 }) => {
@@ -437,20 +435,16 @@ const recordWorkoutLog = async ({
     INSERT INTO workout_logs (
       user_id,
       regiment_id,
-      regiment_day_index,
-      log_date,
       planned_workout_id,
       actual_workout,
       score
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+    ) VALUES ($1, $2, $3, $4, $5)
     RETURNING *;
   `;
 
   const values = [
     user_id,
     regiment_id,
-    regiment_day_index,
-    log_date,
     planned_workout_id,
     JSON.stringify(enrichedWorkout),
     calculatedScore
@@ -460,7 +454,6 @@ const recordWorkoutLog = async ({
   return rows[0];
 };
 
-
 const fetchUserWorkoutLogs = async (user_id, limit = 50, offset = 0) => {
   const query = `
     SELECT wl.*,
@@ -468,13 +461,14 @@ const fetchUserWorkoutLogs = async (user_id, limit = 50, offset = 0) => {
            w.name AS planned_workout_name,
            r.name AS regiment_name
     FROM workout_logs wl
-    LEFT JOIN users u ON wl.user_id = u.id  -- Corrected here
+    LEFT JOIN users u ON wl.user_id = u.id
     LEFT JOIN workouts w ON wl.planned_workout_id = w.workout_id
     LEFT JOIN regiments r ON wl.regiment_id = r.regiment_id
     WHERE wl.user_id = $1
-    ORDER BY wl.log_date DESC, wl.created_at DESC
+    ORDER BY wl.created_at DESC NULLS LAST
     LIMIT $2 OFFSET $3;
   `;
+
   const { rows } = await db.query(query, [user_id, limit, offset]);
   return rows;
 };
@@ -768,12 +762,12 @@ const updateRegimentById = async (id, { name, description, workout_structure }) 
 `;
 
   const values = [
-  name,
-  description,
-  workout_structure ? JSON.stringify(workout_structure) : null,
-  intensity,
-  id
-];
+    name,
+    description,
+    workout_structure ? JSON.stringify(workout_structure) : null,
+    intensity,
+    id
+  ];
 
 
   const { rows } = await db.query(query, values);

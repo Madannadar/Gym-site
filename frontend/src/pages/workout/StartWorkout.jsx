@@ -241,8 +241,6 @@ const StartWorkout = () => {
       const payload = {
         user_id: Number(uid),
         regiment_id: logData.regiment_id ? Number(logData.regiment_id) : null,
-        regiment_day_index: 1,
-        log_date: new Date().toISOString().split("T")[0],
         planned_workout_id: Number(workoutId),
         actual_workout: actualWorkoutWithUnits,
       };

@@ -30,11 +30,11 @@ router.post("/exercises", recordExerciseEntry); // working  // frontend too
 // GET /api/workouts/exercises - fetch all exercises
 router.get("/exercises", fetchAllExercisesList); // working
 // GET /api/workouts/exercises/:id - fetch an exercise by ID
-router.get("/exercises/:id", fetchExerciseByIdEntry); // working
+router.get("/exercises/:id", fetchExerciseByIdEntry); // working  
 // PUT /api/workouts/exercises/:id - update an exercise
-router.put("/exercises/:id", updateExerciseByIdEntry); // working
+router.put("/exercises/:id", updateExerciseByIdEntry); // working // not in use
 // DELETE /api/workouts/exercises/:id - delete an exercise
-router.delete("/exercises/:id", deleteExerciseByIdEntry); // working
+router.delete("/exercises/:id", deleteExerciseByIdEntry); // working // not in use 
 
 //Express matches routes top to bottom, so if a dynamic param route (/:workoutId) is defined first, it will catch all requests, including /regiments.
 
@@ -54,13 +54,13 @@ router.delete("/regiments/:id", deleteRegimentByIdEntry); // working
 // POST /api/workouts - create a new workout
 router.post("/", recordWorkoutEntry); // working  // checks if exercise exists before adding to workout
 // GET /api/workouts - fetch all workouts
-router.get("/", fetchAllWorkoutsList); // working
+router.get("/", fetchAllWorkoutsList); // working 
 // GET /api/workouts/:id - fetch a workout by ID
-router.get("/:id", fetchWorkoutByIdEntry); // working
+router.get("/:id", fetchWorkoutByIdEntry); // working  
 // PUT /api/workouts/:id - update a workout
-router.put("/:id", updateWorkoutByIdEntry); // working
+router.put("/:id", updateWorkoutByIdEntry); // working  // not in use
 // DELETE /api/workouts/:id - delete a workout
-router.delete("/:id", deleteWorkoutByIdEntry); // working
+router.delete("/:id", deleteWorkoutByIdEntry); // working // not in use
 
 // Workout Log Routes
 // POST /api/workouts/logs - create a new workout log
@@ -68,11 +68,11 @@ router.post("/logs", recordWorkoutLogEntry); // working  // checks if regiment, 
 // GET /api/workouts/logs/user/:userId - fetch workout logs by user
 router.get("/logs/user/:userId", fetchUserWorkoutLogsList);
 // GET /api/workouts/logs/:id - fetch a workout log by ID
-router.get("/logs/:id", fetchWorkoutLogByIdEntry); // working
+router.get("/logs/:id", fetchWorkoutLogByIdEntry); // working // not in use
 // PUT /api/workouts/logs/:id - update a workout log
-router.put("/logs/:id", updateWorkoutLogByIdEntry); // working
+router.put("/logs/:id", updateWorkoutLogByIdEntry); // working  // not in use
 // DELETE /api/workouts/logs/:id - delete a workout log
-router.delete("/logs/:id", deleteWorkoutLogByIdEntry); // working
+router.delete("/logs/:id", deleteWorkoutLogByIdEntry); // working  // not in use
 
 
 export default router;
