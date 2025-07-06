@@ -24,6 +24,7 @@ const Workout_Management = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [deletingRegiment, setDeletingRegiment] = useState(null);
   const [visibleIndex, setVisibleIndex] = useState(0);
+  const activeRegimentId = currentPlannedRegiments.length > 0 ? currentPlannedRegiments[0].regiment_id : null;
 
   const navigate = useNavigate();
   const { uid } = useAuth();
@@ -313,8 +314,16 @@ const Workout_Management = () => {
                       e.stopPropagation();
                       navigate(`/start-workout/${regiment.regiment_id}/${day.workout_id}`);
                     }}
-                    className="flex items-center gap-2 text-sm px-4 py-2 bg-gradient-to-r from-[#4B9CD3] to-blue-500 text-white rounded-lg hover:from-blue-500 hover:to-blue-600 transform transition-all duration-200 hover:scale-105 shadow-md hover:shadow-lg"
-                  >
+                    disabled={
+                      currentPlannedRegiments.length > 0 &&
+                      regiment.regiment_id !== activeRegimentId
+                    }
+                    className={`flex items-center gap-2 text-sm px-4 py-2 rounded-lg transform transition-all duration-200 shadow-md font-medium
+                    ${currentPlannedRegiments.length > 0 &&
+                        regiment.regiment_id !== activeRegimentId
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "bg-gradient-to-r from-[#4B9CD3] to-blue-500 text-white hover:from-blue-500 hover:to-blue-600 hover:scale-105 hover:shadow-lg"
+                      }`}>
                     <Play className="h-4 w-4" /> Start
                   </button>
                 </div>
@@ -561,22 +570,22 @@ const Workout_Management = () => {
         <h1 className="text-4xl font-bold mb-6 text-[#4B9CD3] text-center">
           Workout Manager
         </h1>
-
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-row justify-between items-center gap-4 mb-6">
           <button
             onClick={() => navigate("/create-regiment")}
-            className="bg-gradient-to-r from-[#4B9CD3] to-blue-500 text-white px-6 py-3 rounded-lg hover:from-blue-500 hover:to-blue-600 transform transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl font-medium"
+            className="w-1/2 bg-gradient-to-r from-[#4B9CD3] to-blue-500 text-white px-4 py-3 rounded-lg hover:from-blue-500 hover:to-blue-600 transform transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl font-medium text-center text-sm sm:text-base"
           >
             Create Regiment
           </button>
+
           <button
             onClick={() => setShowLogs((prev) => !prev)}
-            className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-3 rounded-lg hover:from-purple-600 hover:to-purple-700 transform transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl font-medium"
+            className={`w-1/2 bg-gradient-to-r from-purple-500 to-purple-600 text-white px-4 py-3 rounded-lg hover:from-purple-600 hover:to-purple-700 transform transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl font-medium text-center ${showLogs ? "text-sm" : "text-xs sm:text-sm"
+              }`}
           >
             {showLogs ? "View Regiments" : "View Workout Logs"}
           </button>
         </div>
-
         {error && <p className="text-red-600 text-center">{error}</p>}
 
         <input

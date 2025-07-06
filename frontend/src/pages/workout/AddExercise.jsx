@@ -84,7 +84,7 @@ const CreateExercise = () => {
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 bg-white min-h-screen">
       <button 
-        onClick={() => navigate("/Workout_Management")}
+        onClick={() => navigate("/create-workout")}
         className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors mb-6"
       >
         <ArrowLeft className="h-5 w-5" /> Back to Workouts
@@ -97,14 +97,13 @@ const CreateExercise = () => {
           <AlertCircle className="h-5 w-5 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" />
           <div>
             <p className="font-semibold text-yellow-700">Important Note</p>
-            <p className="text-yellow-600">
+            <p className="text-yellow-600"></p>
               Select all units that apply to this exercise. For example:
               <ul className="list-disc pl-5 mt-2 space-y-1">
                 <li>Bench press: reps and weight</li>
                 <li>Plank: time</li>
                 <li>Running: laps (with distance unit)</li>
               </ul>
-            </p>
           </div>
         </div>
       </div>

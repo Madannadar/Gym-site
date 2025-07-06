@@ -119,16 +119,23 @@ const CreateWorkout = () => {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 bg-white min-h-screen">
-      <button 
-        onClick={() => navigate("/Workout_Management")}
+      <button
+        onClick={() => navigate("/create-regiment")}
         className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors mb-6"
       >
-        <ArrowLeft className="h-5 w-5" /> Back to Workouts
+        <ArrowLeft className="h-5 w-5" /> Back to Regiment
       </button>
 
       <h1 className="text-3xl font-bold text-[#4B9CD3] mb-8">Create Workout</h1>
+      <button
+        type="button"
+        onClick={() => navigate("/create-exercise")}
+        className="flex items-center gap-2 mb-8 px-6 py-3 bg-gradient-to-r from-[#4B9CD3] to-blue-500 text-white rounded-lg hover:from-blue-500 hover:to-blue-600 transform transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl font-medium"
+      >
+        <Plus className="h-5 w-5" /> Create New Exercise
+      </button>
 
-      <div className="bg-red-100 border-l-4 border-red-500 p-4 mb-6 rounded-lg">
+      <div className="bg-red-100 border-l-4 border-red-500 p-4 mb-6 rounded-lg mt-2">
         <div className="flex items-start">
           <AlertTriangle className="h-5 w-5 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
           <div>
@@ -189,8 +196,8 @@ const CreateWorkout = () => {
           ) : (
             <div className="space-y-6">
               {formData.structure.map((exercise, idx) => (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   className="border border-gray-200 rounded-lg p-6 shadow-sm bg-gray-50 hover:shadow-md transition-all duration-200"
                 >
                   <div className="mb-6">
@@ -259,8 +266,8 @@ const CreateWorkout = () => {
                   <div className="mb-6">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-lg font-semibold text-[#4B9CD3]">Sets</h3>
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         onClick={() => addSet(idx)}
                         className="flex items-center gap-1 text-blue-600 hover:text-blue-800 transition-colors"
                       >
@@ -273,8 +280,8 @@ const CreateWorkout = () => {
                     ) : (
                       <div className="space-y-3">
                         {Object.entries(exercise.sets).map(([key, set]) => (
-                          <div 
-                            key={key} 
+                          <div
+                            key={key}
                             className="flex flex-wrap gap-4 items-center p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-all"
                           >
                             <span className="font-semibold text-gray-700 min-w-[60px]">Set {key}</span>
@@ -331,8 +338,8 @@ const CreateWorkout = () => {
                               </div>
                             )}
 
-                            <button 
-                              type="button" 
+                            <button
+                              type="button"
                               onClick={() => removeSet(idx, key)}
                               className="ml-auto text-red-600 hover:text-red-800 transition-colors flex items-center gap-1"
                             >
@@ -344,8 +351,8 @@ const CreateWorkout = () => {
                     )}
                   </div>
 
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => removeExercise(idx)}
                     className="w-full py-2 px-4 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors flex items-center justify-center gap-2"
                   >
@@ -358,21 +365,13 @@ const CreateWorkout = () => {
         </div>
 
         <div className="flex flex-wrap gap-4">
-          <button 
-            type="button" 
-            onClick={() => navigate("/create-exercise")}
-            className="flex-1 py-3 px-6 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg hover:from-indigo-600 hover:to-indigo-700 transform transition-all duration-200 hover:scale-105 shadow-md hover:shadow-lg font-medium flex items-center justify-center gap-2"
-          >
-            <Plus className="h-5 w-5" /> Create New Exercise
-          </button>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={isSubmitting}
-            className={`flex-1 py-3 px-6 rounded-lg transform transition-all duration-200 hover:scale-105 shadow-md hover:shadow-lg font-medium flex items-center justify-center gap-2 ${
-              isSubmitting 
-                ? 'bg-gray-400 cursor-not-allowed' 
+            className={`flex-1 py-3 px-6 rounded-lg transform transition-all duration-200 hover:scale-105 shadow-md hover:shadow-lg font-medium flex items-center justify-center gap-2 ${isSubmitting
+                ? 'bg-gray-400 cursor-not-allowed'
                 : 'bg-gradient-to-r from-[#4B9CD3] to-blue-500 hover:from-blue-500 hover:to-blue-600 text-white'
-            }`}
+              }`}
           >
             {isSubmitting ? (
               <div className="inline-block h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

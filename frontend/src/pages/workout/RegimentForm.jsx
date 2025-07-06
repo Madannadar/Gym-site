@@ -156,11 +156,11 @@ const RegimentForm = () => {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 bg-white min-h-screen">
-      <button 
+      <button
         onClick={() => navigate('/Workout_Management')}
         className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors mb-6"
       >
-        <ArrowLeft className="h-5 w-5" /> Back to Workouts
+        <ArrowLeft className="h-5 w-5" /> Back to Workouts management
       </button>
 
       <div className="flex justify-between items-center mb-8">
@@ -224,8 +224,8 @@ const RegimentForm = () => {
           ) : (
             <div className="space-y-4">
               {formData.workout_structure.map((day, idx) => (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   className="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:border-[#4B9CD3] transition-all duration-200"
                 >
                   <div className="flex flex-col md:flex-row gap-4 items-center">
@@ -261,9 +261,9 @@ const RegimentForm = () => {
                     <button
                       type="button"
                       onClick={() => removeDay(idx)}
-                      className="flex items-center gap-1 px-3 py-2 text-red-500 hover:text-red-700 transition-colors"
+                      className="w-full py-2 px-4 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors flex items-center justify-center gap-2"
                     >
-                      <X className="h-5 w-5" /> Remove
+                      <X className="h-5 w-5" /> Remove Exercise
                     </button>
                   </div>
                 </div>
@@ -275,11 +275,10 @@ const RegimentForm = () => {
         <button
           type="submit"
           disabled={isLoading}
-          className={`flex items-center justify-center gap-2 w-full px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 font-medium ${
-            isLoading
+          className={`flex items-center justify-center gap-2 w-full px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 font-medium ${isLoading
               ? 'bg-gray-400 cursor-not-allowed'
               : 'bg-gradient-to-r from-[#4B9CD3] to-blue-500 hover:from-blue-500 hover:to-blue-600 transform hover:scale-105'
-          } text-white`}
+            } text-white`}
         >
           {isLoading ? (
             <span className="inline-block h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
