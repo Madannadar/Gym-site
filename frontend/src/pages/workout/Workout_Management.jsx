@@ -3,6 +3,9 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../AuthProvider";
 import { Trash2, Pencil, Play, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
 
 const API_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -480,6 +483,22 @@ const Workout_Management = () => {
                             (ex) => ex.exercise_id === actualExercise.exercise_id
                           );
 
+                          // Prepare chart data
+                          const chartData = Object.keys(actualExercise.sets || {}).map((setKey, idx) => {
+                            const plannedSet = plannedExercise?.sets?.[setKey] || {};
+                            const actualSet = actualExercise.sets?.[setKey] || {};
+
+                            return {
+                              name: `Set ${idx + 1}`,
+                              plannedReps: plannedSet.reps || 0,
+                              actualReps: actualSet.reps || 0,
+                              plannedWeight: plannedSet.weight || 0,
+                              actualWeight: actualSet.weight || 0,
+                              plannedTime: plannedSet.time || 0,
+                              actualTime: actualSet.time || 0,
+                            };
+                          });
+
                           return (
                             <div
                               key={index}
@@ -493,41 +512,65 @@ const Workout_Management = () => {
                               </p>
 
                               {(plannedExercise?.sets || actualExercise.sets) ? (
-                                <div className="grid grid-cols-2 gap-4 text-sm">
-                                  <div>
-                                    <p className="font-semibold text-green-600 mb-2 flex items-center">
-                                      <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                                      Planned
-                                    </p>
-                                    <div className="space-y-1">
-                                      {Object.entries(plannedExercise?.sets || {}).map(([setKey, set]) => (
-                                        <div key={setKey} className="p-2 bg-green-50 rounded-md">
-                                          {set.reps ? `${set.reps} reps ` : ""}
-                                          {set.weight ? `${set.weight}${plannedExercise.weight_unit || "kg"}` : ""}
-                                          {set.time ? `${set.time} sec ` : ""}
-                                          {set.laps ? `${set.laps} lap${set.laps > 1 ? "s" : ""}${plannedExercise.lap_unit ? ` (${plannedExercise.lap_unit})` : ""}` : ""}
-                                        </div>
-                                      ))}
+                                <>
+                                  <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                      <p className="font-semibold text-green-600 mb-2 flex items-center">
+                                        <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                        Planned
+                                      </p>
+                                      <div className="space-y-1">
+                                        {Object.entries(plannedExercise?.sets || {}).map(([setKey, set]) => (
+                                          <div key={setKey} className="p-2 bg-green-50 rounded-md">
+                                            {set.reps ? `${set.reps} reps ` : ""}
+                                            {set.weight ? `${set.weight}${plannedExercise.weight_unit || "kg"}` : ""}
+                                            {set.time ? `${set.time} sec ` : ""}
+                                            {set.laps ? `${set.laps} lap${set.laps > 1 ? "s" : ""}${plannedExercise.lap_unit ? ` (${plannedExercise.lap_unit})` : ""}` : ""}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+
+                                    <div>
+                                      <p className="font-semibold text-blue-600 mb-2 flex items-center">
+                                        <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                                        Actual
+                                      </p>
+                                      <div className="space-y-1">
+                                        {Object.entries(actualExercise.sets || {}).map(([setKey, set]) => (
+                                          <div key={setKey} className="p-2 bg-blue-50 rounded-md">
+                                            {set.reps ? `${set.reps} reps ` : ""}
+                                            {set.weight ? `${set.weight}${plannedExercise.weight_unit || "kg"}` : ""}
+                                            {set.time ? `${set.time} sec ` : ""}
+                                            {set.laps ? `${set.laps} lap${set.laps > 1 ? "s" : ""}${plannedExercise.lap_unit ? ` (${plannedExercise.lap_unit})` : ""}` : ""}
+                                          </div>
+                                        ))}
+                                      </div>
                                     </div>
                                   </div>
 
-                                  <div>
-                                    <p className="font-semibold text-blue-600 mb-2 flex items-center">
-                                      <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                                      Actual
-                                    </p>
-                                    <div className="space-y-1">
-                                      {Object.entries(actualExercise.sets || {}).map(([setKey, set]) => (
-                                        <div key={setKey} className="p-2 bg-blue-50 rounded-md">
-                                          {set.reps ? `${set.reps} reps ` : ""}
-                                          {set.weight ? `${set.weight}${plannedExercise.weight_unit || "kg"}` : ""}
-                                          {set.time ? `${set.time} sec ` : ""}
-                                          {set.laps ? `${set.laps} lap${set.laps > 1 ? "s" : ""}${plannedExercise.lap_unit ? ` (${plannedExercise.lap_unit})` : ""}` : ""}
-                                        </div>
-                                      ))}
+                                  {/* Bar Chart */}
+                                  {chartData.length > 0 && (
+                                    <div className="mt-6">
+                                      <h5 className="font-semibold text-gray-700 mb-2">Planned vs Actual (Per Set)</h5>
+                                      <ResponsiveContainer width="100%" height={250}>
+                                        <BarChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 5 }}>
+                                          <CartesianGrid strokeDasharray="3 3" />
+                                          <XAxis dataKey="name" />
+                                          <YAxis />
+                                          <Tooltip />
+                                          <Legend />
+                                          <Bar dataKey="plannedReps" fill="#34D399" name="Planned Reps" />
+                                          <Bar dataKey="actualReps" fill="#3B82F6" name="Actual Reps" />
+                                          <Bar dataKey="plannedWeight" fill="#F59E0B" name="Planned Weight" />
+                                          <Bar dataKey="actualWeight" fill="#6366F1" name="Actual Weight" />
+                                          <Bar dataKey="plannedTime" fill="#A78BFA" name="Planned Time" />
+                                          <Bar dataKey="actualTime" fill="#EC4899" name="Actual Time" />
+                                        </BarChart>
+                                      </ResponsiveContainer>
                                     </div>
-                                  </div>
-                                </div>
+                                  )}
+                                </>
                               ) : (
                                 <p className="text-gray-500 text-sm italic">No set data available</p>
                               )}
@@ -535,7 +578,6 @@ const Workout_Management = () => {
                           );
                         })}
                       </div>
-
                       <div className="flex justify-center mt-3 gap-1">
                         {log.actual_workout.slice(0, 3).map((_, idx) => (
                           <span

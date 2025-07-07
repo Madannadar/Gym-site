@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../../AuthProvider";
 import { Check, Play, Pause, X, ArrowLeft, Timer } from "lucide-react";
+import confetti from "canvas-confetti";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -16,22 +17,14 @@ const StartWorkout = () => {
   const [error, setError] = useState("");
   const [checkedSets, setCheckedSets] = useState({});
   const [isLoading, setIsLoading] = useState(true);
+  const [addedSets, setAddedSets] = useState({}); // { [exerciseIndex]: [setNumbers] }
+
 
   const [logData, setLogData] = useState({
     user_id: uid,
     regiment_id: regimenId ? Number(regimenId) : null,
     actual_workout: [],
   });
-
-  const [timer, setTimer] = useState({
-    hours: 0,
-    minutes: 0,
-    seconds: 0,
-    isRunning: false,
-    intervalId: null,
-  });
-
-  const [selectedTimer, setSelectedTimer] = useState(null);
 
   useEffect(() => {
     if (!uid) return;
@@ -89,6 +82,16 @@ const StartWorkout = () => {
 
     fetchData();
   }, [workoutId, uid]);
+
+  const [timer, setTimer] = useState({
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+    isRunning: false,
+    intervalId: null,
+  });
+
+  const [selectedTimer, setSelectedTimer] = useState(null);
 
   const handleSetCheck = (eIdx, setNumber) => {
     setCheckedSets((prev) => ({
@@ -225,6 +228,90 @@ const StartWorkout = () => {
     });
   };
 
+  const handleAddSet = (exerciseIndex) => {
+    const currentSets = workout.structure[exerciseIndex].sets;
+    const newSetNumber = (Math.max(...Object.keys(currentSets).map(Number)) + 1).toString();
+
+    const { weight_unit = "kg", laps_unit = "", time_unit = "seconds" } = workout.structure[exerciseIndex];
+
+    // Update workout
+    setWorkout((prevWorkout) => {
+      const newWorkout = { ...prevWorkout };
+      const sets = newWorkout.structure[exerciseIndex].sets;
+
+      sets[newSetNumber] = {
+        reps: "",
+        weight: "",
+        time: "",
+        laps: "",
+        weight_unit,
+        time_unit,
+        laps_unit,
+      };
+
+      return newWorkout;
+    });
+
+    // Update logData
+    setLogData((prevLogData) => {
+      const updated = [...prevLogData.actual_workout];
+      updated[exerciseIndex].sets[newSetNumber] = {
+        reps: "",
+        weight: "",
+        time: "",
+        laps: "",
+      };
+      return { ...prevLogData, actual_workout: updated };
+    });
+
+    // Update checkedSets
+    setCheckedSets((prevChecked) => {
+      const updated = { ...prevChecked };
+      updated[exerciseIndex] = {
+        ...updated[exerciseIndex],
+        [newSetNumber]: false,
+      };
+      return updated;
+    });
+
+    // Track added sets (optional if you use remove functionality)
+    setAddedSets((prev) => {
+      const current = prev[exerciseIndex] || [];
+      return {
+        ...prev,
+        [exerciseIndex]: [...current, newSetNumber],
+      };
+    });
+  };
+
+  const handleRemoveSet = (exerciseIndex, setNumber) => {
+    setWorkout((prevWorkout) => {
+      const updatedWorkout = { ...prevWorkout };
+      delete updatedWorkout.structure[exerciseIndex].sets[setNumber];
+      return updatedWorkout;
+    });
+
+    setLogData((prev) => {
+      const updated = [...prev.actual_workout];
+      delete updated[exerciseIndex].sets[setNumber];
+      return { ...prev, actual_workout: updated };
+    });
+
+    setCheckedSets((prev) => {
+      const updated = { ...prev };
+      delete updated[exerciseIndex][setNumber];
+      return updated;
+    });
+
+    setAddedSets((prev) => {
+      const updatedList = (prev[exerciseIndex] || []).filter((num) => num !== setNumber);
+      return {
+        ...prev,
+        [exerciseIndex]: updatedList,
+      };
+    });
+  };
+
   const handleFinish = async () => {
     if (!uid) {
       alert("User not authenticated. Please log in.");
@@ -261,7 +348,12 @@ const StartWorkout = () => {
         });
       }
 
-      alert("Workout completed and logged successfully!");
+      // setShowSuccessMessage(true);
+      confetti({
+        particleCount: 150,
+        spread: 90,
+        origin: { y: 0.6 },
+      });
       navigate("/Workout_Management");
     } catch (err) {
       console.error("Error finishing workout:", err);
@@ -282,20 +374,20 @@ const StartWorkout = () => {
     <div className="max-w-5xl mx-auto px-4 py-8 bg-white min-h-screen">
       <button
         onClick={() => navigate('/Workout_Management')}
-        className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors mb-6"
+        className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 transition mb-6 font-medium"
       >
-        <ArrowLeft className="h-5 w-5" /> Back to Workouts
+        <ArrowLeft className="h-4 w-4" /> Back to Workouts
       </button>
 
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-[#4B9CD3]">
+      <div className="sticky top-0 z-40 bg-white flex justify-between items-center mb-8 px-4 py-4 shadow-sm border-b border-gray-200">
+        <h1 className="text-3xl font-bold text-[#4B9CD3] tracking-tight">
           {workout.name || "Workout"}
         </h1>
         <button
           onClick={handleFinish}
           className={`flex items-center gap-2 px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ${allExercisesComplete()
-              ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
-              : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+            ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+            : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
             } text-white font-medium`}
         >
           <Check className="h-5 w-5" /> Finish & Log Workout
@@ -306,7 +398,7 @@ const StartWorkout = () => {
         {workout.structure.map((exercise, eIdx) => (
           <div
             key={eIdx}
-            className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-xl"
+            className="bg-white rounded-xl shadow-lg border border-gray-200 transition-all duration-300 hover:shadow-xl"
           >
             <div className="p-6">
               <h2 className="text-xl font-bold text-[#4B9CD3] mb-4">
@@ -325,8 +417,7 @@ const StartWorkout = () => {
                   return (
                     <div
                       key={setNumber}
-                      className={`border rounded-lg p-4 transition-all duration-200 ${isChecked ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"
-                        }`}
+                      className={`rounded-xl p-4 shadow-sm border transition-all duration-200 ${isChecked ? "bg-green-50 border-green-300" : "bg-white border-gray-300"}`}
                     >
                       <div className="flex justify-between items-start mb-3">
                         <div>
@@ -337,76 +428,108 @@ const StartWorkout = () => {
                             {set.laps ? ` / ${set.laps} Laps (${lapUnit})` : ""}
                           </p>
                         </div>
-
                         <div className="flex gap-2 items-center">
                           {isTime && (
                             <button
                               onClick={() => handleSelectTimer(eIdx, setNumber)}
-                              className="flex items-center gap-1 px-3 py-1 bg-[#4B9CD3] text-white rounded hover:bg-blue-600 transition-colors"
+                              className="flex items-center gap-1 px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition"
                             >
                               <Timer className="h-4 w-4" /> Timer
                             </button>
                           )}
                           <button
                             onClick={() => handleSetCheck(eIdx, setNumber)}
-                            className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm transition-colors ${isChecked
-                                ? "bg-green-500 text-white hover:bg-green-600"
-                                : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                              }`}
+                            className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-all ${isChecked
+                              ? "bg-green-500 text-white hover:bg-green-600"
+                              : "bg-gray-200 text-gray-800 hover:bg-gray-300"}`}
                           >
                             {isChecked && <Check className="h-4 w-4" />} Done
                           </button>
+                          {addedSets[eIdx]?.includes(setNumber) && (
+                            <button
+                              onClick={() => handleRemoveSet(eIdx, setNumber)}
+                              className="text-red-500 hover:text-red-700 text-xs font-medium ml-2"
+                            >
+                              <X />
+                            </button>
+                          )}
                         </div>
                       </div>
 
                       <div className="border-t pt-3 mt-3">
                         <p className="text-sm font-medium text-gray-700 mb-2">Actual Performance:</p>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="flex flex-wrap gap-3 items-end sm:mt-0 mt-4">
                           {"reps" in actualSet && (
-                            <div className="group">
-                              <label className="block text-xs text-gray-500 mb-1">Reps</label>
+                            <div className="flex-1 min-w-[70px] space-y-1">
+                              <label className="block text-xs text-gray-500 font-medium">Reps</label>
                               <input
                                 type="number"
                                 value={actualSet.reps}
                                 onChange={(e) => handleActualSetChange(eIdx, setNumber, "reps", e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+                                className="w-full rounded-lg border border-gray-300 p-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
                                 min="0"
                               />
                             </div>
                           )}
                           {"weight" in actualSet && (
-                            <div className="group">
-                              <label className="block text-xs text-gray-500 mb-1">Weight ({weightUnit})</label>
+                            <div className="flex-1 min-w-[70px] space-y-1">
+                              <label className="block text-xs text-gray-500 font-medium">Weight</label>
                               <input
                                 type="number"
                                 value={actualSet.weight}
                                 onChange={(e) => handleActualSetChange(eIdx, setNumber, "weight", e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+                                className="w-full rounded-lg border border-gray-300 p-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
                                 min="0"
                                 step="0.1"
                               />
                             </div>
                           )}
+                          {"weight" in actualSet && (
+                            <div className="flex-1 min-w-[70px] space-y-1">
+                              <label className="block text-xs text-gray-500 font-medium">Weight Unit</label>
+                              <select
+                                value={weightUnit}
+                                onChange={(e) => handleActualSetChange(eIdx, setNumber, "weight_unit", e.target.value)}
+                                className="w-full rounded-lg border border-gray-300 p-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                              >
+                                <option value="kg">kg</option>
+                                <option value="lbs">lbs</option>
+                              </select>
+                            </div>
+                          )}
                           {"time" in actualSet && (
-                            <div className="group">
-                              <label className="block text-xs text-gray-500 mb-1">Time ({timeUnit})</label>
+                            <div className="flex-1 min-w-[70px] space-y-1">
+                              <label className="block text-xs text-gray-500 font-medium">Time</label>
                               <input
                                 type="number"
                                 value={actualSet.time}
                                 onChange={(e) => handleActualSetChange(eIdx, setNumber, "time", e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+                                className="w-full rounded-lg border border-gray-300 p-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
                                 min="0"
                               />
                             </div>
                           )}
+                          {"time" in actualSet && (
+                            <div className="flex-1 min-w-[70px] space-y-1">
+                              <label className="block text-xs text-gray-500 font-medium">Time Unit</label>
+                              <select
+                                value={timeUnit}
+                                onChange={(e) => handleActualSetChange(eIdx, setNumber, "time_unit", e.target.value)}
+                                className="w-full rounded-lg border border-gray-300 p-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                              >
+                                <option value="seconds">seconds</option>
+                                <option value="minutes">minutes</option>
+                              </select>
+                            </div>
+                          )}
                           {"laps" in actualSet && (
-                            <div className="group">
-                              <label className="block text-xs text-gray-500 mb-1">Laps</label>
+                            <div className="flex-1 min-w-[70px] space-y-1">
+                              <label className="block text-xs text-gray-500 font-medium">Laps</label>
                               <input
                                 type="number"
                                 value={actualSet.laps}
                                 onChange={(e) => handleActualSetChange(eIdx, setNumber, "laps", e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+                                className="w-full rounded-lg border border-gray-300 p-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
                                 min="0"
                               />
                             </div>
@@ -416,84 +539,93 @@ const StartWorkout = () => {
                     </div>
                   );
                 })}
+                <div className="pt-4">
+                  <button
+                    onClick={() => handleAddSet(eIdx)}
+                    className="text-blue-600 hover:text-blue-700 text-sm font-semibold hover:underline transition"
+                  >
+                    + Add Set
+                  </button>
+                </div>
+                {selectedTimer && (
+                  <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white p-6 rounded-xl shadow-2xl border border-gray-200 z-50 animate-fadeInUp">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-semibold text-gray-800">Timer</h3>
+                      <button
+                        onClick={() => {
+                          stopTimer();
+                          setSelectedTimer(null);
+                        }}
+                        className="text-red-500 hover:text-red-700 transition-colors"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div className="flex justify-between mb-6">
+                      <div className="text-center bg-gray-100 p-4 rounded-lg w-1/3 mx-1">
+                        <p className="text-2xl font-bold">
+                          {String(timer.hours).padStart(2, '0')}
+                        </p>
+                        <p className="text-xs text-gray-500">Hours</p>
+                      </div>
+                      <div className="text-center bg-gray-100 p-4 rounded-lg w-1/3 mx-1">
+                        <p className="text-2xl font-bold">
+                          {String(timer.minutes).padStart(2, '0')}
+                        </p>
+                        <p className="text-xs text-gray-500">Minutes</p>
+                      </div>
+                      <div className="text-center bg-gray-100 p-4 rounded-lg w-1/3 mx-1">
+                        <p className="text-2xl font-bold">
+                          {String(timer.seconds).padStart(2, '0')}
+                        </p>
+                        <p className="text-xs text-gray-500">Seconds</p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-4">
+                      <button
+                        onClick={startTimer}
+                        disabled={timer.isRunning}
+                        className={`flex-1 py-3 rounded-lg flex items-center justify-center gap-2 ${timer.isRunning
+                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-blue-500 text-white hover:bg-blue-600 transition"
+                          }`}
+                      >
+                        <Play /> Start
+                      </button>
+                      <button
+                        onClick={stopTimer}
+                        disabled={!timer.isRunning}
+                        className={`flex-1 py-3 rounded-lg flex items-center justify-center gap-2 ${!timer.isRunning
+                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-red-500 text-white hover:bg-red-600 transition"
+                          }`}
+                      >
+                        <Pause />Stop
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         ))}
       </div>
+
       {allExercisesComplete() && (
-        <div className="fixed bottom-6 left-0 right-0 flex justify-center">
+        <div className="fixed bottom-6 left-0 right-0 flex justify-center z-50">
           <button
             onClick={handleFinish}
-            className="flex items-center gap-2 px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium animate-bounce"
+            className="flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold shadow-md hover:shadow-xl transition-all animate-bounce"
           >
             <Check className="h-5 w-5" /> Finish & Log Workout
           </button>
         </div>
       )}
-
-      {selectedTimer && (
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white p-6 rounded-xl shadow-2xl border border-gray-200 z-50 animate-fadeInUp">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">Timer</h3>
-            <button
-              onClick={() => {
-                stopTimer();
-                setSelectedTimer(null);
-              }}
-              className="text-red-500 hover:text-red-700 transition-colors"
-            >
-              <X className="h-6 w-6" />
-            </button>
-          </div>
-
-          <div className="flex justify-between mb-6">
-            <div className="text-center bg-gray-100 p-4 rounded-lg w-1/3 mx-1">
-              <p className="text-2xl font-bold">
-                {String(timer.hours).padStart(2, '0')}
-              </p>
-              <p className="text-xs text-gray-500">Hours</p>
-            </div>
-            <div className="text-center bg-gray-100 p-4 rounded-lg w-1/3 mx-1">
-              <p className="text-2xl font-bold">
-                {String(timer.minutes).padStart(2, '0')}
-              </p>
-              <p className="text-xs text-gray-500">Minutes</p>
-            </div>
-            <div className="text-center bg-gray-100 p-4 rounded-lg w-1/3 mx-1">
-              <p className="text-2xl font-bold">
-                {String(timer.seconds).padStart(2, '0')}
-              </p>
-              <p className="text-xs text-gray-500">Seconds</p>
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <button
-              onClick={startTimer}
-              disabled={timer.isRunning}
-              className={`flex-1 py-3 rounded-lg flex items-center justify-center gap-2 ${timer.isRunning
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-blue-500 text-white hover:bg-blue-600 transition-colors'
-                }`}
-            >
-              <Play className="h-5 w-5" /> Start
-            </button>
-            <button
-              onClick={stopTimer}
-              disabled={!timer.isRunning}
-              className={`flex-1 py-3 rounded-lg flex items-center justify-center gap-2 ${!timer.isRunning
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-red-500 text-white hover:bg-red-600 transition-colors'
-                }`}
-            >
-              <Pause className="h-5 w-5" /> Stop
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
+
 };
 
 export default StartWorkout;
