@@ -1,8 +1,10 @@
+
+
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../../AuthProvider";
-import { Check, Play, Pause, X, ArrowLeft, Timer } from "lucide-react";
+import { Check, Play, Pause, X, ArrowLeft, Timer, ArrowRight } from "lucide-react";
 import confetti from "canvas-confetti";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL;
@@ -404,9 +406,11 @@ const StartWorkout = () => {
               <h2 className="text-xl font-bold text-[#4B9CD3] mb-4">
                 {exercise.exercise_details?.name || `Exercise ${exercise.exercise_id}`}
               </h2>
+             <div className="overflow-x-auto">
+              <div className="flex gap-4 px-1 w-max">
 
-              <div className="space-y-4">
                 {Object.entries(exercise.sets).map(([setNumber, set]) => {
+                  
                   const isTime = !!set.time;
                   const isChecked = checkedSets?.[eIdx]?.[setNumber];
                   const actualSet = logData.actual_workout[eIdx]?.sets[setNumber] || {};
@@ -415,9 +419,11 @@ const StartWorkout = () => {
                   const lapUnit = exercise.laps_unit || "no units";
 
                   return (
-                    <div
+                   <div
                       key={setNumber}
-                      className={`rounded-xl p-4 shadow-sm border transition-all duration-200 ${isChecked ? "bg-green-50 border-green-300" : "bg-white border-gray-300"}`}
+                      className={`rounded-xl p-4 shadow-sm border transition-all duration-200 
+                        ${isChecked ? "bg-green-50 border-green-300" : "bg-white border-gray-300"} 
+                        w-full sm:w-[48%] lg:w-[33.5%]`}
                     >
                       <div className="flex justify-between items-start mb-3">
                         <div>
@@ -458,30 +464,47 @@ const StartWorkout = () => {
 
                       <div className="border-t pt-3 mt-3">
                         <p className="text-sm font-medium text-gray-700 mb-2">Actual Performance:</p>
-                        <div className="flex flex-wrap gap-3 items-end sm:mt-0 mt-4">
-                          {"reps" in actualSet && (
-                            <div className="flex-1 min-w-[70px] space-y-1">
-                              <label className="block text-xs text-gray-500 font-medium">Reps</label>
-                              <input
-                                type="number"
-                                value={actualSet.reps}
-                                onChange={(e) => handleActualSetChange(eIdx, setNumber, "reps", e.target.value)}
-                                className="w-full rounded-lg border border-gray-300 p-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
-                                min="0"
-                              />
+                        <div className="flex flex-col gap-4">
+                           {"reps" in actualSet && (
+                            <div className="group">
+                              <div className="flex items-center justify-between gap-4">
+                                <div className="text-sm text-gray-700 whitespace-nowrap">
+                                  <div>Planned Reps </div>
+                                  <div><ArrowRight /><span className="font-medium">{set.reps}</span></div>
+                                  {/* <div className="text-xs text-gray-500">{exercise.weight_unit}</div> */}
+                                </div>
+                                <div className="flex flex-col items-start">
+                                  <label className="text-xs text-gray-500 mb-1">Actual Input:</label>
+                                  <input
+                                    type="number"
+                                    value={actualSet.reps}
+                                    onChange={(e) => handleActualSetChange(eIdx, setNumber, "reps", e.target.value)}
+                                    className="w-24 p-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+                                    min="0"
+                                  />
+                                </div>
+                              </div>
                             </div>
                           )}
                           {"weight" in actualSet && (
-                            <div className="flex-1 min-w-[70px] space-y-1">
-                              <label className="block text-xs text-gray-500 font-medium">Weight</label>
-                              <input
-                                type="number"
-                                value={actualSet.weight}
-                                onChange={(e) => handleActualSetChange(eIdx, setNumber, "weight", e.target.value)}
-                                className="w-full rounded-lg border border-gray-300 p-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
-                                min="0"
-                                step="0.1"
-                              />
+                            <div className="group border-t pt-3 mt-3">
+                              <div className="flex items-center justify-between gap-4">
+                                <div className="text-sm text-gray-700 whitespace-nowrap">
+                                  <div>Planned Weight: </div>
+                                  <div className="text-xs text-gray-500"> <span className="font-medium  text-gray-700 text-sm whitespace-nowrap">{set.weight || 0}</span> {weightUnit}</div>
+                                </div>
+                                <div className="flex flex-col items-start">
+                                  <label className="text-xs text-gray-500 mb-1">Actual Input:</label>
+                                  <input
+                                    type="number"
+                                    value={actualSet.weight}
+                                    onChange={(e) => handleActualSetChange(eIdx, setNumber, "weight", e.target.value)}
+                                    className="w-24 p-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+                                    min="0"
+                                    step="0.1"
+                                  />
+                                </div>
+                              </div>
                             </div>
                           )}
                           {"weight" in actualSet && (
@@ -498,15 +521,23 @@ const StartWorkout = () => {
                             </div>
                           )}
                           {"time" in actualSet && (
-                            <div className="flex-1 min-w-[70px] space-y-1">
-                              <label className="block text-xs text-gray-500 font-medium">Time</label>
-                              <input
-                                type="number"
-                                value={actualSet.time}
-                                onChange={(e) => handleActualSetChange(eIdx, setNumber, "time", e.target.value)}
-                                className="w-full rounded-lg border border-gray-300 p-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
-                                min="0"
-                              />
+                            <div className="group border-t pt-3 mt-3">
+                              <div className="flex items-center justify-between gap-4">
+                                <div className="text-sm text-gray-700 whitespace-nowrap">
+                                  <div>Planned Time: <span className="font-medium">{set.time || 0}</span></div>
+                                  <div className="text-xs text-gray-500">{timeUnit}</div>
+                                </div>
+                                <div className="flex flex-col items-start">
+                                  <label className="text-xs text-gray-500 mb-1">Actual Input:</label>
+                                  <input
+                                    type="number"
+                                    value={actualSet.time}
+                                    onChange={(e) => handleActualSetChange(eIdx, setNumber, "time", e.target.value)}
+                                    className="w-24 p-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+                                    min="0"
+                                  />
+                                </div>
+                              </div>
                             </div>
                           )}
                           {"time" in actualSet && (
@@ -523,15 +554,23 @@ const StartWorkout = () => {
                             </div>
                           )}
                           {"laps" in actualSet && (
-                            <div className="flex-1 min-w-[70px] space-y-1">
-                              <label className="block text-xs text-gray-500 font-medium">Laps</label>
-                              <input
-                                type="number"
-                                value={actualSet.laps}
-                                onChange={(e) => handleActualSetChange(eIdx, setNumber, "laps", e.target.value)}
-                                className="w-full rounded-lg border border-gray-300 p-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
-                                min="0"
-                              />
+                            <div className="group border-t pt-3 mt-3">
+                              <div className="flex items-center justify-between gap-4">
+                                <div className="text-sm text-gray-700 whitespace-nowrap">
+                                  <div>Planned Laps: <span className="font-medium">{set.laps || 0}</span></div>
+                                  <div className="text-xs text-gray-500">{lapUnit}</div>
+                                </div>
+                                <div className="flex flex-col items-start">
+                                  <label className="text-xs text-gray-500 mb-1">Actual Input:</label>
+                                  <input
+                                    type="number"
+                                    value={actualSet.laps}
+                                    onChange={(e) => handleActualSetChange(eIdx, setNumber, "laps", e.target.value)}
+                                    className="w-24 p-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+                                    min="0"
+                                  />
+                                </div>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -608,6 +647,7 @@ const StartWorkout = () => {
                   </div>
                 )}
               </div>
+             </div>
             </div>
           </div>
         ))}
@@ -629,8 +669,6 @@ const StartWorkout = () => {
 };
 
 export default StartWorkout;
-
-
 
 
 // import React, { useEffect, useState } from "react";
@@ -922,8 +960,8 @@ export default StartWorkout;
 //         <ArrowLeft className="h-5 w-5" /> Back to Workouts
 //       </button>
 
-//       <div className="flex justify-between items-center mb-8">
-//         <h1 className="text-3xl font-bold text-[#4B9CD3]">
+//       <div className="sticky top-0 z-40 bg-white flex justify-between items-center mb-8 px-4 py-4 shadow-sm border-b border-gray-200">
+//         <h1 className="text-3xl font-bold text-[#4B9CD3] tracking-tight">
 //           {workout.name || "Workout"}
 //         </h1>
 //         <button
@@ -1107,7 +1145,7 @@ export default StartWorkout;
 //           </button>
 //         </div>
 //       )}
-
+      
 //       {selectedTimer && (
 //         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white p-6 rounded-xl shadow-2xl border border-gray-200 z-50 animate-fadeInUp">
 //           <div className="flex justify-between items-center mb-4">

@@ -4,8 +4,15 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../AuthProvider";
 import { Trash2, Pencil, Play, ChevronDown, ChevronUp } from 'lucide-react';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
-} from 'recharts';
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend
+} from "recharts";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -28,6 +35,7 @@ const Workout_Management = () => {
   const [deletingRegiment, setDeletingRegiment] = useState(null);
   const [visibleIndex, setVisibleIndex] = useState(0);
   const activeRegimentId = currentPlannedRegiments.length > 0 ? currentPlannedRegiments[0].regiment_id : null;
+  const [showGraph, setShowGraph] = useState(false);
 
   const navigate = useNavigate();
   const { uid } = useAuth();
@@ -201,6 +209,45 @@ const Workout_Management = () => {
       alert("Failed to delete regiment. Please try again.");
       setDeletingRegiment(null);
     }
+  };
+
+  const calculateEffort = (set, weights = { reps: 1, weight: 0.5, time: 0.2, laps: 1.5 }) => {
+    return (
+      (set.reps || 1) * weights.reps +
+      (set.weight || 1) * weights.weight +
+      (set.time || 1) * weights.time +
+      (set.laps || 1) * weights.laps
+    );
+  };
+
+  const NormalizedEffortChart = ({ plannedSets = {}, actualSets = {} }) => {
+    const chartData = Object.keys(actualSets).map((setKey, idx) => {
+      const plannedSet = plannedSets?.[setKey] || {};
+      const actualSet = actualSets?.[setKey] || {};
+
+      return {
+        name: `Set ${idx + 1}`,
+        plannedEffort: calculateEffort(plannedSet),
+        actualEffort: calculateEffort(actualSet)
+      };
+    });
+
+    return (
+      <div className="mt-6">
+        <h5 className="font-semibold text-gray-700 mb-2">Performance Trend (Normalized)</h5>
+        <ResponsiveContainer width="100%" height={250}>
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Line type="monotone" dataKey="plannedEffort" stroke="#34D399" name="Planned Effort" />
+            <Line type="monotone" dataKey="actualEffort" stroke="#3B82F6" name="Actual Effort" />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    );
   };
 
   const renderRegimentCard = (regiment, includeLogCount = true, workoutDetails) => (
@@ -471,6 +518,12 @@ const Workout_Management = () => {
                         <span className="w-2 h-2 bg-[#4B9CD3] rounded-full mr-2"></span>
                         Exercises
                       </h4>
+                      <button
+                        onClick={() => setShowGraph(!showGraph)}
+                        className="text-sm text-blue-500 hover:underline mb-3"
+                      >
+                        {showGraph ? "Show Set Details" : "Show Graph"}
+                      </button>
 
                       <div
                         ref={scrollRef}
@@ -513,61 +566,46 @@ const Workout_Management = () => {
 
                               {(plannedExercise?.sets || actualExercise.sets) ? (
                                 <>
-                                  <div className="grid grid-cols-2 gap-4 text-sm">
-                                    <div>
-                                      <p className="font-semibold text-green-600 mb-2 flex items-center">
-                                        <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                                        Planned
-                                      </p>
-                                      <div className="space-y-1">
-                                        {Object.entries(plannedExercise?.sets || {}).map(([setKey, set]) => (
-                                          <div key={setKey} className="p-2 bg-green-50 rounded-md">
-                                            {set.reps ? `${set.reps} reps ` : ""}
-                                            {set.weight ? `${set.weight}${plannedExercise.weight_unit || "kg"}` : ""}
-                                            {set.time ? `${set.time} sec ` : ""}
-                                            {set.laps ? `${set.laps} lap${set.laps > 1 ? "s" : ""}${plannedExercise.lap_unit ? ` (${plannedExercise.lap_unit})` : ""}` : ""}
-                                          </div>
-                                        ))}
+                                  {showGraph ? (
+                                    <NormalizedEffortChart
+                                      plannedSets={plannedExercise?.sets}
+                                      actualSets={actualExercise.sets}
+                                    />
+                                  ) : (
+                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                      <div>
+                                        <p className="font-semibold text-green-600 mb-2 flex items-center">
+                                          <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                          Planned
+                                        </p>
+                                        <div className="space-y-1">
+                                          {Object.entries(plannedExercise?.sets || {}).map(([setKey, set]) => (
+                                            <div key={setKey} className="p-2 bg-green-50 rounded-md">
+                                              {set.reps ? `${set.reps} reps ` : ""}
+                                              {set.weight ? `${set.weight}${plannedExercise.weight_unit || "kg"}` : ""}
+                                              {set.time ? `${set.time} sec ` : ""}
+                                              {set.laps ? `${set.laps} lap${set.laps > 1 ? "s" : ""}${plannedExercise.lap_unit ? ` (${plannedExercise.lap_unit})` : ""}` : ""}
+                                            </div>
+                                          ))}
+                                        </div>
                                       </div>
-                                    </div>
 
-                                    <div>
-                                      <p className="font-semibold text-blue-600 mb-2 flex items-center">
-                                        <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                                        Actual
-                                      </p>
-                                      <div className="space-y-1">
-                                        {Object.entries(actualExercise.sets || {}).map(([setKey, set]) => (
-                                          <div key={setKey} className="p-2 bg-blue-50 rounded-md">
-                                            {set.reps ? `${set.reps} reps ` : ""}
-                                            {set.weight ? `${set.weight}${plannedExercise.weight_unit || "kg"}` : ""}
-                                            {set.time ? `${set.time} sec ` : ""}
-                                            {set.laps ? `${set.laps} lap${set.laps > 1 ? "s" : ""}${plannedExercise.lap_unit ? ` (${plannedExercise.lap_unit})` : ""}` : ""}
-                                          </div>
-                                        ))}
+                                      <div>
+                                        <p className="font-semibold text-blue-600 mb-2 flex items-center">
+                                          <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                                          Actual
+                                        </p>
+                                        <div className="space-y-1">
+                                          {Object.entries(actualExercise.sets || {}).map(([setKey, set]) => (
+                                            <div key={setKey} className="p-2 bg-blue-50 rounded-md">
+                                              {set.reps ? `${set.reps} reps ` : ""}
+                                              {set.weight ? `${set.weight}${plannedExercise.weight_unit || "kg"}` : ""}
+                                              {set.time ? `${set.time} sec ` : ""}
+                                              {set.laps ? `${set.laps} lap${set.laps > 1 ? "s" : ""}${plannedExercise.lap_unit ? ` (${plannedExercise.lap_unit})` : ""}` : ""}
+                                            </div>
+                                          ))}
+                                        </div>
                                       </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Bar Chart */}
-                                  {chartData.length > 0 && (
-                                    <div className="mt-6">
-                                      <h5 className="font-semibold text-gray-700 mb-2">Planned vs Actual (Per Set)</h5>
-                                      <ResponsiveContainer width="100%" height={250}>
-                                        <BarChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 5 }}>
-                                          <CartesianGrid strokeDasharray="3 3" />
-                                          <XAxis dataKey="name" />
-                                          <YAxis />
-                                          <Tooltip />
-                                          <Legend />
-                                          <Bar dataKey="plannedReps" fill="#34D399" name="Planned Reps" />
-                                          <Bar dataKey="actualReps" fill="#3B82F6" name="Actual Reps" />
-                                          <Bar dataKey="plannedWeight" fill="#F59E0B" name="Planned Weight" />
-                                          <Bar dataKey="actualWeight" fill="#6366F1" name="Actual Weight" />
-                                          <Bar dataKey="plannedTime" fill="#A78BFA" name="Planned Time" />
-                                          <Bar dataKey="actualTime" fill="#EC4899" name="Actual Time" />
-                                        </BarChart>
-                                      </ResponsiveContainer>
                                     </div>
                                   )}
                                 </>
