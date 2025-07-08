@@ -460,7 +460,8 @@ const recordWorkoutLogEntry = async (req, res) => {
       regiment_day_index,
       log_date,
       planned_workout_id,
-      actual_workout
+      actual_workout,
+      timee
     } = req.body;
 
     // Validate structure
@@ -480,7 +481,8 @@ const recordWorkoutLogEntry = async (req, res) => {
       regiment_day_index,
       log_date,
       planned_workout_id,
-      actual_workout
+      actual_workout,
+      timee
     });
 
     // logger.info("Workout log recorded successfully", {
