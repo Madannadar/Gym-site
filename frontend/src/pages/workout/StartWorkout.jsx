@@ -485,8 +485,11 @@ const StartWorkout = () => {
                               <div className="group">
                                 <div className="flex items-center justify-between gap-4">
                                   <div className="text-sm text-gray-700 whitespace-nowrap">
-                                    <div>Planned Reps </div>
-                                    <div><ArrowRight /><span className="font-medium">{set.reps}</span></div>
+                                    <div>Planned Reps: </div>
+                                    <div className="flex items-center gap-1">
+                                      {/* <ArrowRight className="w-4 h-4 text-gray-500" /> */}
+                                      <span className="font-medium">{set.reps}</span>
+                                    </div>
                                     {/* <div className="text-xs text-gray-500">{exercise.weight_unit}</div> */}
                                   </div>
                                   <div className="flex flex-col items-start">
@@ -523,11 +526,11 @@ const StartWorkout = () => {
                                 </div>
                               </div>
                             )}
-                            {"weight" in actualSet && (
+                            {/* {"weight" in actualSet && (
                               <div className="flex-1 min-w-[70px] space-y-1">
                                 <label className="block text-xs text-gray-500 font-medium">Weight Unit</label>
                                 <select
-                                  value={weightUnit}
+                                  value={actualSet.weight_unit || "kg"} // <-- use from actualSet
                                   onChange={(e) => handleActualSetChange(eIdx, setNumber, "weight_unit", e.target.value)}
                                   className="w-full rounded-lg border border-gray-300 p-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
                                 >
@@ -535,13 +538,14 @@ const StartWorkout = () => {
                                   <option value="lbs">lbs</option>
                                 </select>
                               </div>
-                            )}
+                            )} */}
                             {"time" in actualSet && (
                               <div className="group border-t pt-3 mt-3">
                                 <div className="flex items-center justify-between gap-4">
                                   <div className="text-sm text-gray-700 whitespace-nowrap">
-                                    <div>Planned Time: <span className="font-medium">{set.time || 0}</span></div>
-                                    <div className="text-xs text-gray-500">{timeUnit}</div>
+                                    <div>Planned Time:</div>
+                                    <div> <span className="font-medium">{set.time || 0}</span> {timeUnit}</div>
+                                    {/* <div className="text-xs text-gray-500"></div> */}
                                   </div>
                                   <div className="flex flex-col items-start">
                                     <label className="text-xs text-gray-500 mb-1">Actual Input:</label>
@@ -556,7 +560,7 @@ const StartWorkout = () => {
                                 </div>
                               </div>
                             )}
-                            {"time" in actualSet && (
+                            {/* {"time" in actualSet && (
                               <div className="flex-1 min-w-[70px] space-y-1">
                                 <label className="block text-xs text-gray-500 font-medium">Time Unit</label>
                                 <select
@@ -568,13 +572,14 @@ const StartWorkout = () => {
                                   <option value="minutes">minutes</option>
                                 </select>
                               </div>
-                            )}
+                            )} */}
                             {"laps" in actualSet && (
                               <div className="group border-t pt-3 mt-3">
                                 <div className="flex items-center justify-between gap-4">
                                   <div className="text-sm text-gray-700 whitespace-nowrap">
-                                    <div>Planned Laps: <span className="font-medium">{set.laps || 0}</span></div>
-                                    <div className="text-xs text-gray-500">{lapUnit}</div>
+                                    <div>Planned Laps:</div>
+                                    <div> <span className="font-medium">{set.laps || 0}</span> {lapUnit}</div>
+                                    {/* <div className="text-xs text-gray-500"></div> */}
                                   </div>
                                   <div className="flex flex-col items-start">
                                     <label className="text-xs text-gray-500 mb-1">Actual Input:</label>
