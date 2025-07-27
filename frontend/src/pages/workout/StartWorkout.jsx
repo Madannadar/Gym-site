@@ -331,9 +331,9 @@ const StartWorkout = () => {
     }
 
     try {
-      await axios.put(`${API_URL}/workouts/${workoutId}`, {
-        current_user_id: uid,
-      });
+      // await axios.put(`${API_URL}/workouts/${workoutId}`, {
+      //   current_user_id: uid,
+      // });
 
       const actualWorkoutWithUnits = buildActualWorkoutWithUnits();
 
@@ -344,11 +344,10 @@ const StartWorkout = () => {
         actual_workout: actualWorkoutWithUnits,
         timee: elapsedSeconds
       };
-      console.log("elapsedSeconds:", elapsedSeconds);
-      console.log("Payload:", payload);
 
       await axios.post(`${API_URL}/workouts/logs`, payload);
 
+      // ✅ Check if regiment is completed
       if (regimenId) {
         const regimentRes = await axios.get(`${API_URL}/workouts/regiments/${regimenId}`);
         const regiment = regimentRes.data.item;
@@ -358,12 +357,32 @@ const StartWorkout = () => {
           workout_id: day.workout_id,
         }));
 
-        await axios.put(`${API_URL}/workouts/regiments/${regimenId}`, {
-          workout_structure: cleanedStructure,
-        });
+        // await axios.put(`${API_URL}/workouts/regiments/${regimenId}`, {
+        //   workout_structure: cleanedStructure,
+        // });
+
+        // ✅ Fetch all logs for the user and check completion
+        const logsRes = await axios.get(`${API_URL}/workouts/logs/user/${uid}`);
+        const userLogs = logsRes.data.items || [];
+
+        const loggedWorkoutIds = new Set(
+          userLogs
+            .filter((log) => log.regiment_id === Number(regimenId))
+            .map((log) => log.planned_workout_id)
+        );
+
+        const allWorkoutIds = cleanedStructure.map((day) => day.workout_id);
+        const isComplete = allWorkoutIds.every(id => loggedWorkoutIds.has(id));
+
+        if (isComplete) {
+          // ✅ Delete the current regiment entry
+          console.log(uid)
+          await axios.delete(`${API_URL}/workouts/user_current_regiment/${uid}`);
+          console.log("Regiment completed. Removed from user_current_regiment.");
+        }
       }
+
       clearInterval(timerRef.current);
-      // setShowSuccessMessage(true);
       confetti({
         particleCount: 150,
         spread: 90,
@@ -376,6 +395,7 @@ const StartWorkout = () => {
       alert(`Error completing workout: ${errorMessage}`);
     }
   };
+
 
   if (error) return <div className="text-red-600 p-4">{error}</div>;
   if (isLoading) return (
@@ -394,24 +414,28 @@ const StartWorkout = () => {
         <ArrowLeft className="h-4 w-4" /> Back to Workouts
       </button>
 
-      <div className="sticky top-0 z-40 bg-white flex justify-between items-center mb-8 px-4 py-4 shadow-sm border-b border-gray-200">
-        <h1 className="text-3xl font-bold text-[#4B9CD3] tracking-tight">
+      <div className="sticky top-0 z-40 bg-white flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 mb-6 px-4 py-4 shadow-sm border-b border-gray-200">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#4B9CD3] tracking-tight">
           {workout.name || "Workout"}
         </h1>
-        <div className="text-right text-sm text-gray-500 mb-2">
-          Time spent on this page: <span className="font-semibold">{Math.floor(elapsedSeconds / 60)}m {elapsedSeconds % 60}s</span>
+
+        <div className="text-sm text-gray-500 sm:text-right">
+          Time spent on this page:{" "}
+          <span className="font-semibold">
+            {Math.floor(elapsedSeconds / 60)}m {elapsedSeconds % 60}s
+          </span>
         </div>
+
         <button
           onClick={handleFinish}
-          className={`flex items-center gap-2 px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ${allExercisesComplete()
-            ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
-            : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+          className={`w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ${allExercisesComplete()
+              ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+              : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
             } text-white font-medium`}
         >
           <Check className="h-5 w-5" /> Finish & Log Workout
         </button>
       </div>
-
       <div className="space-y-6">
         {workout.structure.map((exercise, eIdx) => (
           <div

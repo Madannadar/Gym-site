@@ -87,7 +87,7 @@ const CreateExercise = () => {
         onClick={() => navigate("/create-workout")}
         className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors mb-6"
       >
-        <ArrowLeft className="h-5 w-5" /> Back to Workouts
+        <ArrowLeft className="h-5 w-5" /> Back to Workouts 
       </button>
 
       <h1 className="text-3xl font-bold text-[#4B9CD3] mb-8">Create Exercise</h1>

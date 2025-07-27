@@ -20,7 +20,9 @@ import {
   fetchRegimentByIdEntry,
   updateRegimentByIdEntry,
   deleteRegimentByIdEntry,
+  getHighestIntensityWorkout,
 } from "../controllers/workout.controller.js"
+import { deleteCurrentRegimentFromStatus, getCurrentRegimentForUser, setCurrentRegiment } from "../model/workout.model.js";
 // import { getCurrentRegimentForUser, recordProgress } from "../model/workout.model.js";
 
 const router = express.Router();
@@ -50,7 +52,7 @@ router.get("/regiments/:id", fetchRegimentByIdEntry); // working
 router.put("/regiments/:id", updateRegimentByIdEntry); // working
 // DELETE /api/workouts/regiments/:id - delete a regiment
 router.delete("/regiments/:id", deleteRegimentByIdEntry); // working
-  
+
 // Workout Routes
 // POST /api/workouts - create a new workout
 router.post("/", recordWorkoutEntry); // working  // checks if exercise exists before adding to workout
@@ -75,8 +77,16 @@ router.put("/logs/:id", updateWorkoutLogByIdEntry); // working
 // DELETE /api/workouts/logs/:id - delete a workout log
 router.delete("/logs/:id", deleteWorkoutLogByIdEntry); // working
 
+router.post("/user_current_regiment", setCurrentRegiment)
+router.get("/user_current_regiment/:id", getCurrentRegimentForUser);
+router.delete("/user_current_regiment/:id",deleteCurrentRegimentFromStatus);
+
+
 // router.post("/progress",recordProgress)
 
 // router.get("/current-regiment/:user_id", getCurrentRegimentForUser);
+
+// GET /api/workouts/logs/highest-intensity/:userId - fetch highest intensity workout for user
+router.get("/logs/highest-intensity/:userId", getHighestIntensityWorkout);
 
 export default router;

@@ -1,25 +1,24 @@
-// src/pages/TodaysQRPage.jsx
 import { useEffect, useState } from "react";
 import { apiClient } from "../AxiosSetup";
-import { QRCode } from "qrcode.react";
+import { QRCodeCanvas } from "qrcode.react"; // ✅ correct
 
 const TodaysQRPage = () => {
   const [qrString, setQrString] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const fetchQRString = async () => {
-    try {
-      const res = await apiClient.get(`/api/attendance/qr/string`);
-      setQrString(res.data.qr_code);
-    } catch (err) {
-      console.error("❌ Failed to fetch QR string:", err);
-      setQrString("");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchQRString = async () => {
+      try {
+        const res = await apiClient.get(`/api/attendance/qr/string`);
+        setQrString(res.data.qr_code);
+      } catch (err) {
+        console.error("❌ Failed to fetch QR string:", err);
+        setQrString("");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchQRString();
   }, []);
 
@@ -30,7 +29,7 @@ const TodaysQRPage = () => {
         <p>Loading QR Code...</p>
       ) : qrString ? (
         <>
-          <QRCode value={qrString} size={256} />
+          <QRCodeCanvas value={qrString} size={256} /> {/* ✅ */}
           <p style={{ marginTop: "1rem" }}>
             <strong>QR String:</strong> {qrString}
           </p>
